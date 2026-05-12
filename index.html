@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ぴよツール</title>
+  <style>
+    :root {
+      --topbar:  #1e2a3a;
+      --body-bg: #F7F8FA;
+      --white:   #FFFFFF;
+      --border:  #EBEBEB;
+      --text-1:  #18181B;
+      --text-2:  #6B7280;
+      --text-3:  #9CA3AF;
+      --radius-card: 16px;
+      --shadow-card: 0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-hover: 0 10px 28px rgba(0,0,0,0.13), 0 3px 8px rgba(0,0,0,0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: var(--body-bg);
+      min-height: 100vh;
+      color: var(--text-1);
+    }
+
+    /* ── TOPBAR ─────────────────────────────── */
+    .topbar {
+      background: var(--topbar);
+      height: 56px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .topbar-logo  { font-size: 24px; line-height: 1; }
+    .topbar-brand { font-size: 15px; font-weight: 700; color: #fff; }
+    .topbar-sep   { width: 1px; height: 16px; background: rgba(255,255,255,0.15); }
+    .topbar-sub   { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+    /* ── PAGE HEADER ────────────────────────── */
+    .page-header {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 36px 24px 0;
+    }
+    .page-header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-1);
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+    .page-header p { font-size: 14px; color: var(--text-2); }
+
+    /* ── MAIN ──────────────────────────────── */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 28px 24px 80px;
+    }
+
+    /* ── SECTION LABEL ─────────────────────── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-3);
+      margin-bottom: 14px;
+    }
+    .section-gap { height: 32px; }
+
+    /* ── CARD GRID ──────────────────────────── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    /* ── SQUARE CARD ────────────────────────── */
+    .tool-card {
+      background: var(--white);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border: 1px solid var(--border);
+    }
+    .tool-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-hover);
+    }
+    .tool-card.coming-soon { cursor: default; }
+    .tool-card.coming-soon:hover { transform: none; box-shadow: var(--shadow-card); }
+
+    /* ── CARD THUMBNAIL (square) ────────────── */
+    .card-thumb {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-emoji {
+      font-size: 72px;
+      line-height: 1;
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.18));
+      transition: transform 0.3s ease;
+      position: relative;
+      z-index: 1;
+    }
+    .tool-card:not(.coming-soon):hover .card-emoji {
+      transform: scale(1.1) translateY(-4px);
+    }
+
+    /* floating animation for active tools */
+    .card-float { animation: cardFloat 3.5s ease-in-out infinite; }
+    @keyframes cardFloat {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-8px); }
+    }
+    .tool-card:hover .card-float { animation: none; }
+
+    /* coming-soon overlay */
+    .thumb-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(1px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+    .thumb-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 20px;
+      background: rgba(0,0,0,0.65);
+      color: white;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* per-tool gradient backgrounds */
+    .bg-lottery   { background: linear-gradient(145deg, #EBF4FF 0%, #93C5FD 60%, #60A5FA 100%); }
+    .bg-timer     { background: linear-gradient(145deg, #E3F2FD 0%, #90CAF9 60%, #64B5F6 100%); }
+    .bg-team      { background: linear-gradient(145deg, #F3E5F5 0%, #CE93D8 60%, #BA68C8 100%); }
+    .bg-dice      { background: linear-gradient(145deg, #E8F5E9 0%, #A5D6A7 60%, #81C784 100%); }
+    .bg-vote      { background: linear-gradient(145deg, #FCE4EC 0%, #F48FB1 60%, #F06292 100%); }
+    .bg-text      { background: linear-gradient(145deg, #FFF3E0 0%, #FFCC80 60%, #FFA726 100%); }
+
+    /* ── CARD INFO ──────────────────────────── */
+    .card-info {
+      padding: 14px 16px 18px;
+      border-top: 1px solid #F0F0F0;
+    }
+    .card-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-1);
+      margin-bottom: 5px;
+      letter-spacing: -0.01em;
+    }
+    .card-desc {
+      font-size: 12px;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+
+    /* ── FOOTER ────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 28px;
+      color: var(--text-3);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <span class="topbar-logo">✨</span>
+  <span class="topbar-brand">ぴよツール</span>
+  <div class="topbar-sep"></div>
+  <span class="topbar-sub">社内ツール集</span>
+</div>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <h1>ツール一覧</h1>
+  <p>ぴよが社内の作業をお手伝いします</p>
+</div>
+
+<main>
+
+  <!-- 利用可能 -->
+  <div class="section-label" style="margin-top:8px">利用可能</div>
+  <div class="cards-grid" style="margin-bottom:32px">
+
+    <a href="lottery.html" class="tool-card">
+      <div class="card-thumb bg-lottery">
+        <span class="card-emoji card-float">🎯</span>
+      </div>
+      <div class="card-info">
+        <div class="card-name">くじ引き</div>
+        <div class="card-desc">名前や数字のリストからランダムに抽選。豪華演出つき！</div>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- 近日公開 -->
+  <div class="section-label">近日公開</div>
+  <div class="cards-grid">
+
+    <div class="tool-card coming-soon">
+      <div class="card-thumb bg-timer">
+        <span class="card-emoji">⏰</span>
+        <div class="thumb-overlay"><span class="thumb-badge">近日公開</span></div>
+      </div>
+      <div class="card-info">
+        <div class="card-name">タイマー</div>
+        <div class="card-desc">カウントダウンタイマー</div>
+      </div>
+    </div>
+
+    <div class="tool-card coming-soon">
+      <div class="card-thumb bg-team">
+        <span class="card-emoji">🤝</span>
+        <div class="thumb-overlay"><span class="thumb-badge">近日公開</span></div>
+      </div>
+      <div class="card-info">
+        <div class="card-name">チーム分け</div>
+        <div class="card-desc">メンバーをランダムにチームへ振り分けます</div>
+      </div>
+    </div>
+
+    <div class="tool-card coming-soon">
+      <div class="card-thumb bg-dice">
+        <span class="card-emoji">🎲</span>
+        <div class="thumb-overlay"><span class="thumb-badge">近日公開</span></div>
+      </div>
+      <div class="card-info">
+        <div class="card-name">サイコロ</div>
+        <div class="card-desc">複数のサイコロをまとめて振れます</div>
+      </div>
+    </div>
+
+    <div class="tool-card coming-soon">
+      <div class="card-thumb bg-vote">
+        <span class="card-emoji">✅</span>
+        <div class="thumb-overlay"><span class="thumb-badge">近日公開</span></div>
+      </div>
+      <div class="card-info">
+        <div class="card-name">投票</div>
+        <div class="card-desc">手軽なリアルタイム投票ツール</div>
+      </div>
+    </div>
+
+    <div class="tool-card coming-soon">
+      <div class="card-thumb bg-text">
+        <span class="card-emoji">✏️</span>
+        <div class="thumb-overlay"><span class="thumb-badge">近日公開</span></div>
+      </div>
+      <div class="card-info">
+        <div class="card-name">テキスト変換</div>
+        <div class="card-desc">大文字・小文字変換などのテキスト加工</div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>✨ ぴよツール — 社内専用</footer>
+
+</body>
+</html>
