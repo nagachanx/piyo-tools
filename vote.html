@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>投票 — ぴよツールズ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F5F5F4; --surface:#FFFFFF; --border:#E7E5E4; --border-strong:#D6D3D1;
+      --text-1:#1C1917; --text-2:#44403C; --text-3:#78716C; --text-4:#A8A29E;
+      --icon-bg:#F3F4F6; --primary:#2563EB; --primary-dk:#1D4ED8; --primary-lt:#DBEAFE; --primary-bg:#EFF6FF;
+      --danger:#EF4444;
+      --radius-card:14px; --radius:8px;
+      --shadow-sm:0 1px 2px rgba(15,23,42,0.04);
+      --ring:0 0 0 3px rgba(37,99,235,0.20); --transition:150ms ease-out;
+    }
+    /* Option colors */
+    .opt-c-1 { --oc:#3B82F6; }
+    .opt-c-2 { --oc:#10B981; }
+    .opt-c-3 { --oc:#F59E0B; }
+    .opt-c-4 { --oc:#EF4444; }
+    .opt-c-5 { --oc:#8B5CF6; }
+    .opt-c-6 { --oc:#EC4899; }
+    .opt-c-7 { --oc:#06B6D4; }
+    .opt-c-8 { --oc:#84CC16; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif; background: var(--bg); min-height: 100vh; color: var(--text-1); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); }
+    .topbar-sep { color: var(--text-4); font-size: 18px; margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+    .topbar-spacer { flex: 1; }
+    .icon-btn { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition); }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-btn:hover { color: var(--text-1); border-color: var(--border-strong); }
+    .icon-btn:focus-visible { outline: none; box-shadow: var(--ring); border-color: var(--primary); }
+
+    .page-header { max-width: 1200px; margin: 0 auto; padding: 32px 24px 16px; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-3); }
+
+    main { max-width: 800px; margin: 0 auto; padding: 8px 24px 80px; }
+
+    .block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); margin-bottom: 16px; overflow: hidden; }
+    .block-header { padding: 14px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+    .block-header-icon { width: 18px; height: 18px; color: var(--text-3); }
+    .block-header-icon svg { width: 100%; height: 100%; }
+    .block-header-title { font-size: 14px; font-weight: 600; }
+    .block-body { padding: 18px 20px; }
+
+    .q-input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 17px; font-weight: 600; font-family: inherit; color: var(--text-1); background: #FAFAF9; transition: all var(--transition); }
+    .q-input:focus-visible { outline: none; border-color: var(--primary); background: var(--surface); box-shadow: var(--ring); }
+    .q-input::placeholder { color: var(--text-4); font-weight: 400; }
+
+    .opt-edit-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .opt-edit-row:last-child { margin-bottom: 0; }
+    .opt-color-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--oc); flex-shrink: 0; }
+    .opt-input { flex: 1; padding: 9px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; font-family: inherit; color: var(--text-1); background: var(--surface); transition: all var(--transition); }
+    .opt-input:focus-visible { outline: none; border-color: var(--primary); box-shadow: var(--ring); }
+    .opt-remove { width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-4); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition); }
+    .opt-remove svg { width: 14px; height: 14px; }
+    .opt-remove:hover:not(:disabled) { color: var(--danger); border-color: var(--danger); background: #FEF2F2; }
+    .opt-remove:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .add-opt-btn { margin-top: 10px; padding: 8px 12px; min-height: 34px; border: 1px dashed var(--border-strong); border-radius: var(--radius); background: transparent; color: var(--text-3); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all var(--transition); display: inline-flex; align-items: center; gap: 6px; }
+    .add-opt-btn svg { width: 14px; height: 14px; }
+    .add-opt-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .add-opt-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Voting view */
+    .vote-question {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-1);
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: -0.01em;
+    }
+    .vote-options { padding: 6px 0; }
+    .vote-opt {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background var(--transition);
+      overflow: hidden;
+    }
+    .vote-opt:last-child { border-bottom: none; }
+    .vote-opt:hover { background: #FAFAF9; }
+    .vote-opt-bar {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      background: var(--oc);
+      opacity: 0.12;
+      transition: width 0.4s ease;
+      pointer-events: none;
+    }
+    .vote-opt-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--oc);
+      color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .vote-opt-text {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-1);
+      position: relative;
+      z-index: 1;
+    }
+    .vote-opt-count {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-3);
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .vote-opt-count-num {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--oc);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+    .vote-opt-pct {
+      font-size: 12px;
+      color: var(--text-3);
+      font-variant-numeric: tabular-nums;
+    }
+    .vote-opt:hover .vote-opt-num { transform: scale(1.05); transition: transform var(--transition); }
+
+    .vote-meta {
+      padding: 12px 20px;
+      background: #FAFAF9;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Mode bar */
+    .mode-bar { display: flex; gap: 4px; background: var(--icon-bg); padding: 4px; border-radius: 10px; width: fit-content; margin-bottom: 16px; }
+    .mode-btn { padding: 8px 16px; min-height: 36px; border: none; background: transparent; color: var(--text-3); font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 7px; font-family: inherit; transition: all var(--transition); }
+    .mode-btn:hover:not(.active) { color: var(--text-1); }
+    .mode-btn.active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
+
+    .actions-row { display: flex; gap: 10px; flex-wrap: wrap; padding: 14px 20px; background: #FAFAF9; border-top: 1px solid var(--border); }
+    .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; min-height: 38px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all var(--transition); }
+    .action-btn svg { width: 13px; height: 13px; }
+    .action-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .action-btn.danger:hover { border-color: var(--danger); color: var(--danger); background: #FEF2F2; }
+    .action-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .summary { margin-left: auto; font-size: 12px; color: var(--text-3); align-self: center; }
+
+    footer { max-width: 1200px; margin: 0 auto; padding: 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; gap: 8px; }
+      .brand-sub { display: none; }
+      .page-header { padding: 24px 20px 8px; }
+      .page-header h1 { font-size: 22px; }
+      main { padding: 8px 16px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.8"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="20" width="48" height="16" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M15 24 Q17 22.5 19 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <path d="M29 24 Q31 22.5 33 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <circle cx="17" cy="28" r="1.5" fill="#3D2F1F"/>
+          <circle cx="31" cy="28" r="1.5" fill="#3D2F1F"/>
+          <path d="M20 30 L28 30 L24 36 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M20 35 Q24 38 28 35" stroke="#3D2F1F" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep" aria-hidden="true">/</span>
+    <span class="topbar-current">投票</span>
+    <div class="topbar-spacer"></div>
+    <button type="button" class="icon-btn" aria-label="ヘルプ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="page-header">
+  <h1>投票</h1>
+  <p>その場で集計するシンプルな投票・タリーツール</p>
+</div>
+
+<main>
+
+  <div class="mode-bar" role="tablist" aria-label="モード">
+    <button class="mode-btn active" data-mode="edit" onclick="setMode('edit')" role="tab" aria-selected="true">設定</button>
+    <button class="mode-btn" data-mode="vote" onclick="setMode('vote')" role="tab" aria-selected="false">投票</button>
+  </div>
+
+  <!-- 設定モード -->
+  <div id="edit-view">
+    <div class="block">
+      <div class="block-header">
+        <span class="block-header-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </span>
+        <span class="block-header-title">質問</span>
+      </div>
+      <div class="block-body">
+        <input type="text" id="q-input" class="q-input" placeholder="例：次のランチはどこに行く？" value="">
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header">
+        <span class="block-header-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </span>
+        <span class="block-header-title">選択肢</span>
+      </div>
+      <div class="block-body">
+        <div id="opt-edit-list"></div>
+        <button class="add-opt-btn" id="add-opt-btn" onclick="addOption()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          選択肢を追加
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 投票モード -->
+  <div id="vote-view" style="display:none">
+    <div class="block">
+      <div class="vote-question" id="vote-q"></div>
+      <div class="vote-options" id="vote-options"></div>
+      <div class="vote-meta">
+        <span id="total-votes">0票</span>
+        <span>クリックすると1票追加されます</span>
+      </div>
+      <div class="actions-row">
+        <button class="action-btn" onclick="copyResults()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span id="copy-label">結果をテキストでコピー</span>
+        </button>
+        <button class="action-btn danger" onclick="resetVotes()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          投票をリセット
+        </button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<script>
+const STORAGE_KEY = 'piyo-vote-state';
+const state = {
+  question: '',
+  options: [
+    { text: '', votes: 0 },
+    { text: '', votes: 0 }
+  ]
+};
+let mode = 'edit';
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ question: state.question, options: state.options })); } catch (e) {}
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (s && Array.isArray(s.options) && s.options.length >= 2) {
+      state.question = s.question || '';
+      state.options = s.options.map(o => ({ text: o.text || '', votes: parseInt(o.votes, 10) || 0 }));
+    }
+  } catch (e) {}
+}
+
+const qInput = document.getElementById('q-input');
+const optEditList = document.getElementById('opt-edit-list');
+const addOptBtn = document.getElementById('add-opt-btn');
+const voteView = document.getElementById('vote-view');
+const editView = document.getElementById('edit-view');
+const voteQ = document.getElementById('vote-q');
+const voteOptions = document.getElementById('vote-options');
+const totalVotesEl = document.getElementById('total-votes');
+const copyLabel = document.getElementById('copy-label');
+
+function renderEdit() {
+  qInput.value = state.question;
+  optEditList.innerHTML = state.options.map((opt, i) => {
+    const c = (i % 8) + 1;
+    return `<div class="opt-edit-row opt-c-${c}">
+      <span class="opt-color-dot"></span>
+      <input type="text" class="opt-input" data-index="${i}" placeholder="選択肢 ${i + 1}" value="${esc(opt.text)}">
+      <button class="opt-remove" onclick="removeOption(${i})" ${state.options.length <= 2 ? 'disabled' : ''} aria-label="削除">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+  addOptBtn.disabled = state.options.length >= 8;
+  // attach input listeners
+  optEditList.querySelectorAll('.opt-input').forEach(input => {
+    input.addEventListener('input', e => {
+      const i = parseInt(e.target.dataset.index, 10);
+      state.options[i].text = e.target.value;
+      save();
+    });
+  });
+}
+
+function renderVote() {
+  voteQ.textContent = state.question.trim() || '（無題）';
+  const total = state.options.reduce((s, o) => s + o.votes, 0);
+  const maxVotes = Math.max(1, ...state.options.map(o => o.votes));
+  voteOptions.innerHTML = state.options.map((opt, i) => {
+    const c = (i % 8) + 1;
+    const pct = total > 0 ? Math.round((opt.votes / total) * 100) : 0;
+    const barPct = total > 0 ? (opt.votes / maxVotes) * 100 : 0;
+    return `<div class="vote-opt opt-c-${c}" onclick="addVote(${i})">
+      <div class="vote-opt-bar" style="width:${barPct}%"></div>
+      <span class="vote-opt-num">${i + 1}</span>
+      <span class="vote-opt-text">${esc(opt.text) || '(選択肢' + (i + 1) + ')'}</span>
+      <span class="vote-opt-count">
+        <span class="vote-opt-count-num">${opt.votes}</span>
+        <span class="vote-opt-pct">${pct}%</span>
+      </span>
+    </div>`;
+  }).join('');
+  totalVotesEl.textContent = `${total}票`;
+}
+
+function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    const a = b.dataset.mode === m;
+    b.classList.toggle('active', a);
+    b.setAttribute('aria-selected', a);
+  });
+  editView.style.display = m === 'edit' ? '' : 'none';
+  voteView.style.display = m === 'vote' ? '' : 'none';
+  if (m === 'vote') renderVote();
+}
+
+function addOption() {
+  if (state.options.length >= 8) return;
+  state.options.push({ text: '', votes: 0 });
+  save();
+  renderEdit();
+}
+function removeOption(i) {
+  if (state.options.length <= 2) return;
+  state.options.splice(i, 1);
+  save();
+  renderEdit();
+}
+
+function addVote(i) {
+  state.options[i].votes++;
+  save();
+  renderVote();
+}
+function resetVotes() {
+  if (!confirm('投票をすべてリセットしますか？')) return;
+  state.options.forEach(o => o.votes = 0);
+  save();
+  renderVote();
+}
+
+function copyResults() {
+  const total = state.options.reduce((s, o) => s + o.votes, 0);
+  const lines = [
+    `■ ${state.question.trim() || '（無題）'}`,
+    `合計 ${total}票`,
+    '',
+    ...state.options.map((o, i) => {
+      const pct = total > 0 ? Math.round((o.votes / total) * 100) : 0;
+      return `${i + 1}. ${o.text || '(選択肢' + (i + 1) + ')'} : ${o.votes}票 (${pct}%)`;
+    })
+  ];
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    copyLabel.textContent = '✓ コピーしました';
+    setTimeout(() => { copyLabel.textContent = '結果をテキストでコピー'; }, 1500);
+  }).catch(() => alert('コピーに失敗しました'));
+}
+
+qInput.addEventListener('input', e => {
+  state.question = e.target.value;
+  save();
+});
+
+load();
+renderEdit();
+</script>
+</body>
+</html>

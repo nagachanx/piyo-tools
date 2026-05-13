@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>チーム分け — ぴよツールズ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F5F5F4; --surface:#FFFFFF; --border:#E7E5E4; --border-strong:#D6D3D1;
+      --text-1:#1C1917; --text-2:#44403C; --text-3:#78716C; --text-4:#A8A29E;
+      --icon-bg:#F3F4F6; --primary:#2563EB; --primary-dk:#1D4ED8; --primary-lt:#DBEAFE; --primary-bg:#EFF6FF;
+      --radius-card:14px; --radius:8px;
+      --shadow-sm:0 1px 2px rgba(15,23,42,0.04);
+      --ring:0 0 0 3px rgba(37,99,235,0.20); --transition:150ms ease-out;
+    }
+    /* Team colors (8 categories) */
+    .team-1 { --tc:#3B82F6; --tc-bg:#EFF6FF; --tc-bd:#BFDBFE; }
+    .team-2 { --tc:#10B981; --tc-bg:#ECFDF5; --tc-bd:#A7F3D0; }
+    .team-3 { --tc:#F59E0B; --tc-bg:#FFFBEB; --tc-bd:#FDE68A; }
+    .team-4 { --tc:#EF4444; --tc-bg:#FEF2F2; --tc-bd:#FECACA; }
+    .team-5 { --tc:#8B5CF6; --tc-bg:#F5F3FF; --tc-bd:#DDD6FE; }
+    .team-6 { --tc:#EC4899; --tc-bg:#FDF2F8; --tc-bd:#FBCFE8; }
+    .team-7 { --tc:#06B6D4; --tc-bg:#ECFEFF; --tc-bd:#A5F3FC; }
+    .team-8 { --tc:#84CC16; --tc-bg:#F7FEE7; --tc-bd:#D9F99D; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif; background: var(--bg); min-height: 100vh; color: var(--text-1); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; color: var(--text-1); letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); font-weight: 400; }
+    .topbar-sep { color: var(--text-4); font-size: 18px; margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+    .topbar-spacer { flex: 1; }
+    .icon-btn { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color var(--transition), border-color var(--transition); }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-btn:hover { color: var(--text-1); border-color: var(--border-strong); }
+    .icon-btn:focus-visible { outline: none; box-shadow: var(--ring); border-color: var(--primary); }
+
+    .page-header { max-width: 1200px; margin: 0 auto; padding: 32px 24px 16px; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-3); }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 8px 24px 80px; }
+
+    .block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); margin-bottom: 16px; overflow: hidden; }
+    .block-header { padding: 14px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+    .block-header-icon { width: 18px; height: 18px; color: var(--text-3); }
+    .block-header-icon svg { width: 100%; height: 100%; }
+    .block-header-title { font-size: 14px; font-weight: 600; }
+    .block-body { padding: 18px 20px; }
+
+    .text-area { width: 100%; min-height: 160px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; line-height: 1.65; font-family: inherit; color: var(--text-1); background: #FAFAF9; resize: vertical; transition: all var(--transition); }
+    .text-area:focus-visible { outline: none; border-color: var(--primary); background: var(--surface); box-shadow: var(--ring); }
+    .text-area::placeholder { color: var(--text-4); }
+
+    .field-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+    .field-hint { font-size: 12px; color: var(--text-4); }
+
+    .setting-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+    .opt-label { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .opt-label .opt-value { font-size: 14px; font-weight: 700; color: var(--primary); text-transform: none; letter-spacing: 0; }
+
+    .seg-group { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+    .seg-btn { padding: 8px 14px; min-height: 36px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all var(--transition); }
+    .seg-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .seg-btn.active { border-color: var(--primary); background: var(--primary); color: white; }
+    .seg-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+
+    .num-row { display: flex; align-items: center; gap: 10px; }
+    .slider { flex: 1; -webkit-appearance: none; appearance: none; height: 6px; background: var(--icon-bg); border-radius: 3px; outline: none; }
+    .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--primary); cursor: pointer; }
+    .slider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--primary); cursor: pointer; border: none; }
+
+    .shuffle-btn { width: 100%; height: 52px; padding: 0 24px; background: var(--primary); border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; color: white; cursor: pointer; font-family: inherit; transition: all var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 1px 2px rgba(15,23,42,0.05); }
+    .shuffle-btn svg { width: 16px; height: 16px; }
+    .shuffle-btn:hover { background: var(--primary-dk); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.28); }
+    .shuffle-btn:focus-visible { outline: none; box-shadow: var(--ring), 0 4px 12px rgba(37,99,235,0.28); }
+    .shuffle-btn:active { transform: translateY(0); }
+    .shuffle-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* Results */
+    .teams-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    .team-card { background: var(--surface); border: 2px solid var(--tc-bd); border-radius: var(--radius-card); overflow: hidden; }
+    .team-card-head { padding: 12px 16px; background: var(--tc-bg); border-bottom: 1px solid var(--tc-bd); display: flex; align-items: center; justify-content: space-between; }
+    .team-name { font-size: 14px; font-weight: 700; color: var(--tc); display: inline-flex; align-items: center; gap: 6px; }
+    .team-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--tc); }
+    .team-count { font-size: 11px; font-weight: 600; color: var(--tc); padding: 2px 8px; background: white; border-radius: 999px; }
+    .team-members { padding: 12px 16px; }
+    .team-member { padding: 6px 0; font-size: 14px; color: var(--text-1); display: flex; align-items: center; gap: 8px; }
+    .team-member::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--tc); opacity: 0.5; }
+
+    .actions-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 14px 20px; background: #FAFAF9; border-top: 1px solid var(--border); }
+    .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; min-height: 36px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all var(--transition); }
+    .action-btn svg { width: 13px; height: 13px; }
+    .action-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .action-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .summary { margin-left: auto; font-size: 12px; color: var(--text-3); }
+
+    .empty { padding: 36px 20px; text-align: center; color: var(--text-4); font-size: 13px; }
+
+    footer { max-width: 1200px; margin: 0 auto; padding: 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; gap: 8px; }
+      .brand-sub { display: none; }
+      .page-header { padding: 24px 20px 8px; }
+      .page-header h1 { font-size: 22px; }
+      main { padding: 8px 16px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.8"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="20" width="48" height="16" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M15 24 Q17 22.5 19 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <path d="M29 24 Q31 22.5 33 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <circle cx="17" cy="28" r="1.5" fill="#3D2F1F"/>
+          <circle cx="31" cy="28" r="1.5" fill="#3D2F1F"/>
+          <path d="M20 30 L28 30 L24 36 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M20 35 Q24 38 28 35" stroke="#3D2F1F" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep" aria-hidden="true">/</span>
+    <span class="topbar-current">チーム分け</span>
+    <div class="topbar-spacer"></div>
+    <button type="button" class="icon-btn" aria-label="ヘルプ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="page-header">
+  <h1>チーム分け</h1>
+  <p>メンバーをランダムにチームへ振り分け</p>
+</div>
+
+<main>
+
+  <!-- メンバー入力 -->
+  <div class="block">
+    <div class="block-header">
+      <span class="block-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </span>
+      <span class="block-header-title">メンバー</span>
+    </div>
+    <div class="block-body">
+      <textarea id="members-input" class="text-area" placeholder="メンバーを1行ずつ入力&#10;&#10;例：&#10;田中 太郎&#10;鈴木 花子&#10;山田 一郎"></textarea>
+      <div class="field-row">
+        <span class="field-hint" id="member-count">0名</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 設定 -->
+  <div class="block">
+    <div class="block-header">
+      <span class="block-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </span>
+      <span class="block-header-title">設定</span>
+    </div>
+    <div class="block-body">
+      <div class="setting-grid">
+        <div>
+          <div class="opt-label"><span>分け方</span></div>
+          <div class="seg-group" id="mode-group" role="radiogroup" aria-label="分け方">
+            <button class="seg-btn active" data-mode="teams" role="radio" aria-checked="true">チーム数で分ける</button>
+            <button class="seg-btn" data-mode="size"  role="radio" aria-checked="false">1チームの人数で分ける</button>
+          </div>
+        </div>
+        <div>
+          <div class="opt-label">
+            <span id="num-label">チーム数</span>
+            <span class="opt-value" id="num-display">2</span>
+          </div>
+          <div class="num-row">
+            <input type="range" id="num-slider" class="slider" min="2" max="8" value="2">
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:18px">
+        <button class="shuffle-btn" onclick="shuffleNow()" id="shuffle-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+          チーム分け実行
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div class="block" id="result-block" style="display:none">
+    <div class="block-header">
+      <span class="block-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </span>
+      <span class="block-header-title">チーム分け結果</span>
+    </div>
+    <div class="block-body" style="padding:18px 18px">
+      <div class="teams-grid" id="teams-grid"></div>
+    </div>
+    <div class="actions-row">
+      <button class="action-btn" onclick="copyResult()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span id="copy-label">テキストでコピー</span>
+      </button>
+      <button class="action-btn" onclick="shuffleNow()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        もう一度シャッフル
+      </button>
+      <span class="summary" id="summary"></span>
+    </div>
+  </div>
+
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<script>
+const state = { mode: 'teams', num: 2, teams: [] };
+const membersInput = document.getElementById('members-input');
+const memberCountEl = document.getElementById('member-count');
+const modeGroup = document.getElementById('mode-group');
+const numLabelEl = document.getElementById('num-label');
+const numDisplayEl = document.getElementById('num-display');
+const numSlider = document.getElementById('num-slider');
+const resultBlock = document.getElementById('result-block');
+const teamsGrid = document.getElementById('teams-grid');
+const summaryEl = document.getElementById('summary');
+const copyLabel = document.getElementById('copy-label');
+
+function getMembers() {
+  return membersInput.value.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+}
+
+function updateMemberCount() {
+  const n = getMembers().length;
+  memberCountEl.textContent = `${n}名`;
+  updateSliderRange();
+}
+
+function updateSliderRange() {
+  const memCount = getMembers().length;
+  if (state.mode === 'teams') {
+    const max = Math.max(2, Math.min(8, memCount || 8));
+    numSlider.max = max;
+    numLabelEl.textContent = 'チーム数';
+  } else {
+    const max = Math.max(1, Math.min(20, memCount || 20));
+    numSlider.max = max;
+    numLabelEl.textContent = '1チームの人数';
+  }
+  if (parseInt(numSlider.value, 10) > parseInt(numSlider.max, 10)) {
+    numSlider.value = numSlider.max;
+    state.num = parseInt(numSlider.value, 10);
+  }
+  numDisplayEl.textContent = state.num + '';
+}
+
+membersInput.addEventListener('input', updateMemberCount);
+
+modeGroup.addEventListener('click', e => {
+  const btn = e.target.closest('.seg-btn');
+  if (!btn) return;
+  state.mode = btn.dataset.mode;
+  modeGroup.querySelectorAll('.seg-btn').forEach(b => {
+    const active = b === btn;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-checked', active);
+  });
+  // モード切替時にスライダー範囲をリセット
+  numSlider.min = state.mode === 'teams' ? 2 : 1;
+  numSlider.value = state.mode === 'teams' ? 2 : 2;
+  state.num = parseInt(numSlider.value, 10);
+  updateSliderRange();
+});
+
+numSlider.addEventListener('input', e => {
+  state.num = parseInt(e.target.value, 10);
+  numDisplayEl.textContent = state.num + '';
+});
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function shuffleNow() {
+  const members = getMembers();
+  if (members.length === 0) { alert('メンバーを入力してください'); return; }
+
+  const shuffled = shuffle(members);
+  let teams;
+  if (state.mode === 'teams') {
+    const k = Math.min(state.num, shuffled.length);
+    teams = Array.from({length: k}, () => []);
+    shuffled.forEach((m, i) => teams[i % k].push(m));
+  } else {
+    const size = state.num;
+    teams = [];
+    for (let i = 0; i < shuffled.length; i += size) {
+      teams.push(shuffled.slice(i, i + size));
+    }
+  }
+  state.teams = teams;
+  renderResult();
+}
+
+function renderResult() {
+  resultBlock.style.display = '';
+  teamsGrid.innerHTML = state.teams.map((members, i) => {
+    const teamIdx = (i % 8) + 1;
+    return `<div class="team-card team-${teamIdx}">
+      <div class="team-card-head">
+        <span class="team-name"><span class="team-dot"></span>チーム ${String.fromCharCode(65 + i)}</span>
+        <span class="team-count">${members.length}名</span>
+      </div>
+      <div class="team-members">
+        ${members.map(m => `<div class="team-member">${esc(m)}</div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  summaryEl.textContent = `合計 ${state.teams.reduce((s,t)=>s+t.length,0)}名 / ${state.teams.length}チーム`;
+  resultBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function copyResult() {
+  if (state.teams.length === 0) return;
+  const text = state.teams.map((members, i) =>
+    `■ チーム ${String.fromCharCode(65 + i)} (${members.length}名)\n${members.map(m => '  ・' + m).join('\n')}`
+  ).join('\n\n');
+  navigator.clipboard.writeText(text).then(() => {
+    copyLabel.textContent = '✓ コピーしました';
+    setTimeout(() => { copyLabel.textContent = 'テキストでコピー'; }, 1500);
+  }).catch(() => alert('コピーに失敗しました'));
+}
+
+updateMemberCount();
+</script>
+</body>
+</html>

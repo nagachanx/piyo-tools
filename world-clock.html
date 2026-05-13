@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>世界時計 — ぴよツールズ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:            #F5F5F4;
+      --surface:       #FFFFFF;
+      --border:        #E7E5E4;
+      --border-strong: #D6D3D1;
+      --text-1:        #1C1917;
+      --text-2:        #44403C;
+      --text-3:        #78716C;
+      --text-4:        #A8A29E;
+      --icon-bg:       #F3F4F6;
+      --primary:       #2563EB;
+      --primary-dk:    #1D4ED8;
+      --primary-lt:    #DBEAFE;
+      --primary-bg:    #EFF6FF;
+      --good:          #10B981;
+      --good-lt:       #ECFDF5;
+      --night:         #6366F1;
+      --night-lt:      #EEF2FF;
+      --sleep:         #94A3B8;
+      --sleep-lt:      #F1F5F9;
+      --radius-card:   14px;
+      --radius:        8px;
+      --shadow-sm:     0 1px 2px rgba(15,23,42,0.04);
+      --shadow-md:     0 4px 12px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.04);
+      --ring:          0 0 0 3px rgba(37,99,235,0.20);
+      --transition:    150ms ease-out;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text-1);
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─ Topbar ─────────────────────────── */
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; color: var(--text-1); letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); font-weight: 400; }
+    .topbar-sep { color: var(--text-4); font-size: 18px; user-select: none; margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+    .topbar-spacer { flex: 1; }
+    .icon-btn { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color var(--transition), border-color var(--transition); }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-btn:hover { color: var(--text-1); border-color: var(--border-strong); }
+    .icon-btn:focus-visible { outline: none; box-shadow: var(--ring); border-color: var(--primary); }
+
+    /* ─ Page header ───────────────────── */
+    .page-header { max-width: 1200px; margin: 0 auto; padding: 32px 24px 16px; }
+    .page-header h1 { font-size: 28px; font-weight: 700; color: var(--text-1); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-3); }
+
+    /* ─ Main ──────────────────────────── */
+    main { max-width: 1100px; margin: 0 auto; padding: 8px 24px 80px; }
+
+    /* ─ Toolbar (mode + style toggles) ── */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .mode-bar {
+      display: flex;
+      gap: 4px;
+      background: var(--icon-bg);
+      padding: 4px;
+      border-radius: 10px;
+    }
+    .mode-btn {
+      padding: 7px 14px;
+      min-height: 34px;
+      border: none;
+      background: transparent;
+      color: var(--text-3);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 7px;
+      font-family: inherit;
+      transition: all var(--transition);
+    }
+    .mode-btn:hover:not(.active) { color: var(--text-1); }
+    .mode-btn.active {
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+    .mode-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .toolbar-spacer { flex: 1; }
+    .reset-btn {
+      padding: 8px 14px;
+      min-height: 36px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text-3);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition);
+    }
+    .reset-btn svg { width: 12px; height: 12px; }
+    .reset-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .reset-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+
+    /* ─ City grid ─────────────────────── */
+    .city-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .city-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 18px 20px 18px;
+      transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+    }
+    .city-card:active { cursor: grabbing; }
+    .city-card.business { border-color: var(--good); background: linear-gradient(180deg, var(--surface) 0%, var(--good-lt) 100%); }
+    .city-card.night    { border-color: var(--night); background: linear-gradient(180deg, var(--surface) 0%, var(--night-lt) 100%); }
+    .city-card.sleep    { background: linear-gradient(180deg, var(--surface) 0%, var(--sleep-lt) 100%); }
+
+    /* drag states (Sortable.js classes) */
+    .city-card.sortable-ghost { opacity: 0.35; }
+    .city-card.sortable-chosen { box-shadow: 0 8px 24px rgba(15,23,42,0.15); }
+    .city-card.sortable-drag { box-shadow: 0 12px 32px rgba(15,23,42,0.2); transform: rotate(2deg); }
+
+    /* grip handle */
+    .drag-handle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: var(--text-4);
+      width: 24px; height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.5;
+      transition: opacity var(--transition);
+    }
+    .city-card:hover .drag-handle { opacity: 1; }
+    .drag-handle svg { width: 14px; height: 14px; }
+
+    .city-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .city-info { flex: 1; }
+    .city-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-1);
+      letter-spacing: -0.01em;
+      margin-bottom: 2px;
+    }
+    .city-country { font-size: 12px; color: var(--text-3); }
+    .city-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--icon-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-3);
+      flex-shrink: 0;
+    }
+    .city-card.business .city-icon { background: var(--good-lt); color: var(--good); }
+    .city-card.night    .city-icon { background: var(--night-lt); color: var(--night); }
+    .city-card.sleep    .city-icon { background: var(--sleep-lt); color: var(--sleep); }
+    .city-icon svg { width: 18px; height: 18px; }
+
+    /* ─ Clock area (both analog + digital) ── */
+    .clock-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin: 6px 0 14px;
+    }
+    .analog-clock {
+      width: 130px;
+      height: 130px;
+      transition: width 0.2s ease, height 0.2s ease;
+      flex-shrink: 0;
+    }
+    .analog-face {
+      fill: var(--surface);
+      stroke: var(--border-strong);
+      stroke-width: 1.5;
+    }
+    .analog-tick { stroke: var(--text-3); stroke-linecap: round; }
+    .analog-tick.major { stroke-width: 2; }
+    .analog-tick.minor { stroke-width: 1; }
+    .analog-numeral {
+      fill: var(--text-2);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    .hand-hour   { stroke: var(--text-1); stroke-width: 4; stroke-linecap: round; transition: transform 0.3s ease; }
+    .hand-minute { stroke: var(--text-1); stroke-width: 2.5; stroke-linecap: round; transition: transform 0.3s ease; }
+    .hand-second { stroke: var(--primary); stroke-width: 1.2; stroke-linecap: round; transition: transform 0.15s linear; }
+    .city-card.business .hand-second { stroke: var(--good); }
+    .city-card.night    .hand-second { stroke: var(--night); }
+    .city-card.sleep    .hand-second { stroke: var(--sleep); }
+    .analog-center { fill: var(--primary); }
+    .city-card.business .analog-center { fill: var(--good); }
+    .city-card.night    .analog-center { fill: var(--night); }
+    .city-card.sleep    .analog-center { fill: var(--sleep); }
+
+    .digital-time {
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-1);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+      line-height: 1;
+      transition: font-size 0.2s ease;
+    }
+
+    /* デジタルモード時：アナログ小さく、デジタル大きく */
+    body.style-digital .analog-clock { width: 48px; height: 48px; }
+    body.style-digital .digital-time { font-size: 36px; font-weight: 700; }
+    body.style-digital .clock-area { gap: 6px; }
+    /* アナログモード時：そのまま */
+
+    .city-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-3);
+      margin-bottom: 8px;
+    }
+    .city-tz {
+      padding: 2px 8px;
+      background: var(--icon-bg);
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-2);
+      font-variant-numeric: tabular-nums;
+    }
+    .city-status {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+    .city-card.business .city-status { background: var(--good-lt); color: #065F46; }
+    .city-card.night    .city-status { background: var(--night-lt); color: #3730A3; }
+    .city-card.sleep    .city-status { background: var(--sleep-lt); color: #475569; }
+
+    /* ─ Meeting planner ───────────────── */
+    .block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .block-header {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .block-header-icon { width: 18px; height: 18px; color: var(--text-3); display: inline-flex; align-items: center; justify-content: center; }
+    .block-header-icon svg { width: 100%; height: 100%; }
+    .block-header-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+    .block-body { padding: 18px 20px; }
+    .planner-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .planner-label { font-size: 13px; font-weight: 500; color: var(--text-2); }
+    .planner-base-select, .planner-time-input {
+      padding: 10px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      color: var(--text-1);
+      background: var(--surface);
+      cursor: pointer;
+    }
+    .planner-time-input {
+      font-family: 'SF Mono', 'Menlo', monospace;
+      width: 200px;
+      font-variant-numeric: tabular-nums;
+    }
+    .planner-base-select:focus-visible, .planner-time-input:focus-visible {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: var(--ring);
+    }
+    .planner-now-btn {
+      padding: 9px 14px;
+      min-height: 38px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text-2);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition);
+    }
+    .planner-now-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .planner-now-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+
+    /* ─ Footer ────────────────────────── */
+    footer { max-width: 1200px; margin: 0 auto; padding: 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; gap: 8px; }
+      .brand-sub { display: none; }
+      .page-header { padding: 24px 20px 8px; }
+      .page-header h1 { font-size: 22px; }
+      main { padding: 8px 16px 60px; }
+      .toolbar { gap: 8px; }
+      .toolbar-spacer { display: none; }
+      .city-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .city-card { padding: 14px; }
+      .analog-clock { width: 100px; height: 100px; }
+      body.style-digital .digital-time { font-size: 28px; }
+    }
+    @media (max-width: 480px) {
+      .city-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="style-analog">
+
+<!-- Topbar -->
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.8"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="20" width="48" height="16" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M15 24 Q17 22.5 19 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <path d="M29 24 Q31 22.5 33 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <circle cx="17" cy="28" r="1.5" fill="#3D2F1F"/>
+          <circle cx="31" cy="28" r="1.5" fill="#3D2F1F"/>
+          <path d="M20 30 L28 30 L24 36 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M20 35 Q24 38 28 35" stroke="#3D2F1F" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep" aria-hidden="true">/</span>
+    <span class="topbar-current">世界時計</span>
+    <div class="topbar-spacer"></div>
+    <button type="button" class="icon-btn" aria-label="ヘルプ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- Page Header -->
+<div class="page-header">
+  <h1>世界時計</h1>
+  <p>Tokyo / Cebu / Hanoi / Brazil ・ ドラッグで並び替え可能</p>
+</div>
+
+<main>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="mode-bar" role="tablist" aria-label="時刻モード">
+      <button class="mode-btn active" data-mode="now"     onclick="setMode('now')"     role="tab" aria-selected="true">現在時刻</button>
+      <button class="mode-btn"        data-mode="meeting" onclick="setMode('meeting')" role="tab" aria-selected="false">ミーティング時間</button>
+    </div>
+    <div class="mode-bar" role="tablist" aria-label="表示形式">
+      <button class="mode-btn active" data-style="analog"  onclick="setStyle('analog')"  role="tab" aria-selected="true">アナログ</button>
+      <button class="mode-btn"        data-style="digital" onclick="setStyle('digital')" role="tab" aria-selected="false">デジタル</button>
+    </div>
+    <div class="toolbar-spacer"></div>
+    <button class="reset-btn" onclick="resetOrder()" aria-label="並び順をデフォルトに戻す">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      並び順リセット
+    </button>
+  </div>
+
+  <!-- City Grid -->
+  <div class="city-grid" id="city-grid"></div>
+
+  <!-- Meeting Planner -->
+  <div class="block" id="planner-block" style="display:none">
+    <div class="block-header">
+      <span class="block-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </span>
+      <span class="block-header-title">ミーティング時間の設定</span>
+    </div>
+    <div class="block-body">
+      <div class="planner-row">
+        <span class="planner-label">基準都市</span>
+        <select class="planner-base-select" id="base-select" aria-label="基準都市"></select>
+        <span class="planner-label">日時</span>
+        <input type="datetime-local" class="planner-time-input" id="meeting-time" aria-label="ミーティング日時">
+        <button class="planner-now-btn" onclick="resetToNow()">現在時刻にリセット</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<!-- Sortable.js -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+// ───────────────────── CITIES (時差順がデフォルト)
+const CITIES = [
+  { id: 'tokyo',  name: 'Tokyo', country: '日本',          tz: 'Asia/Tokyo' },
+  { id: 'cebu',   name: 'Cebu',  country: 'フィリピン',     tz: 'Asia/Manila' },
+  { id: 'hanoi',  name: 'Hanoi', country: 'ベトナム',       tz: 'Asia/Ho_Chi_Minh' },
+  { id: 'brazil', name: 'São Paulo', country: 'ブラジル',   tz: 'America/Sao_Paulo' },
+];
+const ORDER_KEY = 'piyo-wclock-order-v2';
+
+// ───────────────────── STATE
+let mode = 'now';
+let baseCityId = 'tokyo';
+let tickHandle = null;
+
+// ───────────────────── DOM
+const cityGrid     = document.getElementById('city-grid');
+const plannerBlock = document.getElementById('planner-block');
+const baseSelect   = document.getElementById('base-select');
+const meetingTimeInput = document.getElementById('meeting-time');
+
+// ───────────────────── ICONS
+const ICON_SUN  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
+const ICON_MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+const ICON_GRIP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="18" r="1" fill="currentColor"/><circle cx="15" cy="6" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="18" r="1" fill="currentColor"/></svg>';
+
+// ───────────────────── ORDER
+function loadOrder() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ORDER_KEY) || 'null');
+    if (Array.isArray(saved) && saved.length === CITIES.length) {
+      const map = new Map(CITIES.map(c => [c.id, c]));
+      const ordered = saved.map(id => map.get(id)).filter(Boolean);
+      if (ordered.length === CITIES.length) return ordered;
+    }
+  } catch (e) {}
+  return [...CITIES];
+}
+function saveOrder() {
+  const ids = Array.from(cityGrid.children).map(el => el.dataset.cityId).filter(Boolean);
+  if (ids.length > 0) localStorage.setItem(ORDER_KEY, JSON.stringify(ids));
+}
+function resetOrder() {
+  localStorage.removeItem(ORDER_KEY);
+  renderCards();
+  refresh();
+}
+
+// ───────────────────── CARD TEMPLATE
+function cardHtml(c) {
+  return `<div class="city-card" data-city-id="${c.id}">
+    <div class="drag-handle" aria-hidden="true">${ICON_GRIP}</div>
+    <div class="city-head">
+      <div class="city-info">
+        <div class="city-name">${c.name}</div>
+        <div class="city-country">${c.country}</div>
+      </div>
+      <div class="city-icon" id="icon-${c.id}" aria-hidden="true"></div>
+    </div>
+    <div class="clock-area">
+      <svg class="analog-clock" viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="analog-face" cx="50" cy="50" r="46"/>
+        ${tickMarks()}
+        <text class="analog-numeral" x="50" y="12">12</text>
+        <text class="analog-numeral" x="88" y="50">3</text>
+        <text class="analog-numeral" x="50" y="88">6</text>
+        <text class="analog-numeral" x="12" y="50">9</text>
+        <line class="hand-hour"   id="h-hour-${c.id}"   x1="50" y1="50" x2="50" y2="28"/>
+        <line class="hand-minute" id="h-min-${c.id}"    x1="50" y1="50" x2="50" y2="18"/>
+        <line class="hand-second" id="h-sec-${c.id}"    x1="50" y1="50" x2="50" y2="14"/>
+        <circle class="analog-center" cx="50" cy="50" r="2.5"/>
+      </svg>
+      <div class="digital-time" id="time-${c.id}">--:--:--</div>
+    </div>
+    <div class="city-meta">
+      <span id="date-${c.id}">---</span>
+      <span class="city-tz" id="tz-${c.id}">UTC</span>
+    </div>
+    <span class="city-status" id="status-${c.id}"></span>
+  </div>`;
+}
+function tickMarks() {
+  // 12 ticks: major every 3, minor for others
+  let out = '';
+  for (let i = 0; i < 12; i++) {
+    const angle = i * 30;
+    const major = i % 3 === 0;
+    out += `<line class="analog-tick ${major ? 'major' : 'minor'}" x1="50" y1="${major ? 6 : 7}" x2="50" y2="${major ? 11 : 10}" transform="rotate(${angle} 50 50)"/>`;
+  }
+  return out;
+}
+
+// ───────────────────── RENDER CARDS
+function renderCards() {
+  const ordered = loadOrder();
+  cityGrid.innerHTML = ordered.map(cardHtml).join('');
+
+  // 基準都市セレクト更新
+  baseSelect.innerHTML = ordered.map(c => `<option value="${c.id}">${c.name}（${c.country}）</option>`).join('');
+  baseSelect.value = baseCityId;
+
+  // Sortable設定
+  if (window.Sortable) {
+    Sortable.create(cityGrid, {
+      animation: 200,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      dragClass: 'sortable-drag',
+      onEnd: saveOrder
+    });
+  }
+}
+
+// ───────────────────── TIME PARTS
+function partsFor(date, tz) {
+  const p = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).formatToParts(date);
+  const m = {};
+  p.forEach(x => { m[x.type] = x.value; });
+  return m;
+}
+function getUtcOffset(date, tz) {
+  const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' });
+  const p = dtf.formatToParts(date).find(x => x.type === 'timeZoneName');
+  return p ? p.value.replace('GMT', 'UTC') : 'UTC';
+}
+function getOffsetMinutes(date, tz) {
+  const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset', hour: '2-digit' });
+  const p = dtf.formatToParts(date).find(x => x.type === 'timeZoneName');
+  if (!p) return 0;
+  const m = p.value.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+  if (!m) return 0;
+  const sign = m[1] === '-' ? -1 : 1;
+  return sign * (parseInt(m[2], 10) * 60 + parseInt(m[3] || '0', 10));
+}
+function formatDateJa(date, tz) {
+  return new Intl.DateTimeFormat('ja-JP', { timeZone: tz, month: 'long', day: 'numeric', weekday: 'short' }).format(date);
+}
+function classifyHour(hour) {
+  if (hour >= 9 && hour < 19) return { cls: 'business', label: 'Working hours', icon: ICON_SUN };
+  if (hour >= 6 && hour < 22)  return { cls: 'night',    label: 'Awake',         icon: hour < 18 ? ICON_SUN : ICON_MOON };
+  return { cls: 'sleep', label: 'Sleeping', icon: ICON_MOON };
+}
+
+// ───────────────────── RENDER TIMES
+function renderAt(refDate) {
+  const visibleCities = Array.from(cityGrid.children).map(el => el.dataset.cityId);
+  visibleCities.forEach(id => {
+    const city = CITIES.find(c => c.id === id);
+    if (!city) return;
+    const p = partsFor(refDate, city.tz);
+    const h = parseInt(p.hour, 10);
+    const m = parseInt(p.minute, 10);
+    const s = parseInt(p.second, 10);
+
+    // デジタル
+    document.getElementById(`time-${id}`).textContent = `${p.hour}:${p.minute}:${p.second}`;
+    document.getElementById(`date-${id}`).textContent = formatDateJa(refDate, city.tz);
+    document.getElementById(`tz-${id}`).textContent   = getUtcOffset(refDate, city.tz);
+
+    // アナログ
+    const secAngle  = s * 6;
+    const minAngle  = m * 6 + s * 0.1;
+    const hourAngle = (h % 12) * 30 + m * 0.5;
+    document.getElementById(`h-hour-${id}`).setAttribute('transform', `rotate(${hourAngle} 50 50)`);
+    document.getElementById(`h-min-${id}`).setAttribute('transform',  `rotate(${minAngle} 50 50)`);
+    document.getElementById(`h-sec-${id}`).setAttribute('transform',  `rotate(${secAngle} 50 50)`);
+
+    // ステータス
+    const { cls, label, icon } = classifyHour(h);
+    const card = cityGrid.querySelector(`[data-city-id="${id}"]`);
+    card.classList.remove('business', 'night', 'sleep');
+    card.classList.add(cls);
+    document.getElementById(`icon-${id}`).innerHTML = icon;
+    document.getElementById(`status-${id}`).textContent = label;
+  });
+}
+
+function refresh() {
+  if (mode === 'now') renderAt(new Date());
+  else renderAt(getMeetingDate());
+}
+
+// ───────────────────── TICK
+function startTick() {
+  stopTick();
+  refresh();
+  const now = Date.now();
+  const delay = 1000 - (now % 1000);
+  tickHandle = setTimeout(function loop() {
+    refresh();
+    tickHandle = setTimeout(loop, 1000);
+  }, delay);
+}
+function stopTick() {
+  if (tickHandle) { clearTimeout(tickHandle); tickHandle = null; }
+}
+
+// ───────────────────── MEETING
+function getMeetingDate() {
+  const v = meetingTimeInput.value;
+  if (!v) return new Date();
+  const baseTz = CITIES.find(c => c.id === baseCityId).tz;
+  const localInterpretation = new Date(v);
+  const offsetSpecified = getOffsetMinutes(localInterpretation, baseTz);
+  const localOffset = localInterpretation.getTimezoneOffset() * -1;
+  const diff = (offsetSpecified - localOffset) * 60 * 1000;
+  return new Date(localInterpretation.getTime() - diff);
+}
+function setMeetingInputFromDate(date) {
+  const baseTz = CITIES.find(c => c.id === baseCityId).tz;
+  const p = partsFor(date, baseTz);
+  meetingTimeInput.value = `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+function resetToNow() {
+  setMeetingInputFromDate(new Date());
+  renderAt(getMeetingDate());
+}
+
+// ───────────────────── MODE / STYLE SWITCH
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(b => {
+    const a = b.dataset.mode === m;
+    b.classList.toggle('active', a);
+    b.setAttribute('aria-selected', a);
+  });
+  if (m === 'now') {
+    plannerBlock.style.display = 'none';
+    startTick();
+  } else {
+    stopTick();
+    plannerBlock.style.display = '';
+    setMeetingInputFromDate(new Date());
+    renderAt(getMeetingDate());
+  }
+}
+function setStyle(s) {
+  document.body.classList.toggle('style-analog',  s === 'analog');
+  document.body.classList.toggle('style-digital', s === 'digital');
+  document.querySelectorAll('.mode-btn[data-style]').forEach(b => {
+    const a = b.dataset.style === s;
+    b.classList.toggle('active', a);
+    b.setAttribute('aria-selected', a);
+  });
+}
+
+// ───────────────────── BINDINGS
+baseSelect.addEventListener('change', e => {
+  baseCityId = e.target.value;
+  if (mode === 'meeting') renderAt(getMeetingDate());
+});
+meetingTimeInput.addEventListener('input', () => {
+  if (mode === 'meeting') renderAt(getMeetingDate());
+});
+
+// ───────────────────── INIT
+renderCards();
+startTick();
+</script>
+</body>
+</html>

@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タイマー — ぴよツールズ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:            #F5F5F4;
+      --surface:       #FFFFFF;
+      --border:        #E7E5E4;
+      --border-strong: #D6D3D1;
+      --text-1:        #1C1917;
+      --text-2:        #44403C;
+      --text-3:        #78716C;
+      --text-4:        #A8A29E;
+      --icon-bg:       #F3F4F6;
+      --primary:       #2563EB;
+      --primary-dk:    #1D4ED8;
+      --primary-lt:    #DBEAFE;
+      --primary-bg:    #EFF6FF;
+      --danger:        #EF4444;
+      --danger-dk:     #DC2626;
+      --warn:          #F59E0B;
+      --success:       #10B981;
+      --radius-card:   14px;
+      --radius:        8px;
+      --shadow-sm:     0 1px 2px rgba(15,23,42,0.04);
+      --shadow-md:     0 4px 12px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.04);
+      --ring:          0 0 0 3px rgba(37,99,235,0.20);
+      --transition:    150ms ease-out;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text-1);
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─ Topbar ─────────────────────────── */
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; color: var(--text-1); letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); font-weight: 400; }
+    .topbar-sep { color: var(--text-4); font-size: 18px; user-select: none; margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+    .topbar-spacer { flex: 1; }
+    .icon-btn { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color var(--transition), border-color var(--transition); }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-btn:hover { color: var(--text-1); border-color: var(--border-strong); }
+    .icon-btn:focus-visible { outline: none; box-shadow: var(--ring); border-color: var(--primary); }
+
+    /* ─ Page header ───────────────────── */
+    .page-header { max-width: 1200px; margin: 0 auto; padding: 32px 24px 16px; }
+    .page-header h1 { font-size: 28px; font-weight: 700; color: var(--text-1); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-3); }
+
+    /* ─ Main ──────────────────────────── */
+    main { max-width: 720px; margin: 0 auto; padding: 8px 24px 80px; }
+
+    /* ─ Timer display (ring + time) ───── */
+    .timer-display {
+      position: relative;
+      width: min(360px, 80vw);
+      aspect-ratio: 1 / 1;
+      margin: 16px auto 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .timer-ring {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      transform: rotate(-90deg);
+    }
+    .timer-ring-bg {
+      stroke: var(--icon-bg);
+    }
+    .timer-ring-fg {
+      stroke: var(--primary);
+      transition: stroke-dashoffset 0.3s linear, stroke 0.3s ease;
+      stroke-linecap: round;
+    }
+    .timer-content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+    .timer-time {
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+      font-size: clamp(46px, 13vw, 76px);
+      font-weight: 700;
+      color: var(--text-1);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      transition: color 0.3s ease;
+    }
+    .timer-status {
+      font-size: 12px;
+      color: var(--text-4);
+      margin-top: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    /* 残り10秒 */
+    .timer-display.warn .timer-time { color: var(--warn); }
+    .timer-display.warn .timer-ring-fg { stroke: var(--warn); }
+    /* 完了 */
+    .timer-display.done .timer-time { color: var(--danger); }
+    .timer-display.done .timer-ring-fg { stroke: var(--danger); }
+    .timer-display.done {
+      animation: timerDonePulse 0.8s ease-in-out infinite;
+    }
+    @keyframes timerDonePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
+    /* ─ Block ─────────────────────────── */
+    .block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .block-header {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .block-header-icon { width: 18px; height: 18px; color: var(--text-3); display: inline-flex; align-items: center; justify-content: center; }
+    .block-header-icon svg { width: 100%; height: 100%; }
+    .block-header-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+    .block-body { padding: 16px 20px; }
+
+    /* ─ Presets ───────────────────────── */
+    .preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .preset-btn {
+      padding: 8px 14px;
+      min-height: 38px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text-2);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition);
+    }
+    .preset-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .preset-btn.active {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+    .preset-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .preset-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ─ Custom inputs ─────────────────── */
+    .custom-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .num-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .num-input {
+      width: 64px;
+      padding: 9px 8px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      font-family: 'SF Mono', 'Menlo', monospace;
+      color: var(--text-1);
+      background: var(--surface);
+    }
+    .num-input:focus-visible { outline: none; border-color: var(--primary); box-shadow: var(--ring); }
+    .num-input:disabled { opacity: 0.5; background: var(--icon-bg); }
+    .num-unit { font-size: 13px; color: var(--text-3); }
+
+    /* ─ Controls ──────────────────────── */
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .ctrl-btn {
+      min-width: 140px;
+      height: 52px;
+      padding: 0 28px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      font-family: inherit;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .ctrl-btn svg { width: 16px; height: 16px; }
+    .ctrl-btn-primary { background: var(--primary); color: white; box-shadow: 0 1px 2px rgba(15,23,42,0.05); }
+    .ctrl-btn-primary:hover:not(:disabled) { background: var(--primary-dk); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.28); }
+    .ctrl-btn-danger { background: var(--danger); color: white; box-shadow: 0 1px 2px rgba(15,23,42,0.05); }
+    .ctrl-btn-danger:hover:not(:disabled) { background: var(--danger-dk); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(239,68,68,0.28); }
+    .ctrl-btn-secondary {
+      background: var(--surface);
+      color: var(--text-2);
+      border-color: var(--border-strong);
+    }
+    .ctrl-btn-secondary:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .ctrl-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .ctrl-btn:active { transform: translateY(0); }
+    .ctrl-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ─ Toggle ────────────────────────── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all var(--transition);
+      user-select: none;
+    }
+    .toggle-row:hover { background: #FAFAF9; }
+    .toggle-row.on { border-color: var(--primary); background: var(--primary-bg); }
+    .toggle-row input { display: none; }
+    .toggle-check {
+      width: 18px; height: 18px;
+      border-radius: 4px;
+      border: 1.5px solid var(--border-strong);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition);
+    }
+    .toggle-row.on .toggle-check {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+    .toggle-check svg { width: 12px; height: 12px; opacity: 0; }
+    .toggle-row.on .toggle-check svg { opacity: 1; }
+    .toggle-text { flex: 1; font-size: 13px; font-weight: 500; color: var(--text-1); }
+    .toggle-hint { font-size: 11px; color: var(--text-4); margin-top: 2px; }
+
+    /* ─ Hint ──────────────────────────── */
+    .timer-hint {
+      margin-top: 14px;
+      font-size: 12px;
+      color: var(--text-4);
+      text-align: center;
+    }
+    .timer-hint kbd {
+      padding: 2px 6px;
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      background: var(--surface);
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 11px;
+      color: var(--text-2);
+      margin: 0 2px;
+    }
+
+    /* ─ Footer ────────────────────────── */
+    footer { max-width: 1200px; margin: 0 auto; padding: 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; gap: 8px; }
+      .brand-sub { display: none; }
+      .page-header { padding: 24px 20px 8px; }
+      .page-header h1 { font-size: 22px; }
+      main { padding: 8px 16px 60px; }
+      .ctrl-btn { min-width: 110px; padding: 0 20px; height: 48px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.8"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="20" width="48" height="16" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M15 24 Q17 22.5 19 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <path d="M29 24 Q31 22.5 33 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <circle cx="17" cy="28" r="1.5" fill="#3D2F1F"/>
+          <circle cx="31" cy="28" r="1.5" fill="#3D2F1F"/>
+          <path d="M20 30 L28 30 L24 36 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M20 35 Q24 38 28 35" stroke="#3D2F1F" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep" aria-hidden="true">/</span>
+    <span class="topbar-current">タイマー</span>
+    <div class="topbar-spacer"></div>
+    <button type="button" class="icon-btn" aria-label="ヘルプ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- Page Header -->
+<div class="page-header">
+  <h1>タイマー</h1>
+  <p>カウントダウンタイマー ・ 完了時にアラーム通知</p>
+</div>
+
+<main>
+
+  <!-- 大きな表示 -->
+  <div class="timer-display" id="display">
+    <svg class="timer-ring" viewBox="0 0 100 100" aria-hidden="true">
+      <circle class="timer-ring-bg" cx="50" cy="50" r="46" stroke-width="4" fill="none"/>
+      <circle id="ring-fg" class="timer-ring-fg" cx="50" cy="50" r="46" stroke-width="4" fill="none"
+              stroke-dasharray="289.03" stroke-dashoffset="0"/>
+    </svg>
+    <div class="timer-content">
+      <div class="timer-time" id="time">05:00</div>
+      <div class="timer-status" id="status">Ready</div>
+    </div>
+  </div>
+
+  <!-- プリセット -->
+  <div class="block">
+    <div class="block-header">
+      <span class="block-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </span>
+      <span class="block-header-title">プリセット</span>
+    </div>
+    <div class="block-body">
+      <div class="preset-row" id="preset-row" role="radiogroup" aria-label="プリセット">
+        <button class="preset-btn" data-sec="60" role="radio" aria-checked="false">1分</button>
+        <button class="preset-btn" data-sec="180" role="radio" aria-checked="false">3分</button>
+        <button class="preset-btn active" data-sec="300" role="radio" aria-checked="true">5分</button>
+        <button class="preset-btn" data-sec="600" role="radio" aria-checked="false">10分</button>
+        <button class="preset-btn" data-sec="900" role="radio" aria-checked="false">15分</button>
+        <button class="preset-btn" data-sec="1500" role="radio" aria-checked="false">25分</button>
+        <button class="preset-btn" data-sec="1800" role="radio" aria-checked="false">30分</button>
+        <button class="preset-btn" data-sec="3600" role="radio" aria-checked="false">60分</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- カスタム時間 -->
+  <div class="block">
+    <div class="block-header">
+      <span class="block-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </span>
+      <span class="block-header-title">カスタム時間</span>
+    </div>
+    <div class="block-body">
+      <div class="custom-row">
+        <div class="num-cell">
+          <input type="number" id="in-h" class="num-input" min="0" max="23" value="0" aria-label="時">
+          <span class="num-unit">時</span>
+        </div>
+        <div class="num-cell">
+          <input type="number" id="in-m" class="num-input" min="0" max="59" value="5" aria-label="分">
+          <span class="num-unit">分</span>
+        </div>
+        <div class="num-cell">
+          <input type="number" id="in-s" class="num-input" min="0" max="59" value="0" aria-label="秒">
+          <span class="num-unit">秒</span>
+        </div>
+      </div>
+
+      <div style="margin-top:16px">
+        <label class="toggle-row on" id="sound-toggle">
+          <input type="checkbox" id="sound-cb" checked>
+          <span class="toggle-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+          <span class="toggle-text">完了時にアラームを鳴らす</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 操作ボタン -->
+  <div class="controls">
+    <button class="ctrl-btn ctrl-btn-primary" id="start-btn" onclick="toggleStart()">
+      <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+      <span id="start-label">スタート</span>
+    </button>
+    <button class="ctrl-btn ctrl-btn-secondary" id="reset-btn" onclick="reset()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      リセット
+    </button>
+  </div>
+
+  <p class="timer-hint">
+    <kbd>Space</kbd> 開始/一時停止 ・ <kbd>R</kbd> リセット
+  </p>
+
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<script>
+// ───────────────────── STATE
+const RING_CIRC = 2 * Math.PI * 46; // ≈ 289.03
+
+let totalMs     = 5 * 60 * 1000;
+let remainingMs = totalMs;
+let running     = false;
+let endTime     = 0;
+let rafId       = null;
+let alarmEnabled = true;
+let audioCtx    = null;
+let alarmTimers = [];
+
+// ───────────────────── DOM
+const displayEl = document.getElementById('display');
+const timeEl    = document.getElementById('time');
+const statusEl  = document.getElementById('status');
+const ringFg    = document.getElementById('ring-fg');
+const startBtn  = document.getElementById('start-btn');
+const startLbl  = document.getElementById('start-label');
+const resetBtn  = document.getElementById('reset-btn');
+const inH = document.getElementById('in-h');
+const inM = document.getElementById('in-m');
+const inS = document.getElementById('in-s');
+const presetRow = document.getElementById('preset-row');
+const soundToggle = document.getElementById('sound-toggle');
+const soundCb     = document.getElementById('sound-cb');
+
+ringFg.style.strokeDasharray = RING_CIRC;
+
+// ───────────────────── FORMAT
+function formatTime(ms) {
+  ms = Math.max(0, Math.ceil(ms / 1000) * 1000);
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = n => String(n).padStart(2, '0');
+  if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
+  return `${pad(m)}:${pad(s)}`;
+}
+
+// ───────────────────── DISPLAY
+function updateRing() {
+  if (totalMs <= 0) {
+    ringFg.style.strokeDashoffset = RING_CIRC;
+    return;
+  }
+  const progress = remainingMs / totalMs;
+  ringFg.style.strokeDashoffset = RING_CIRC * (1 - progress);
+}
+
+function updateDisplay() {
+  timeEl.textContent = formatTime(remainingMs);
+  updateRing();
+  // 状態に応じた表示
+  displayEl.classList.remove('warn', 'done');
+  if (remainingMs <= 0 && running === false && totalMs > 0 && startLbl.textContent !== 'スタート') {
+    // 完了状態（タイトル変更されている場合）
+    displayEl.classList.add('done');
+  } else if (running && remainingMs <= 10000 && remainingMs > 0) {
+    displayEl.classList.add('warn');
+  }
+}
+
+// ───────────────────── INPUTS → TIME
+function readInputsToMs() {
+  const h = Math.max(0, Math.min(23, parseInt(inH.value, 10) || 0));
+  const m = Math.max(0, Math.min(59, parseInt(inM.value, 10) || 0));
+  const s = Math.max(0, Math.min(59, parseInt(inS.value, 10) || 0));
+  return ((h * 3600) + (m * 60) + s) * 1000;
+}
+
+function setInputsFromMs(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  inH.value = Math.floor(totalSec / 3600);
+  inM.value = Math.floor((totalSec % 3600) / 60);
+  inS.value = totalSec % 60;
+}
+
+function syncFromInputs() {
+  if (running) return;
+  totalMs = readInputsToMs();
+  remainingMs = totalMs;
+  // プリセットの一致するボタンを active に
+  presetRow.querySelectorAll('.preset-btn').forEach(b => {
+    const active = parseInt(b.dataset.sec, 10) * 1000 === totalMs;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-checked', active);
+  });
+  statusEl.textContent = totalMs > 0 ? 'Ready' : 'Set time';
+  startBtn.disabled = totalMs === 0;
+  startLbl.textContent = 'スタート';
+  startBtn.classList.remove('ctrl-btn-danger');
+  startBtn.classList.add('ctrl-btn-primary');
+  startBtn.querySelector('svg').innerHTML = '<polygon points="6 4 20 12 6 20 6 4"/>';
+  updateDisplay();
+}
+
+[inH, inM, inS].forEach(el => {
+  el.addEventListener('input', syncFromInputs);
+  el.addEventListener('blur', () => {
+    el.value = Math.max(0, Math.min(parseInt(el.max, 10), parseInt(el.value, 10) || 0));
+    syncFromInputs();
+  });
+});
+
+// ───────────────────── PRESETS
+presetRow.addEventListener('click', e => {
+  const btn = e.target.closest('.preset-btn');
+  if (!btn || running) return;
+  const sec = parseInt(btn.dataset.sec, 10);
+  totalMs = sec * 1000;
+  remainingMs = totalMs;
+  setInputsFromMs(totalMs);
+  presetRow.querySelectorAll('.preset-btn').forEach(b => {
+    const active = b === btn;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-checked', active);
+  });
+  statusEl.textContent = 'Ready';
+  startBtn.disabled = false;
+  startLbl.textContent = 'スタート';
+  startBtn.classList.remove('ctrl-btn-danger');
+  startBtn.classList.add('ctrl-btn-primary');
+  startBtn.querySelector('svg').innerHTML = '<polygon points="6 4 20 12 6 20 6 4"/>';
+  updateDisplay();
+});
+
+// ───────────────────── SOUND TOGGLE
+soundToggle.addEventListener('click', e => {
+  if (e.target.tagName === 'INPUT') return;
+  e.preventDefault();
+  soundCb.checked = !soundCb.checked;
+  soundToggle.classList.toggle('on', soundCb.checked);
+  alarmEnabled = soundCb.checked;
+});
+soundCb.addEventListener('change', () => {
+  alarmEnabled = soundCb.checked;
+  soundToggle.classList.toggle('on', soundCb.checked);
+});
+
+// ───────────────────── ALARM SOUND
+function playAlarm() {
+  if (!alarmEnabled) return;
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      console.error('AudioContext unavailable', e);
+      return;
+    }
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  // 5回のビープを鳴らす
+  const beepDur = 0.22;
+  const gap     = 0.13;
+  for (let i = 0; i < 5; i++) {
+    const start = audioCtx.currentTime + i * (beepDur + gap);
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.value = i % 2 === 0 ? 880 : 660;
+    osc.type = 'sine';
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(0.4, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + beepDur);
+    osc.start(start);
+    osc.stop(start + beepDur);
+  }
+
+  // バイブレーション（モバイル）
+  if (navigator.vibrate) {
+    navigator.vibrate([200, 100, 200, 100, 400]);
+  }
+}
+
+// ───────────────────── TICK (requestAnimationFrame)
+function tick() {
+  if (!running) return;
+  remainingMs = Math.max(0, endTime - performance.now());
+  updateDisplay();
+  if (remainingMs <= 0) {
+    onComplete();
+    return;
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+// ───────────────────── ACTIONS
+function start() {
+  if (totalMs <= 0) return;
+  // 完了状態から再スタートの場合はリセット相当
+  if (remainingMs <= 0) remainingMs = totalMs;
+  endTime = performance.now() + remainingMs;
+  running = true;
+  startLbl.textContent = '一時停止';
+  startBtn.classList.remove('ctrl-btn-primary');
+  startBtn.classList.add('ctrl-btn-danger');
+  startBtn.querySelector('svg').innerHTML = '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>';
+  statusEl.textContent = 'Running';
+  // 入力＆プリセットを無効化
+  [inH, inM, inS].forEach(el => el.disabled = true);
+  presetRow.querySelectorAll('.preset-btn').forEach(b => b.disabled = true);
+  // ユーザー操作時にAudioContextをresume（自動再生規制対策）
+  if (audioCtx?.state === 'suspended') audioCtx.resume();
+  tick();
+}
+
+function pause() {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+  running = false;
+  remainingMs = Math.max(0, endTime - performance.now());
+  startLbl.textContent = '再開';
+  startBtn.classList.remove('ctrl-btn-danger');
+  startBtn.classList.add('ctrl-btn-primary');
+  startBtn.querySelector('svg').innerHTML = '<polygon points="6 4 20 12 6 20 6 4"/>';
+  statusEl.textContent = 'Paused';
+  updateDisplay();
+}
+
+function reset() {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+  running = false;
+  remainingMs = totalMs;
+  startLbl.textContent = 'スタート';
+  startBtn.disabled = totalMs === 0;
+  startBtn.classList.remove('ctrl-btn-danger');
+  startBtn.classList.add('ctrl-btn-primary');
+  startBtn.querySelector('svg').innerHTML = '<polygon points="6 4 20 12 6 20 6 4"/>';
+  [inH, inM, inS].forEach(el => el.disabled = false);
+  presetRow.querySelectorAll('.preset-btn').forEach(b => b.disabled = false);
+  displayEl.classList.remove('warn', 'done');
+  statusEl.textContent = totalMs > 0 ? 'Ready' : 'Set time';
+  updateDisplay();
+}
+
+function toggleStart() {
+  if (running) pause();
+  else start();
+}
+
+function onComplete() {
+  running = false;
+  remainingMs = 0;
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+  statusEl.textContent = '🎉 完了！';
+  displayEl.classList.remove('warn');
+  displayEl.classList.add('done');
+  timeEl.textContent = '00:00';
+  ringFg.style.strokeDashoffset = RING_CIRC;
+  startLbl.textContent = 'スタート';
+  startBtn.classList.remove('ctrl-btn-danger');
+  startBtn.classList.add('ctrl-btn-primary');
+  startBtn.querySelector('svg').innerHTML = '<polygon points="6 4 20 12 6 20 6 4"/>';
+  [inH, inM, inS].forEach(el => el.disabled = false);
+  presetRow.querySelectorAll('.preset-btn').forEach(b => b.disabled = false);
+  playAlarm();
+  // ブラウザ通知
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try { new Notification('⏰ タイマー終了', { body: `${formatTime(totalMs)} のカウントダウンが完了しました` }); }
+    catch(e) {}
+  }
+}
+
+// ───────────────────── KEYBOARD
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    toggleStart();
+  } else if (e.key === 'r' || e.key === 'R') {
+    reset();
+  }
+});
+
+// ───────────────────── INIT
+syncFromInputs();
+// 通知パーミッションを控えめに要求（初回スタート時）
+let notifAsked = false;
+startBtn.addEventListener('click', () => {
+  if (!notifAsked && 'Notification' in window && Notification.permission === 'default') {
+    notifAsked = true;
+    Notification.requestPermission().catch(() => {});
+  }
+}, { once: true });
+</script>
+</body>
+</html>

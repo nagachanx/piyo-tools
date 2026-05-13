@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ストップウォッチ — ぴよツールズ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:            #F5F5F4;
+      --surface:       #FFFFFF;
+      --border:        #E7E5E4;
+      --border-strong: #D6D3D1;
+      --text-1:        #1C1917;
+      --text-2:        #44403C;
+      --text-3:        #78716C;
+      --text-4:        #A8A29E;
+      --icon-bg:       #F3F4F6;
+      --primary:       #2563EB;
+      --primary-dk:    #1D4ED8;
+      --primary-lt:    #DBEAFE;
+      --primary-bg:    #EFF6FF;
+      --danger:        #EF4444;
+      --danger-dk:     #DC2626;
+      --green:         #10B981;
+      --radius-card:   14px;
+      --radius:        8px;
+      --shadow-sm:     0 1px 2px rgba(15,23,42,0.04);
+      --shadow-md:     0 4px 12px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.04);
+      --ring:          0 0 0 3px rgba(37,99,235,0.20);
+      --transition:    150ms ease-out;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text-1);
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─ Topbar ─────────────────────────── */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar-inner {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; color: var(--text-1); letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); font-weight: 400; }
+    .topbar-sep { color: var(--text-4); font-size: 18px; user-select: none; margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+    .topbar-spacer { flex: 1; }
+    .icon-btn {
+      width: 36px; height: 36px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text-3);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color var(--transition), border-color var(--transition);
+    }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-btn:hover { color: var(--text-1); border-color: var(--border-strong); }
+    .icon-btn:focus-visible { outline: none; box-shadow: var(--ring); border-color: var(--primary); }
+
+    /* ─ Page header ───────────────────── */
+    .page-header {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 16px;
+    }
+    .page-header h1 { font-size: 28px; font-weight: 700; color: var(--text-1); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-3); }
+
+    /* ─ Main ──────────────────────────── */
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 8px 24px 80px;
+    }
+
+    /* ─ Display ───────────────────────── */
+    .sw-display {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 56px 24px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+    }
+    .sw-display.running::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--primary);
+      animation: swProgress 1.5s ease-in-out infinite;
+    }
+    @keyframes swProgress {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+    .sw-time {
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+      font-size: clamp(54px, 11vw, 104px);
+      font-weight: 700;
+      color: var(--text-1);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .sw-time-status {
+      font-size: 12px;
+      color: var(--text-4);
+      margin-top: 16px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ─ Controls ──────────────────────── */
+    .sw-controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .sw-btn {
+      min-width: 130px;
+      height: 52px;
+      padding: 0 28px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      font-family: inherit;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .sw-btn svg { width: 16px; height: 16px; }
+    .sw-btn-primary { background: var(--primary); color: white; box-shadow: 0 1px 2px rgba(15,23,42,0.05); }
+    .sw-btn-primary:hover { background: var(--primary-dk); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.28); }
+    .sw-btn-danger { background: var(--danger); color: white; box-shadow: 0 1px 2px rgba(15,23,42,0.05); }
+    .sw-btn-danger:hover { background: var(--danger-dk); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(239,68,68,0.28); }
+    .sw-btn-secondary {
+      background: var(--surface);
+      color: var(--text-2);
+      border-color: var(--border-strong);
+    }
+    .sw-btn-secondary:hover:not(:disabled) {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-bg);
+    }
+    .sw-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .sw-btn:active { transform: translateY(0); }
+    .sw-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ─ Block ─────────────────────────── */
+    .block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+    }
+    .block-header {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .block-header-icon { width: 18px; height: 18px; color: var(--text-3); display: inline-flex; align-items: center; justify-content: center; }
+    .block-header-icon svg { width: 100%; height: 100%; }
+    .block-header-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+    .block-header-count { font-size: 12px; color: var(--text-4); font-weight: 500; margin-left: 4px; }
+
+    .copy-btn {
+      margin-left: auto;
+      padding: 6px 12px;
+      min-height: 32px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text-2);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .copy-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .copy-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .copy-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ─ Laps ──────────────────────────── */
+    .sw-laps {
+      max-height: 480px;
+      overflow-y: auto;
+    }
+    .sw-laps-empty {
+      text-align: center;
+      padding: 36px 16px;
+      color: var(--text-4);
+      font-size: 13px;
+    }
+    .sw-lap-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+      gap: 16px;
+    }
+    .sw-lap-row:last-child { border-bottom: none; }
+    .sw-lap-num {
+      width: 42px;
+      font-size: 12px;
+      color: var(--text-3);
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .sw-lap-time {
+      flex: 1;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-1);
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    }
+    .sw-lap-tag {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .sw-lap-tag-fast { background: #DCFCE7; color: #166534; }
+    .sw-lap-tag-slow { background: #FEE2E2; color: #991B1B; }
+    .sw-lap-total {
+      font-size: 12px;
+      color: var(--text-3);
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+      flex-shrink: 0;
+    }
+
+    /* ─ Hint ──────────────────────────── */
+    .sw-hint {
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--text-4);
+      text-align: center;
+    }
+    .sw-hint kbd {
+      padding: 2px 6px;
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      background: var(--surface);
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 11px;
+      color: var(--text-2);
+      margin: 0 2px;
+    }
+
+    /* ─ Footer ────────────────────────── */
+    footer {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+      color: var(--text-4);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; gap: 8px; }
+      .brand-sub { display: none; }
+      .page-header { padding: 24px 20px 8px; }
+      .page-header h1 { font-size: 22px; }
+      main { padding: 8px 16px 60px; }
+      .sw-display { padding: 40px 16px; }
+      .sw-btn { min-width: 100px; padding: 0 18px; height: 48px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.8"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="20" width="48" height="16" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M15 24 Q17 22.5 19 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <path d="M29 24 Q31 22.5 33 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <circle cx="17" cy="28" r="1.5" fill="#3D2F1F"/>
+          <circle cx="31" cy="28" r="1.5" fill="#3D2F1F"/>
+          <path d="M20 30 L28 30 L24 36 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M20 35 Q24 38 28 35" stroke="#3D2F1F" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep" aria-hidden="true">/</span>
+    <span class="topbar-current">ストップウォッチ</span>
+    <div class="topbar-spacer"></div>
+    <button type="button" class="icon-btn" aria-label="ヘルプ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- Page Header -->
+<div class="page-header">
+  <h1>ストップウォッチ</h1>
+  <p>ラップ計測もできるシンプルなストップウォッチ</p>
+</div>
+
+<main>
+
+  <!-- Display -->
+  <div class="sw-display" id="sw-display">
+    <div class="sw-time" id="sw-time">00:00.00</div>
+    <div class="sw-time-status" id="sw-status">Ready</div>
+  </div>
+
+  <!-- Controls -->
+  <div class="sw-controls">
+    <button class="sw-btn sw-btn-primary" id="sw-start-stop" onclick="toggleStartStop()" aria-label="スタート">
+      <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+      <span id="sw-start-stop-label">スタート</span>
+    </button>
+    <button class="sw-btn sw-btn-secondary" id="sw-lap" onclick="recordLap()" disabled aria-label="ラップ記録">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"/><polyline points="21 3 21 9 15 9"/></svg>
+      ラップ
+    </button>
+    <button class="sw-btn sw-btn-secondary" id="sw-reset" onclick="reset()" disabled aria-label="リセット">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      リセット
+    </button>
+  </div>
+
+  <!-- Laps -->
+  <div class="block">
+    <div class="block-header">
+      <span class="block-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </span>
+      <span class="block-header-title">ラップ記録</span>
+      <span class="block-header-count" id="sw-lap-count"></span>
+      <button class="copy-btn" id="sw-copy" onclick="copyCSV()" disabled aria-label="ラップをCSVでコピー">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span id="sw-copy-label">CSVコピー</span>
+      </button>
+    </div>
+    <div id="sw-laps" class="sw-laps"></div>
+  </div>
+
+  <p class="sw-hint">
+    <kbd>Space</kbd> 開始/停止 ・ <kbd>L</kbd> ラップ ・ <kbd>R</kbd> リセット
+  </p>
+
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<script>
+// ───────────────────── STATE
+let startTime   = 0;        // performance.now() at last start
+let elapsedTime = 0;        // ms accumulated up to last stop
+let running     = false;
+let rafId       = null;
+let laps        = [];       // { lap, time (delta ms), total (cumulative ms) }
+
+const displayEl   = document.getElementById('sw-display');
+const timeEl      = document.getElementById('sw-time');
+const statusEl    = document.getElementById('sw-status');
+const startStopBtn = document.getElementById('sw-start-stop');
+const startStopLabel = document.getElementById('sw-start-stop-label');
+const lapBtn      = document.getElementById('sw-lap');
+const resetBtn    = document.getElementById('sw-reset');
+const lapsEl      = document.getElementById('sw-laps');
+const lapCountEl  = document.getElementById('sw-lap-count');
+const copyBtn     = document.getElementById('sw-copy');
+const copyLabel   = document.getElementById('sw-copy-label');
+
+// ───────────────────── FORMAT
+function formatTime(ms) {
+  ms = Math.max(0, ms);
+  const h  = Math.floor(ms / 3600000);
+  const m  = Math.floor((ms % 3600000) / 60000);
+  const s  = Math.floor((ms % 60000) / 1000);
+  const cs = Math.floor((ms % 1000) / 10);
+  const pad = (n, l = 2) => String(n).padStart(l, '0');
+  if (h > 0) return `${pad(h)}:${pad(m)}:${pad(s)}.${pad(cs)}`;
+  return `${pad(m)}:${pad(s)}.${pad(cs)}`;
+}
+
+// ───────────────────── DISPLAY UPDATE
+function tick() {
+  if (!running) return;
+  const now = performance.now();
+  timeEl.textContent = formatTime(elapsedTime + (now - startTime));
+  rafId = requestAnimationFrame(tick);
+}
+
+// ───────────────────── ACTIONS
+function start() {
+  startTime = performance.now();
+  running = true;
+  startStopLabel.textContent = 'ストップ';
+  startStopBtn.classList.remove('sw-btn-primary');
+  startStopBtn.classList.add('sw-btn-danger');
+  startStopBtn.setAttribute('aria-label', 'ストップ');
+  startStopBtn.querySelector('svg').innerHTML = '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>';
+  lapBtn.disabled = false;
+  resetBtn.disabled = true;
+  statusEl.textContent = 'Running';
+  displayEl.classList.add('running');
+  tick();
+}
+
+function stop() {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+  elapsedTime += performance.now() - startTime;
+  running = false;
+  startStopLabel.textContent = '再開';
+  startStopBtn.classList.remove('sw-btn-danger');
+  startStopBtn.classList.add('sw-btn-primary');
+  startStopBtn.setAttribute('aria-label', '再開');
+  startStopBtn.querySelector('svg').innerHTML = '<polygon points="6 4 20 12 6 20 6 4"/>';
+  lapBtn.disabled = true;
+  resetBtn.disabled = false;
+  statusEl.textContent = 'Paused';
+  displayEl.classList.remove('running');
+  timeEl.textContent = formatTime(elapsedTime);
+}
+
+function reset() {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+  startTime = 0;
+  elapsedTime = 0;
+  running = false;
+  laps = [];
+  startStopLabel.textContent = 'スタート';
+  startStopBtn.classList.remove('sw-btn-danger');
+  startStopBtn.classList.add('sw-btn-primary');
+  startStopBtn.setAttribute('aria-label', 'スタート');
+  startStopBtn.querySelector('svg').innerHTML = '<polygon points="6 4 20 12 6 20 6 4"/>';
+  lapBtn.disabled = true;
+  resetBtn.disabled = true;
+  statusEl.textContent = 'Ready';
+  displayEl.classList.remove('running');
+  timeEl.textContent = formatTime(0);
+  renderLaps();
+}
+
+function toggleStartStop() {
+  if (running) stop();
+  else start();
+}
+
+function recordLap() {
+  if (!running) return;
+  const now = performance.now();
+  const total = elapsedTime + (now - startTime);
+  const prevTotal = laps.length > 0 ? laps[laps.length - 1].total : 0;
+  laps.push({ lap: laps.length + 1, time: total - prevTotal, total });
+  renderLaps();
+}
+
+// ───────────────────── LAP RENDERING
+function renderLaps() {
+  lapCountEl.textContent = laps.length > 0 ? `(${laps.length})` : '';
+  if (laps.length === 0) {
+    lapsEl.innerHTML = '<div class="sw-laps-empty">ラップを記録するとここに表示されます</div>';
+    copyBtn.disabled = true;
+    return;
+  }
+
+  // 最速・最遅を特定（2件以上のとき）
+  let fastestIdx = -1, slowestIdx = -1;
+  if (laps.length > 1) {
+    let minT = Infinity, maxT = -Infinity;
+    laps.forEach((lap, i) => {
+      if (lap.time < minT) { minT = lap.time; fastestIdx = i; }
+      if (lap.time > maxT) { maxT = lap.time; slowestIdx = i; }
+    });
+  }
+
+  // 新しい順に表示
+  const rows = laps.map((lap, i) => {
+    let tag = '';
+    if (i === fastestIdx) tag = '<span class="sw-lap-tag sw-lap-tag-fast">最速</span>';
+    else if (i === slowestIdx) tag = '<span class="sw-lap-tag sw-lap-tag-slow">最遅</span>';
+    return `<div class="sw-lap-row">
+      <span class="sw-lap-num">#${lap.lap}</span>
+      <span class="sw-lap-time">${formatTime(lap.time)}</span>
+      ${tag}
+      <span class="sw-lap-total">合計 ${formatTime(lap.total)}</span>
+    </div>`;
+  });
+  lapsEl.innerHTML = rows.reverse().join('');
+  copyBtn.disabled = false;
+}
+
+// ───────────────────── CSV COPY
+function copyCSV() {
+  if (laps.length === 0) return;
+  const csv = '#,ラップタイム,合計時間\n' +
+    laps.map(l => `${l.lap},${formatTime(l.time)},${formatTime(l.total)}`).join('\n');
+  navigator.clipboard.writeText(csv).then(() => {
+    copyLabel.textContent = '✓ コピーしました';
+    setTimeout(() => { copyLabel.textContent = 'CSVコピー'; }, 1500);
+  }).catch(() => {
+    alert('コピーに失敗しました。');
+  });
+}
+
+// ───────────────────── KEYBOARD SHORTCUTS
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    toggleStartStop();
+  } else if (e.key === 'l' || e.key === 'L') {
+    if (running) recordLap();
+  } else if (e.key === 'r' || e.key === 'R') {
+    if (!running && (elapsedTime > 0 || laps.length > 0)) reset();
+  }
+});
+
+// ───────────────────── INIT
+timeEl.textContent = formatTime(0);
+renderLaps();
+</script>
+</body>
+</html>

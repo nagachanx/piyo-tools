@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文字数カウント — ぴよツールズ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:            #F5F5F4;
+      --surface:       #FFFFFF;
+      --border:        #E7E5E4;
+      --border-strong: #D6D3D1;
+      --text-1:        #1C1917;
+      --text-2:        #44403C;
+      --text-3:        #78716C;
+      --text-4:        #A8A29E;
+      --icon-bg:       #F3F4F6;
+      --primary:       #2563EB;
+      --primary-dk:    #1D4ED8;
+      --primary-lt:    #DBEAFE;
+      --primary-bg:    #EFF6FF;
+      --radius-card:   14px;
+      --radius:        8px;
+      --shadow-sm:     0 1px 2px rgba(15,23,42,0.04);
+      --shadow-md:     0 4px 12px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.04);
+      --ring:          0 0 0 3px rgba(37,99,235,0.20);
+      --transition:    150ms ease-out;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text-1);
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─ Topbar ─────────────────────────── */
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; color: var(--text-1); letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); font-weight: 400; }
+    .topbar-sep { color: var(--text-4); font-size: 18px; user-select: none; margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+    .topbar-spacer { flex: 1; }
+    .icon-btn { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color var(--transition), border-color var(--transition); }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-btn:hover { color: var(--text-1); border-color: var(--border-strong); }
+    .icon-btn:focus-visible { outline: none; box-shadow: var(--ring); border-color: var(--primary); }
+
+    /* ─ Page header ───────────────────── */
+    .page-header {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 16px;
+    }
+    .page-header h1 { font-size: 28px; font-weight: 700; color: var(--text-1); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-3); }
+
+    /* ─ Main ──────────────────────────── */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 8px 24px 80px;
+    }
+
+    /* ─ Block / Input ─────────────────── */
+    .block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .block-header {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .block-header-icon { width: 18px; height: 18px; color: var(--text-3); display: inline-flex; align-items: center; justify-content: center; }
+    .block-header-icon svg { width: 100%; height: 100%; }
+    .block-header-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+    .block-body { padding: 16px 20px 20px; }
+
+    .text-area {
+      width: 100%;
+      min-height: 240px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 15px;
+      line-height: 1.7;
+      font-family: inherit;
+      color: var(--text-1);
+      background: #FAFAF9;
+      resize: vertical;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+    .text-area:focus-visible {
+      outline: none;
+      border-color: var(--primary);
+      background: var(--surface);
+      box-shadow: var(--ring);
+    }
+    .text-area::placeholder { color: var(--text-4); }
+
+    .input-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      gap: 12px;
+    }
+    .input-hint { font-size: 12px; color: var(--text-4); }
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      min-height: 32px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text-2);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition);
+    }
+    .action-btn svg { width: 13px; height: 13px; }
+    .action-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .action-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .action-group { display: flex; gap: 8px; }
+
+    /* ─ Stats Grid ────────────────────── */
+    .stats-primary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      transition: border-color var(--transition);
+    }
+    .stat-card.primary {
+      background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+      border-color: var(--primary-lt);
+    }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .stat-card.primary .stat-label { color: var(--primary-dk); }
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-1);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .stat-card.primary .stat-value { color: var(--primary-dk); }
+    .stat-unit {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-3);
+      margin-left: 4px;
+    }
+    .stat-sub {
+      font-size: 11px;
+      color: var(--text-4);
+      margin-top: 4px;
+    }
+
+    .stats-secondary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .stats-secondary .stat-card {
+      padding: 14px 16px;
+    }
+    .stats-secondary .stat-value {
+      font-size: 22px;
+    }
+
+    /* ─ Footer ────────────────────────── */
+    footer {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+      color: var(--text-4);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; gap: 8px; }
+      .brand-sub { display: none; }
+      .page-header { padding: 24px 20px 8px; }
+      .page-header h1 { font-size: 22px; }
+      main { padding: 8px 16px 60px; }
+      .stats-primary { grid-template-columns: 1fr; }
+      .stats-secondary { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.8"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="20" width="48" height="16" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M15 24 Q17 22.5 19 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <path d="M29 24 Q31 22.5 33 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <circle cx="17" cy="28" r="1.5" fill="#3D2F1F"/>
+          <circle cx="31" cy="28" r="1.5" fill="#3D2F1F"/>
+          <path d="M20 30 L28 30 L24 36 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M20 35 Q24 38 28 35" stroke="#3D2F1F" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep" aria-hidden="true">/</span>
+    <span class="topbar-current">文字数カウント</span>
+    <div class="topbar-spacer"></div>
+    <button type="button" class="icon-btn" aria-label="ヘルプ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- Page Header -->
+<div class="page-header">
+  <h1>文字数カウント</h1>
+  <p>日本語・英語・バイト数を瞬時にカウント</p>
+</div>
+
+<main>
+
+  <!-- 入力エリア -->
+  <div class="block">
+    <div class="block-header">
+      <span class="block-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+      </span>
+      <span class="block-header-title">テキスト入力</span>
+    </div>
+    <div class="block-body">
+      <textarea id="cc-input" class="text-area" placeholder="ここにテキストを入力 / 貼り付けると、リアルタイムで集計します。&#10;&#10;例：&#10;こんにちは、世界！&#10;Hello, World!"></textarea>
+      <div class="input-actions">
+        <span class="input-hint">リアルタイム集計 ・ 改行・空白も自動カウント</span>
+        <div class="action-group">
+          <button class="action-btn" id="cc-paste" onclick="pasteText()" aria-label="クリップボードから貼り付け">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+            貼り付け
+          </button>
+          <button class="action-btn" id="cc-clear" onclick="clearText()" aria-label="入力をクリア">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+            クリア
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 集計（主要） -->
+  <div class="stats-primary">
+    <div class="stat-card primary">
+      <div class="stat-label">文字数（空白込み）</div>
+      <div class="stat-value"><span id="cc-total">0</span><span class="stat-unit">字</span></div>
+      <div class="stat-sub">改行・空白を含む全文字</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">文字数（空白除く）</div>
+      <div class="stat-value"><span id="cc-no-space">0</span><span class="stat-unit">字</span></div>
+      <div class="stat-sub">空白・改行・タブを除く</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">バイト数（UTF-8）</div>
+      <div class="stat-value"><span id="cc-bytes">0</span><span class="stat-unit">B</span></div>
+      <div class="stat-sub">エンコード時のバイト数</div>
+    </div>
+  </div>
+
+  <!-- 集計（詳細） -->
+  <div class="stats-secondary">
+    <div class="stat-card">
+      <div class="stat-label">行数</div>
+      <div class="stat-value" id="cc-lines">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">単語数</div>
+      <div class="stat-value" id="cc-words">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">全角文字</div>
+      <div class="stat-value" id="cc-full">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">半角文字</div>
+      <div class="stat-value" id="cc-half">0</div>
+    </div>
+  </div>
+
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<script>
+const inputEl = document.getElementById('cc-input');
+const totalEl = document.getElementById('cc-total');
+const noSpaceEl = document.getElementById('cc-no-space');
+const bytesEl = document.getElementById('cc-bytes');
+const linesEl = document.getElementById('cc-lines');
+const wordsEl = document.getElementById('cc-words');
+const fullEl  = document.getElementById('cc-full');
+const halfEl  = document.getElementById('cc-half');
+
+const utf8Encoder = new TextEncoder();
+const fmt = n => n.toLocaleString('ja-JP');
+
+function count(text) {
+  // 文字数（空白込み）— サロゲートペア / 絵文字も1文字として数える
+  let total = 0;
+  let noSpace = 0;
+  let full = 0;
+  let half = 0;
+
+  for (const ch of text) {
+    total++;
+    if (/\s/.test(ch)) continue;
+    noSpace++;
+    const cp = ch.codePointAt(0);
+    if (cp < 0x80) half++;
+    else full++;
+  }
+
+  // バイト数（UTF-8）
+  const bytes = utf8Encoder.encode(text).length;
+
+  // 行数
+  const lines = text === '' ? 0 : text.split('\n').length;
+
+  // 単語数（連続する空白で区切る。英語想定）
+  const trimmed = text.trim();
+  const words = trimmed === '' ? 0 : trimmed.split(/\s+/).length;
+
+  return { total, noSpace, bytes, lines, words, full, half };
+}
+
+function render() {
+  const s = count(inputEl.value);
+  totalEl.textContent   = fmt(s.total);
+  noSpaceEl.textContent = fmt(s.noSpace);
+  bytesEl.textContent   = fmt(s.bytes);
+  linesEl.textContent   = fmt(s.lines);
+  wordsEl.textContent   = fmt(s.words);
+  fullEl.textContent    = fmt(s.full);
+  halfEl.textContent    = fmt(s.half);
+}
+
+inputEl.addEventListener('input', render);
+// IME中の変換中もリアルタイム更新
+inputEl.addEventListener('compositionupdate', render);
+
+async function pasteText() {
+  try {
+    const text = await navigator.clipboard.readText();
+    inputEl.value = text;
+    inputEl.focus();
+    render();
+  } catch (e) {
+    alert('クリップボードの読み取りができませんでした。手動で貼り付けてください。');
+  }
+}
+
+function clearText() {
+  inputEl.value = '';
+  inputEl.focus();
+  render();
+}
+
+// 初期化
+render();
+</script>
+</body>
+</html>

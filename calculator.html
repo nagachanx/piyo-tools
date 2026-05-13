@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>電卓 — ぴよツールズ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:            #F5F5F4;
+      --surface:       #FFFFFF;
+      --border:        #E7E5E4;
+      --border-strong: #D6D3D1;
+      --text-1:        #1C1917;
+      --text-2:        #44403C;
+      --text-3:        #78716C;
+      --text-4:        #A8A29E;
+      --icon-bg:       #F3F4F6;
+      --primary:       #2563EB;
+      --primary-dk:    #1D4ED8;
+      --primary-lt:    #DBEAFE;
+      --primary-bg:    #EFF6FF;
+      --orange:        #F59E0B;
+      --orange-dk:     #D97706;
+      --radius-card:   14px;
+      --radius:        10px;
+      --shadow-sm:     0 1px 2px rgba(15,23,42,0.04);
+      --shadow-btn:    0 1px 2px rgba(15,23,42,0.06);
+      --ring:          0 0 0 3px rgba(37,99,235,0.20);
+      --transition:    120ms ease-out;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text-1);
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─ Topbar ─────────────────────────── */
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; color: var(--text-1); letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); font-weight: 400; }
+    .topbar-sep { color: var(--text-4); font-size: 18px; user-select: none; margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+    .topbar-spacer { flex: 1; }
+    .icon-btn { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color var(--transition), border-color var(--transition); }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-btn:hover { color: var(--text-1); border-color: var(--border-strong); }
+    .icon-btn:focus-visible { outline: none; box-shadow: var(--ring); border-color: var(--primary); }
+
+    /* ─ Page header ───────────────────── */
+    .page-header { max-width: 1200px; margin: 0 auto; padding: 32px 24px 16px; }
+    .page-header h1 { font-size: 28px; font-weight: 700; color: var(--text-1); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-3); }
+
+    /* ─ Main / Layout ─────────────────── */
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 8px 24px 80px;
+    }
+    .layout-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 760px) {
+      .layout-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─ Calculator card ───────────────── */
+    .calc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ─ Display ───────────────────────── */
+    .calc-display {
+      background: linear-gradient(180deg, #FAFAF9 0%, #F5F5F4 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 18px 16px;
+      margin-bottom: 14px;
+      text-align: right;
+      overflow: hidden;
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+    .display-prev {
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+      font-size: 13px;
+      color: var(--text-3);
+      font-variant-numeric: tabular-nums;
+      min-height: 18px;
+      word-break: break-all;
+    }
+    .display-current {
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+      font-size: clamp(28px, 6vw, 40px);
+      font-weight: 700;
+      color: var(--text-1);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      word-break: break-all;
+    }
+    .display-current.error { color: #DC2626; }
+    .display-mem {
+      position: absolute;
+      top: 8px;
+      left: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--primary);
+      padding: 1px 6px;
+      background: var(--primary-bg);
+      border-radius: 4px;
+      display: none;
+    }
+    .calc-display { position: relative; }
+    .calc-display.has-memory .display-mem { display: inline-block; }
+
+    /* ─ Memory row ────────────────────── */
+    .mem-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .mem-btn {
+      padding: 8px;
+      min-height: 36px;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text-3);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .mem-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .mem-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .mem-btn:active { transform: scale(0.96); }
+
+    /* ─ Button grid ───────────────────── */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .btn {
+      height: 56px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      font-size: 18px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-btn);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .btn:focus-visible { outline: none; box-shadow: var(--ring), var(--shadow-btn); }
+    .btn:active { transform: scale(0.97); }
+    .btn.num {
+      background: var(--surface);
+      color: var(--text-1);
+      border-color: var(--border);
+    }
+    .btn.num:hover { background: #FAFAF9; border-color: var(--border-strong); }
+    .btn.fn {
+      background: var(--icon-bg);
+      color: var(--text-2);
+      border-color: var(--border);
+      font-size: 16px;
+    }
+    .btn.fn:hover { background: #E5E5E4; }
+    .btn.op {
+      background: var(--primary-bg);
+      color: var(--primary-dk);
+      border-color: var(--primary-lt);
+      font-size: 22px;
+    }
+    .btn.op:hover { background: var(--primary-lt); border-color: var(--primary); }
+    .btn.op.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .btn.eq {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .btn.eq:hover { background: var(--primary-dk); border-color: var(--primary-dk); }
+
+    .btn.wide { grid-column: span 2; }
+
+    /* ─ History card ──────────────────── */
+    .history {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+    }
+    .history-header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .history-header-icon { width: 18px; height: 18px; color: var(--text-3); }
+    .history-header-icon svg { width: 100%; height: 100%; }
+    .history-title { font-size: 14px; font-weight: 600; color: var(--text-1); flex: 1; }
+    .history-clear {
+      padding: 5px 10px;
+      min-height: 28px;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text-3);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition);
+    }
+    .history-clear:hover:not(:disabled) { border-color: #EF4444; color: #EF4444; background: #FEF2F2; }
+    .history-clear:disabled { opacity: 0.4; cursor: not-allowed; }
+    .history-list {
+      max-height: 460px;
+      overflow-y: auto;
+    }
+    .history-row {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    .history-row:last-child { border-bottom: none; }
+    .history-row:hover { background: #FAFAF9; }
+    .history-expr {
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 12px;
+      color: var(--text-3);
+      font-variant-numeric: tabular-nums;
+      word-break: break-all;
+    }
+    .history-result {
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-1);
+      font-variant-numeric: tabular-nums;
+      margin-top: 2px;
+      word-break: break-all;
+    }
+    .history-empty {
+      padding: 36px 18px;
+      text-align: center;
+      color: var(--text-4);
+      font-size: 13px;
+    }
+
+    /* ─ Hint ──────────────────────────── */
+    .calc-hint {
+      margin-top: 14px;
+      font-size: 11px;
+      color: var(--text-4);
+      text-align: center;
+    }
+    .calc-hint kbd {
+      padding: 1px 5px;
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      background: var(--surface);
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 10px;
+      color: var(--text-2);
+      margin: 0 1px;
+    }
+
+    /* ─ Footer ────────────────────────── */
+    footer { max-width: 1200px; margin: 0 auto; padding: 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; gap: 8px; }
+      .brand-sub { display: none; }
+      .page-header { padding: 24px 20px 8px; }
+      .page-header h1 { font-size: 22px; }
+      main { padding: 8px 16px 60px; }
+      .btn { height: 52px; font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.8"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="20" width="48" height="16" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M15 24 Q17 22.5 19 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <path d="M29 24 Q31 22.5 33 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <circle cx="17" cy="28" r="1.5" fill="#3D2F1F"/>
+          <circle cx="31" cy="28" r="1.5" fill="#3D2F1F"/>
+          <path d="M20 30 L28 30 L24 36 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M20 35 Q24 38 28 35" stroke="#3D2F1F" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep" aria-hidden="true">/</span>
+    <span class="topbar-current">電卓</span>
+    <div class="topbar-spacer"></div>
+    <button type="button" class="icon-btn" aria-label="ヘルプ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- Page Header -->
+<div class="page-header">
+  <h1>電卓</h1>
+  <p>四則演算 ・ メモリ機能 ・ 計算履歴 ・ キーボード対応</p>
+</div>
+
+<main>
+<div class="layout-grid">
+
+  <!-- 電卓 -->
+  <div class="calc">
+    <div class="calc-display" id="display">
+      <span class="display-mem" id="mem-indicator">M</span>
+      <div class="display-prev" id="prev">&nbsp;</div>
+      <div class="display-current" id="current">0</div>
+    </div>
+
+    <div class="mem-row">
+      <button class="mem-btn" onclick="memClear()" aria-label="メモリクリア">MC</button>
+      <button class="mem-btn" onclick="memRecall()" aria-label="メモリ呼出">MR</button>
+      <button class="mem-btn" onclick="memOp('-')" aria-label="メモリ減算">M−</button>
+      <button class="mem-btn" onclick="memOp('+')" aria-label="メモリ加算">M+</button>
+    </div>
+
+    <div class="btn-grid">
+      <button class="btn fn" onclick="clearAll()" aria-label="全クリア">C</button>
+      <button class="btn fn" onclick="backspace()" aria-label="1文字削除">⌫</button>
+      <button class="btn fn" onclick="percent()" aria-label="パーセント">%</button>
+      <button class="btn op" data-op="/" onclick="setOp('/')" aria-label="割り算">÷</button>
+
+      <button class="btn num" onclick="inputDigit('7')">7</button>
+      <button class="btn num" onclick="inputDigit('8')">8</button>
+      <button class="btn num" onclick="inputDigit('9')">9</button>
+      <button class="btn op" data-op="*" onclick="setOp('*')" aria-label="掛け算">×</button>
+
+      <button class="btn num" onclick="inputDigit('4')">4</button>
+      <button class="btn num" onclick="inputDigit('5')">5</button>
+      <button class="btn num" onclick="inputDigit('6')">6</button>
+      <button class="btn op" data-op="-" onclick="setOp('-')" aria-label="引き算">−</button>
+
+      <button class="btn num" onclick="inputDigit('1')">1</button>
+      <button class="btn num" onclick="inputDigit('2')">2</button>
+      <button class="btn num" onclick="inputDigit('3')">3</button>
+      <button class="btn op" data-op="+" onclick="setOp('+')" aria-label="足し算">+</button>
+
+      <button class="btn fn" onclick="toggleSign()" aria-label="符号反転">±</button>
+      <button class="btn num" onclick="inputDigit('0')">0</button>
+      <button class="btn num" onclick="inputDecimal()">.</button>
+      <button class="btn eq" onclick="evaluate()" aria-label="計算実行">=</button>
+    </div>
+
+    <p class="calc-hint">
+      <kbd>0-9</kbd> 数字 ・ <kbd>+−×÷</kbd> 演算 ・ <kbd>Enter</kbd> = ・ <kbd>Esc</kbd> C ・ <kbd>⌫</kbd> Backspace
+    </p>
+  </div>
+
+  <!-- 履歴 -->
+  <div class="history">
+    <div class="history-header">
+      <span class="history-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg>
+      </span>
+      <span class="history-title">計算履歴</span>
+      <button class="history-clear" id="history-clear" onclick="clearHistory()" disabled>クリア</button>
+    </div>
+    <div class="history-list" id="history-list">
+      <div class="history-empty">計算するとここに履歴が残ります</div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<script>
+// ────────── STATE
+let current = '0';       // 表示中の値（文字列）
+let prev = null;         // 直前の演算子の左辺（数値）
+let pendingOp = null;    // 待機中の演算子
+let justEvaluated = false;
+let memory = 0;
+let hasMemory = false;
+let history = [];
+
+const HIST_KEY = 'piyo-calc-history';
+const MEM_KEY  = 'piyo-calc-memory';
+
+// ────────── DOM
+const currentEl = document.getElementById('current');
+const prevEl    = document.getElementById('prev');
+const displayEl = document.getElementById('display');
+const historyListEl = document.getElementById('history-list');
+const historyClearBtn = document.getElementById('history-clear');
+
+// ────────── PERSISTENCE
+function loadState() {
+  try {
+    const h = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+    if (Array.isArray(h)) history = h.slice(0, 100);
+    const m = parseFloat(localStorage.getItem(MEM_KEY) || '0');
+    if (!isNaN(m)) { memory = m; hasMemory = m !== 0; }
+  } catch (e) {}
+}
+function saveHistory() {
+  try { localStorage.setItem(HIST_KEY, JSON.stringify(history.slice(0, 100))); } catch (e) {}
+}
+function saveMemory() {
+  try { localStorage.setItem(MEM_KEY, String(memory)); } catch (e) {}
+}
+
+// ────────── FORMAT
+function formatNumber(n) {
+  if (typeof n === 'string') n = parseFloat(n);
+  if (!isFinite(n)) return 'Error';
+  // 浮動小数点誤差を抑制
+  const rounded = Math.round(n * 1e12) / 1e12;
+  let str = rounded.toString();
+  // 指数表記を避ける（大きすぎ・小さすぎる場合は仕方なし）
+  if (str.includes('e')) return rounded.toPrecision(10).replace(/\.?0+$/, '');
+  return str;
+}
+function withCommas(s) {
+  if (s === 'Error') return s;
+  const neg = s.startsWith('-');
+  if (neg) s = s.slice(1);
+  const [intPart, decPart] = s.split('.');
+  const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const result = decPart !== undefined ? `${formatted}.${decPart}` : formatted;
+  return neg ? '-' + result : result;
+}
+function opSymbol(op) {
+  return { '+': '+', '-': '−', '*': '×', '/': '÷' }[op] || op;
+}
+
+// ────────── DISPLAY
+function updateDisplay() {
+  if (current === 'Error') {
+    currentEl.textContent = 'Error';
+    currentEl.classList.add('error');
+  } else {
+    currentEl.classList.remove('error');
+    currentEl.textContent = withCommas(current);
+  }
+  // prev行
+  if (prev !== null && pendingOp) {
+    prevEl.textContent = `${withCommas(formatNumber(prev))} ${opSymbol(pendingOp)}`;
+  } else {
+    prevEl.innerHTML = '&nbsp;';
+  }
+  // active op highlight
+  document.querySelectorAll('.btn.op').forEach(b => {
+    b.classList.toggle('active', pendingOp && b.dataset.op === pendingOp && justEvaluated);
+  });
+  // memory indicator
+  displayEl.classList.toggle('has-memory', hasMemory);
+}
+
+// ────────── ACTIONS
+function inputDigit(d) {
+  if (current === 'Error') current = '0';
+  if (current === '0' || justEvaluated) {
+    current = String(d);
+    justEvaluated = false;
+  } else {
+    if (current.replace(/[^0-9]/g, '').length >= 15) return; // 最大15桁
+    current += d;
+  }
+  updateDisplay();
+}
+
+function inputDecimal() {
+  if (current === 'Error') current = '0';
+  if (justEvaluated) {
+    current = '0.';
+    justEvaluated = false;
+  } else if (!current.includes('.')) {
+    current += '.';
+  }
+  updateDisplay();
+}
+
+function backspace() {
+  if (current === 'Error') { clearAll(); return; }
+  if (justEvaluated) return;
+  if (current.length <= 1 || (current.length === 2 && current.startsWith('-'))) {
+    current = '0';
+  } else {
+    current = current.slice(0, -1);
+  }
+  updateDisplay();
+}
+
+function setOp(op) {
+  if (current === 'Error') return;
+  if (prev !== null && !justEvaluated && pendingOp) {
+    // チェーン演算
+    const result = compute(prev, parseFloat(current), pendingOp);
+    addHistory(prev, pendingOp, parseFloat(current), result);
+    if (!isFinite(result)) { current = 'Error'; prev = null; pendingOp = null; justEvaluated = false; updateDisplay(); return; }
+    prev = result;
+    current = formatNumber(result);
+  } else {
+    prev = parseFloat(current);
+  }
+  pendingOp = op;
+  justEvaluated = true;
+  updateDisplay();
+}
+
+function evaluate() {
+  if (current === 'Error') return;
+  if (prev !== null && pendingOp) {
+    const right = parseFloat(current);
+    const result = compute(prev, right, pendingOp);
+    if (!isFinite(result)) {
+      current = 'Error';
+    } else {
+      addHistory(prev, pendingOp, right, result);
+      current = formatNumber(result);
+    }
+    prev = null;
+    pendingOp = null;
+    justEvaluated = true;
+    updateDisplay();
+  }
+}
+
+function compute(a, b, op) {
+  switch (op) {
+    case '+': return a + b;
+    case '-': return a - b;
+    case '*': return a * b;
+    case '/': return b === 0 ? Infinity : a / b;
+  }
+  return NaN;
+}
+
+function clearAll() {
+  current = '0';
+  prev = null;
+  pendingOp = null;
+  justEvaluated = false;
+  updateDisplay();
+}
+
+function toggleSign() {
+  if (current === 'Error' || current === '0') return;
+  current = current.startsWith('-') ? current.slice(1) : '-' + current;
+  updateDisplay();
+}
+
+function percent() {
+  if (current === 'Error') return;
+  if (prev !== null && pendingOp) {
+    // 100 + 10% → 10% of 100 = 10 を current に入れる
+    const pct = parseFloat(current) / 100;
+    current = formatNumber(prev * pct);
+  } else {
+    current = formatNumber(parseFloat(current) / 100);
+  }
+  justEvaluated = false;
+  updateDisplay();
+}
+
+// ────────── MEMORY
+function memClear() { memory = 0; hasMemory = false; saveMemory(); updateDisplay(); }
+function memRecall() {
+  if (!hasMemory) return;
+  current = formatNumber(memory);
+  justEvaluated = true;
+  updateDisplay();
+}
+function memOp(op) {
+  if (current === 'Error') return;
+  const v = parseFloat(current);
+  memory = op === '+' ? memory + v : memory - v;
+  hasMemory = memory !== 0;
+  saveMemory();
+  justEvaluated = true;
+  updateDisplay();
+}
+
+// ────────── HISTORY
+function addHistory(a, op, b, r) {
+  history.unshift({
+    a, op, b, r,
+    timestamp: Date.now()
+  });
+  history = history.slice(0, 100);
+  saveHistory();
+  renderHistory();
+}
+function renderHistory() {
+  historyClearBtn.disabled = history.length === 0;
+  if (history.length === 0) {
+    historyListEl.innerHTML = '<div class="history-empty">計算するとここに履歴が残ります</div>';
+    return;
+  }
+  historyListEl.innerHTML = history.map((h, i) => `
+    <div class="history-row" onclick="useHistoryResult(${i})" title="クリックで結果を使う">
+      <div class="history-expr">${withCommas(formatNumber(h.a))} ${opSymbol(h.op)} ${withCommas(formatNumber(h.b))} =</div>
+      <div class="history-result">${withCommas(formatNumber(h.r))}</div>
+    </div>
+  `).join('');
+}
+function useHistoryResult(idx) {
+  const h = history[idx];
+  if (!h) return;
+  current = formatNumber(h.r);
+  justEvaluated = true;
+  updateDisplay();
+}
+function clearHistory() {
+  if (history.length === 0) return;
+  if (!confirm('履歴をすべて削除しますか？')) return;
+  history = [];
+  saveHistory();
+  renderHistory();
+}
+
+// ────────── KEYBOARD
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  const k = e.key;
+  if (k >= '0' && k <= '9') { e.preventDefault(); inputDigit(k); }
+  else if (k === '.') { e.preventDefault(); inputDecimal(); }
+  else if (k === '+' || k === '-') { e.preventDefault(); setOp(k); }
+  else if (k === '*') { e.preventDefault(); setOp('*'); }
+  else if (k === '/') { e.preventDefault(); setOp('/'); }
+  else if (k === 'Enter' || k === '=') { e.preventDefault(); evaluate(); }
+  else if (k === 'Escape' || k === 'c' || k === 'C') { e.preventDefault(); clearAll(); }
+  else if (k === 'Backspace') { e.preventDefault(); backspace(); }
+  else if (k === '%') { e.preventDefault(); percent(); }
+});
+
+// ────────── INIT
+loadState();
+renderHistory();
+updateDisplay();
+</script>
+</body>
+</html>

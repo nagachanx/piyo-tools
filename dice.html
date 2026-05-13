@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>サイコロ — ぴよツールズ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F5F5F4; --surface:#FFFFFF; --border:#E7E5E4; --border-strong:#D6D3D1;
+      --text-1:#1C1917; --text-2:#44403C; --text-3:#78716C; --text-4:#A8A29E;
+      --icon-bg:#F3F4F6; --primary:#2563EB; --primary-dk:#1D4ED8; --primary-lt:#DBEAFE; --primary-bg:#EFF6FF;
+      --dice-face:#FFFFFF; --dice-bd:#D6D3D1; --dice-pip:#1C1917;
+      --radius-card:14px; --radius:8px;
+      --shadow-sm:0 1px 2px rgba(15,23,42,0.04);
+      --ring:0 0 0 3px rgba(37,99,235,0.20); --transition:150ms ease-out;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif; background: var(--bg); min-height: 100vh; color: var(--text-1); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); }
+    .topbar-sep { color: var(--text-4); font-size: 18px; margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+    .topbar-spacer { flex: 1; }
+    .icon-btn { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition); }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-btn:hover { color: var(--text-1); border-color: var(--border-strong); }
+    .icon-btn:focus-visible { outline: none; box-shadow: var(--ring); border-color: var(--primary); }
+
+    .page-header { max-width: 1200px; margin: 0 auto; padding: 32px 24px 16px; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-3); }
+
+    main { max-width: 900px; margin: 0 auto; padding: 8px 24px 80px; }
+
+    .block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); margin-bottom: 16px; overflow: hidden; }
+    .block-header { padding: 14px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+    .block-header-icon { width: 18px; height: 18px; color: var(--text-3); }
+    .block-header-icon svg { width: 100%; height: 100%; }
+    .block-header-title { font-size: 14px; font-weight: 600; }
+    .block-body { padding: 18px 20px; }
+
+    /* Dice area */
+    .dice-area {
+      background: linear-gradient(180deg, var(--surface) 0%, #FAFAF9 100%);
+      border-radius: var(--radius-card);
+      padding: 36px 24px;
+      text-align: center;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+    .dice-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+    }
+    .die {
+      width: 84px; height: 84px;
+      background: var(--dice-face);
+      border: 2px solid var(--dice-bd);
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08), inset 0 -3px 0 rgba(0,0,0,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+    .die.rolling { animation: dieRoll 0.7s linear infinite; }
+    @keyframes dieRoll {
+      0%   { transform: rotate(0deg) scale(0.95); }
+      25%  { transform: rotate(-10deg) scale(1.02); }
+      50%  { transform: rotate(8deg) scale(0.97); }
+      75%  { transform: rotate(-6deg) scale(1.03); }
+      100% { transform: rotate(0deg) scale(0.95); }
+    }
+    .die.show { animation: dieLand 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes dieLand {
+      0% { transform: scale(0.6) rotate(-20deg); opacity: 0.5; }
+      60% { transform: scale(1.08) rotate(4deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+    .die-pip-grid {
+      width: 100%; height: 100%;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      align-items: center;
+      justify-items: center;
+    }
+    .pip {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--dice-pip);
+      visibility: hidden;
+      box-shadow: inset 0 -1px 1px rgba(0,0,0,0.2);
+    }
+    .pip.on { visibility: visible; }
+    .die-num {
+      font-family: 'Inter', sans-serif;
+      font-size: 48px;
+      font-weight: 800;
+      color: var(--text-1);
+      letter-spacing: -0.04em;
+    }
+    .die-num-small {
+      font-size: 32px;
+    }
+
+    .total {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-3);
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 8px;
+    }
+    .total-value {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text-1);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .roll-btn {
+      width: 100%;
+      height: 56px;
+      max-width: 340px;
+      padding: 0 24px;
+      background: var(--primary);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+    }
+    .roll-btn svg { width: 18px; height: 18px; }
+    .roll-btn:hover { background: var(--primary-dk); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.28); }
+    .roll-btn:focus-visible { outline: none; box-shadow: var(--ring), 0 4px 12px rgba(37,99,235,0.28); }
+    .roll-btn:active { transform: translateY(0); }
+    .roll-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* Settings */
+    .setting-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+    .opt-label { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .opt-value { font-size: 14px; font-weight: 700; color: var(--primary); text-transform: none; letter-spacing: 0; }
+    .slider { width: 100%; -webkit-appearance: none; appearance: none; height: 6px; background: var(--icon-bg); border-radius: 3px; outline: none; }
+    .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--primary); cursor: pointer; }
+    .slider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--primary); cursor: pointer; border: none; }
+    .seg-group { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+    .seg-btn { padding: 8px 14px; min-height: 36px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all var(--transition); }
+    .seg-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .seg-btn.active { border-color: var(--primary); background: var(--primary); color: white; }
+    .seg-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+
+    /* History */
+    .hist-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+    }
+    .hist-row:last-child { border-bottom: none; }
+    .hist-num { width: 28px; font-size: 11px; color: var(--text-4); font-weight: 600; flex-shrink: 0; }
+    .hist-results { flex: 1; font-family: 'SF Mono', 'Menlo', monospace; font-size: 13px; color: var(--text-1); }
+    .hist-total { font-weight: 600; color: var(--primary); }
+    .hist-empty { padding: 28px 16px; text-align: center; color: var(--text-4); font-size: 13px; }
+    .hist-spec { font-size: 11px; color: var(--text-4); }
+
+    .actions-row { display: flex; gap: 10px; flex-wrap: wrap; padding: 12px 18px; background: #FAFAF9; border-top: 1px solid var(--border); }
+    .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; min-height: 32px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--text-2); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all var(--transition); }
+    .action-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .action-btn svg { width: 12px; height: 12px; }
+    .action-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    footer { max-width: 1200px; margin: 0 auto; padding: 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; gap: 8px; }
+      .brand-sub { display: none; }
+      .page-header { padding: 24px 20px 8px; }
+      .page-header h1 { font-size: 22px; }
+      main { padding: 8px 16px 60px; }
+      .die { width: 64px; height: 64px; }
+      .die-num { font-size: 36px; }
+      .pip { width: 9px; height: 9px; }
+      .die-pip-grid { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.8"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="20" width="48" height="16" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M15 24 Q17 22.5 19 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <path d="M29 24 Q31 22.5 33 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <circle cx="17" cy="28" r="1.5" fill="#3D2F1F"/>
+          <circle cx="31" cy="28" r="1.5" fill="#3D2F1F"/>
+          <path d="M20 30 L28 30 L24 36 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M20 35 Q24 38 28 35" stroke="#3D2F1F" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep" aria-hidden="true">/</span>
+    <span class="topbar-current">サイコロ</span>
+    <div class="topbar-spacer"></div>
+    <button type="button" class="icon-btn" aria-label="ヘルプ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="page-header">
+  <h1>サイコロ</h1>
+  <p>複数のサイコロを同時に振れます ・ 4 / 6 / 8 / 10 / 12 / 20 面対応</p>
+</div>
+
+<main>
+
+  <!-- ダイス表示 -->
+  <div class="block">
+    <div class="dice-area">
+      <div class="dice-grid" id="dice-grid"></div>
+      <div class="total" id="total" style="display:none">合計 <span class="total-value" id="total-val">0</span></div>
+      <button class="roll-btn" id="roll-btn" onclick="roll()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>
+        サイコロを振る
+      </button>
+    </div>
+  </div>
+
+  <!-- 設定 -->
+  <div class="block">
+    <div class="block-header">
+      <span class="block-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </span>
+      <span class="block-header-title">設定</span>
+    </div>
+    <div class="block-body">
+      <div class="setting-grid">
+        <div>
+          <div class="opt-label">
+            <span>個数</span>
+            <span class="opt-value" id="count-display">2</span>
+          </div>
+          <input type="range" id="count-slider" class="slider" min="1" max="10" value="2">
+        </div>
+        <div>
+          <div class="opt-label"><span>面数</span></div>
+          <div class="seg-group" id="sides-group" role="radiogroup" aria-label="面数">
+            <button class="seg-btn" data-sides="4"  role="radio" aria-checked="false">D4</button>
+            <button class="seg-btn active" data-sides="6"  role="radio" aria-checked="true">D6</button>
+            <button class="seg-btn" data-sides="8"  role="radio" aria-checked="false">D8</button>
+            <button class="seg-btn" data-sides="10" role="radio" aria-checked="false">D10</button>
+            <button class="seg-btn" data-sides="12" role="radio" aria-checked="false">D12</button>
+            <button class="seg-btn" data-sides="20" role="radio" aria-checked="false">D20</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 履歴 -->
+  <div class="block">
+    <div class="block-header">
+      <span class="block-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg>
+      </span>
+      <span class="block-header-title">履歴</span>
+    </div>
+    <div id="hist-list">
+      <div class="hist-empty">サイコロを振るとここに記録されます</div>
+    </div>
+    <div class="actions-row" id="hist-actions" style="display:none">
+      <button class="action-btn" onclick="clearHistory()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        履歴をクリア
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<script>
+const state = { count: 2, sides: 6, history: [], lastRolls: [] };
+const grid = document.getElementById('dice-grid');
+const totalEl = document.getElementById('total');
+const totalVal = document.getElementById('total-val');
+const rollBtn = document.getElementById('roll-btn');
+const countDisplay = document.getElementById('count-display');
+const countSlider = document.getElementById('count-slider');
+const sidesGroup = document.getElementById('sides-group');
+const histList = document.getElementById('hist-list');
+const histActions = document.getElementById('hist-actions');
+
+// PIP positions for D6 (3x3 grid)
+const D6_PIPS = {
+  1: [4],
+  2: [0, 8],
+  3: [0, 4, 8],
+  4: [0, 2, 6, 8],
+  5: [0, 2, 4, 6, 8],
+  6: [0, 2, 3, 5, 6, 8]
+};
+
+function renderDie(value, sides, rolling = false) {
+  if (sides === 6) {
+    const pipPositions = D6_PIPS[value] || [];
+    const grid = Array.from({length: 9}, (_, i) => `<div class="pip ${pipPositions.includes(i) ? 'on' : ''}"></div>`).join('');
+    return `<div class="die ${rolling ? 'rolling' : 'show'}"><div class="die-pip-grid">${grid}</div></div>`;
+  }
+  const small = (value >= 10) ? 'die-num-small' : '';
+  return `<div class="die ${rolling ? 'rolling' : 'show'}"><div class="die-num ${small}">${rolling ? '?' : value}</div></div>`;
+}
+
+function renderDice(values, rolling = false) {
+  grid.innerHTML = values.map(v => renderDie(v, state.sides, rolling)).join('');
+}
+
+function renderInitial() {
+  renderDice(Array(state.count).fill(1));
+  totalEl.style.display = 'none';
+}
+
+let rolling = false;
+async function roll() {
+  if (rolling) return;
+  rolling = true;
+  rollBtn.disabled = true;
+
+  // アニメーション中はランダムな表示
+  const animDuration = 600;
+  const start = performance.now();
+  const interval = setInterval(() => {
+    const values = Array.from({length: state.count}, () => Math.floor(Math.random() * state.sides) + 1);
+    renderDice(values, true);
+  }, 70);
+
+  await new Promise(r => setTimeout(r, animDuration));
+  clearInterval(interval);
+
+  // 最終結果
+  const finalValues = Array.from({length: state.count}, () => Math.floor(Math.random() * state.sides) + 1);
+  state.lastRolls = finalValues;
+  renderDice(finalValues, false);
+
+  // 合計表示
+  const sum = finalValues.reduce((s, v) => s + v, 0);
+  totalEl.style.display = state.count > 1 ? 'flex' : 'none';
+  totalVal.textContent = sum;
+
+  // 履歴に追加
+  state.history.unshift({ values: finalValues, sum, sides: state.sides, ts: Date.now() });
+  state.history = state.history.slice(0, 30);
+  renderHistory();
+
+  rolling = false;
+  rollBtn.disabled = false;
+}
+
+function renderHistory() {
+  if (state.history.length === 0) {
+    histList.innerHTML = '<div class="hist-empty">サイコロを振るとここに記録されます</div>';
+    histActions.style.display = 'none';
+    return;
+  }
+  histActions.style.display = '';
+  histList.innerHTML = state.history.map((h, i) => `
+    <div class="hist-row">
+      <span class="hist-num">#${state.history.length - i}</span>
+      <span class="hist-results">${h.values.join(', ')} <span class="hist-spec">(D${h.sides} ×${h.values.length})</span></span>
+      ${h.values.length > 1 ? `<span class="hist-total">合計 ${h.sum}</span>` : ''}
+    </div>
+  `).join('');
+}
+
+function clearHistory() {
+  if (!confirm('履歴を削除しますか？')) return;
+  state.history = [];
+  renderHistory();
+}
+
+countSlider.addEventListener('input', e => {
+  state.count = parseInt(e.target.value, 10);
+  countDisplay.textContent = state.count;
+  renderInitial();
+});
+
+sidesGroup.addEventListener('click', e => {
+  const btn = e.target.closest('.seg-btn');
+  if (!btn) return;
+  state.sides = parseInt(btn.dataset.sides, 10);
+  sidesGroup.querySelectorAll('.seg-btn').forEach(b => {
+    const active = b === btn;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-checked', active);
+  });
+  renderInitial();
+});
+
+// Space to roll
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.code === 'Space') { e.preventDefault(); roll(); }
+});
+
+renderInitial();
+</script>
+</body>
+</html>
