@@ -600,15 +600,15 @@
 
 <footer id="footer">ぴよツールズ — 社内専用</footer>
 
-<!-- ─────────────────────── Supabase SDK ─────────────────────── -->
+<!-- ─────────────────────── 共通設定 + Supabase SDK ─────────────────────── -->
+<script src="piyo-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ╔════════════════════════════════════════════════════════════════════╗
-// ║ Supabase 接続情報                                                  ║
-// ║ 下記2つを設定してください。詳しい手順は schedule-setup.md を参照。 ║
+// ║ Supabase 接続情報は piyo-config.js から取得                          ║
 // ╚════════════════════════════════════════════════════════════════════╝
-const SUPABASE_URL = 'https://dltjyzbkunmqbwlqimom.supabase.co'
-const SUPABASE_ANON_KEY = 'sb_publishable_UYgUnnL91iQ35XyiSBlpkg_Qdycx7Bh'
+const SUPABASE_URL = (window.PIYO_CONFIG && window.PIYO_CONFIG.SUPABASE_URL) || '';
+const SUPABASE_ANON_KEY = (window.PIYO_CONFIG && window.PIYO_CONFIG.SUPABASE_ANON_KEY) || '';
 
 // ─── 設定チェック ───
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {

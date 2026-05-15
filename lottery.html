@@ -986,6 +986,9 @@
 
 </div>
 
+<!-- ──── Supabase（保存メンバーを社内共有するため）──── -->
+<script src="piyo-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ═══════════════════════════════════════════
 // STATE
@@ -1084,36 +1087,64 @@ function resetResult() {
 }
 function esc(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ── PRESETS ─────────────────────────────────
-const PRESET_KEY = 'piyo_lottery_presets';
-function loadAllPresets() { try { return JSON.parse(localStorage.getItem(PRESET_KEY)||'[]'); } catch{return[];} }
-function saveAllPresets(arr) { localStorage.setItem(PRESET_KEY, JSON.stringify(arr)); }
+// ── PRESETS（Supabase で社内共有）────────────────
+const SUPABASE_URL = (window.PIYO_CONFIG && window.PIYO_CONFIG.SUPABASE_URL) || '';
+const SUPABASE_ANON_KEY = (window.PIYO_CONFIG && window.PIYO_CONFIG.SUPABASE_ANON_KEY) || '';
+const supa = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+// nanoid（簡易版）
+function nanoid14() {
+  const ab = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = crypto.getRandomValues(new Uint8Array(14));
+  let id = ''; for (let i = 0; i < 14; i++) id += ab[bytes[i] % ab.length];
+  return id;
+}
+
+let presetsCache = [];
+
+async function fetchPresets() {
+  if (!supa) {
+    console.warn('Supabase未設定のためプリセット機能は使えません');
+    return [];
+  }
+  const { data, error } = await supa.from('lottery_presets').select('*').order('name');
+  if (error) { console.error(error); return []; }
+  presetsCache = data || [];
+  return presetsCache;
+}
 
 function renderPresets() {
-  const presets = loadAllPresets();
+  const presets = presetsCache;
   const area = document.getElementById('preset-area');
   const chips = document.getElementById('preset-chips');
+  if (!supa) { area.style.display = 'none'; return; }
   if (presets.length === 0) { area.style.display = 'none'; return; }
   area.style.display = '';
   chips.innerHTML = presets.map((p,i) => `
     <button class="preset-chip" onclick="loadPreset(${i})">
-      ${esc(p.name)}<small>(${p.items.length}名)</small>
+      ${esc(p.name)}<small>(${(p.items||[]).length}名)</small>
       <button class="del-btn" onclick="deletePreset(event,${i})">×</button>
     </button>`).join('');
 }
 
 function loadPreset(idx) {
-  const p = loadAllPresets()[idx];
+  const p = presetsCache[idx];
   if (!p) return;
   if (inputMode !== 'list') switchTab('list');
-  document.getElementById('names-input').value = p.items.join('\n');
+  document.getElementById('names-input').value = (p.items || []).join('\n');
 }
 
-function deletePreset(event, idx) {
+async function deletePreset(event, idx) {
   event.stopPropagation();
-  const presets = loadAllPresets();
-  if (!confirm(`「${presets[idx]?.name}」を削除しますか？`)) return;
-  presets.splice(idx, 1); saveAllPresets(presets); renderPresets();
+  const p = presetsCache[idx];
+  if (!p) return;
+  if (!confirm(`「${p.name}」を削除しますか？（全スタッフから見えなくなります）`)) return;
+  const { error } = await supa.from('lottery_presets').delete().eq('id', p.id);
+  if (error) { alert('削除に失敗しました: ' + error.message); return; }
+  await fetchPresets();
+  renderPresets();
 }
 
 function toggleSaveForm() {
@@ -1122,24 +1153,37 @@ function toggleSaveForm() {
   if (form.classList.contains('open')) document.getElementById('preset-name-input').focus();
 }
 
-function savePreset() {
+async function savePreset() {
+  if (!supa) { alert('Supabase接続が設定されていないため保存できません'); return; }
   const name  = document.getElementById('preset-name-input').value.trim();
   const items = document.getElementById('names-input').value
     .split('\n').map(s=>s.trim()).filter(s=>s.length>0);
   if (!name)              { alert('保存名を入力してください'); return; }
   if (items.length === 0) { alert('メンバーを入力してください'); return; }
-  const presets  = loadAllPresets();
-  const existing = presets.findIndex(p=>p.name===name);
-  if (existing >= 0) {
+
+  const existing = presetsCache.find(p => p.name === name);
+  const now = new Date().toISOString();
+
+  let error;
+  if (existing) {
     if (!confirm(`「${name}」はすでに保存されています。上書きしますか？`)) return;
-    presets[existing].items = items;
-  } else { presets.push({ name, items }); }
-  saveAllPresets(presets); renderPresets();
+    ({ error } = await supa.from('lottery_presets')
+      .update({ items, updated_at: now })
+      .eq('id', existing.id));
+  } else {
+    ({ error } = await supa.from('lottery_presets')
+      .insert({ id: nanoid14(), name, items, created_at: now, updated_at: now }));
+  }
+  if (error) { alert('保存に失敗しました: ' + error.message); return; }
+
+  await fetchPresets();
+  renderPresets();
   document.getElementById('preset-name-input').value = '';
   document.getElementById('save-form').classList.remove('open');
 }
 
-renderPresets();
+// 初期ロード
+(async () => { await fetchPresets(); renderPresets(); })();
 
 // ── UTILITY ─────────────────────────────────
 const delay = ms => new Promise(r => setTimeout(r, ms));
