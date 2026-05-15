@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>見出し抽出 — ぴよツールズ</title>
+  <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F5F5F4; --surface:#FFFFFF; --border:#E7E5E4; --border-strong:#D6D3D1;
+      --text-1:#1C1917; --text-2:#44403C; --text-3:#78716C; --text-4:#A8A29E;
+      --icon-bg:#F3F4F6; --primary:#43A86A; --primary-dk:#2D8D57; --primary-lt:#C5E5D1; --primary-bg:#EEF7F1;
+      --radius-card:14px; --radius:8px;
+      --shadow-sm:0 1px 2px rgba(15,23,42,0.04);
+      --ring:0 0 0 3px rgba(61,167,107,0.20); --transition:150ms ease-out;
+    }
+    .h1-color { --hc:#43A86A; --hc-bg:#EEF7F1; }
+    .h2-color { --hc:#0891B2; --hc-bg:#ECFEFF; }
+    .h3-color { --hc:#10B981; --hc-bg:#ECFDF5; }
+    .h4-color { --hc:#F59E0B; --hc-bg:#FFFBEB; }
+    .h5-color { --hc:#EC4899; --hc-bg:#FDF2F8; }
+    .h6-color { --hc:#78716C; --hc-bg:#F5F5F4; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif; background: var(--bg); min-height: 100vh; color: var(--text-1); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); }
+    .topbar-sep { color: var(--text-4); font-size: 18px; margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+    .topbar-spacer { flex: 1; }
+    .icon-btn { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition); }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-btn:hover { color: var(--text-1); border-color: var(--border-strong); }
+    .icon-btn:focus-visible { outline: none; box-shadow: var(--ring); border-color: var(--primary); }
+
+    .page-header { max-width: 1200px; margin: 0 auto; padding: 32px 24px 16px; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-3); }
+
+    main { max-width: 1000px; margin: 0 auto; padding: 8px 24px 80px; }
+
+    .block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); margin-bottom: 16px; overflow: hidden; }
+    .block-header { padding: 14px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+    .block-header-icon { width: 18px; height: 18px; color: var(--text-3); }
+    .block-header-icon svg { width: 100%; height: 100%; }
+    .block-header-title { font-size: 14px; font-weight: 600; flex: 1; }
+    .block-header-count { font-size: 12px; color: var(--text-4); font-weight: 500; margin-left: 4px; }
+    .block-body { padding: 18px 20px; }
+
+    /* Mode tab */
+    .mode-bar { display: flex; gap: 4px; background: var(--icon-bg); padding: 4px; border-radius: 10px; width: fit-content; margin-bottom: 16px; }
+    .mode-btn { padding: 8px 18px; min-height: 36px; border: none; background: transparent; color: var(--text-3); font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 7px; font-family: inherit; transition: all var(--transition); }
+    .mode-btn:hover:not(.active) { color: var(--text-1); }
+    .mode-btn.active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
+
+    /* URL input */
+    .url-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .url-input { flex: 1; min-width: 240px; padding: 11px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; font-family: inherit; color: var(--text-1); background: var(--surface); transition: all var(--transition); }
+    .url-input:focus-visible { outline: none; border-color: var(--primary); box-shadow: var(--ring); }
+    .fetch-btn { padding: 0 22px; min-height: 44px; height: 44px; background: var(--primary); border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; color: white; cursor: pointer; font-family: inherit; transition: all var(--transition); display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 1px 2px rgba(15,23,42,0.05); }
+    .fetch-btn svg { width: 16px; height: 16px; }
+    .fetch-btn:hover:not(:disabled) { background: var(--primary-dk); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(61,167,107,0.28); }
+    .fetch-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .fetch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .hint { margin-top: 10px; font-size: 12px; color: var(--text-4); }
+    .hint code { padding: 1px 5px; background: var(--icon-bg); border-radius: 4px; font-size: 11px; }
+    .text-area { width: 100%; min-height: 160px; padding: 12px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 13px; font-family: 'SF Mono', 'Menlo', monospace; color: var(--text-1); background: var(--surface); resize: vertical; transition: all var(--transition); }
+    .text-area:focus-visible { outline: none; border-color: var(--primary); box-shadow: var(--ring); }
+
+    /* Status */
+    .status-row { padding: 12px 18px; background: #FAFAF9; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-3); }
+    .status-row.error { background: #FEF2F2; color: #991B1B; border-top-color: #FECACA; }
+    .spinner { width: 14px; height: 14px; border: 2px solid var(--icon-bg); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Stats */
+    .stats { display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 20px 0; }
+    .stat-pill { padding: 4px 10px; background: var(--hc-bg); color: var(--hc); border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .stat-pill.total { background: var(--primary); color: white; }
+
+    /* Filter */
+    .filters { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+    .filter-label { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .seg-group { display: inline-flex; gap: 4px; background: var(--icon-bg); padding: 3px; border-radius: 8px; flex-wrap: wrap; }
+    .seg-btn { padding: 6px 12px; min-height: 30px; border: none; background: transparent; color: var(--text-3); font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px; font-family: inherit; transition: all var(--transition); }
+    .seg-btn:hover:not(.active) { color: var(--text-1); }
+    .seg-btn.active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
+    .seg-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+
+    /* Headings list */
+    .headings { padding: 8px 0 12px; }
+    .h-row {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 20px;
+      transition: background var(--transition);
+      cursor: pointer;
+    }
+    .h-row:hover { background: #FAFAF9; }
+    .h-row::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0; bottom: 0;
+      width: 3px;
+      background: var(--hc);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .h-row:hover::before { opacity: 1; }
+    .h-level {
+      flex-shrink: 0;
+      width: 32px;
+      height: 22px;
+      border-radius: 5px;
+      background: var(--hc-bg);
+      color: var(--hc);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+    }
+    .h-text {
+      flex: 1;
+      min-width: 0;
+      font-size: 14px;
+      color: var(--text-1);
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .h-row[data-level="1"] .h-text { font-size: 17px; font-weight: 700; }
+    .h-row[data-level="2"] .h-text { font-size: 15px; font-weight: 600; }
+    .h-row[data-level="3"] .h-text { font-size: 14px; font-weight: 500; }
+    .h-anchor {
+      font-size: 11px;
+      color: var(--text-4);
+      font-family: 'SF Mono', monospace;
+      margin-top: 4px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .h-anchor:hover { color: var(--primary); }
+
+    .empty { padding: 48px 20px; text-align: center; color: var(--text-4); font-size: 13px; }
+    .empty-icon { width: 48px; height: 48px; margin: 0 auto 12px; opacity: 0.4; }
+    .empty-icon svg { width: 100%; height: 100%; }
+
+    /* Actions */
+    .actions-row { display: flex; gap: 10px; flex-wrap: wrap; padding: 14px 20px; background: #FAFAF9; border-top: 1px solid var(--border); align-items: center; }
+    .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; min-height: 36px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all var(--transition); border: 1px solid transparent; }
+    .action-btn svg { width: 13px; height: 13px; }
+    .action-btn.primary { background: var(--primary); color: white; border-color: var(--primary); }
+    .action-btn.primary:hover:not(:disabled) { background: var(--primary-dk); border-color: var(--primary-dk); }
+    .action-btn.secondary { background: var(--surface); color: var(--text-2); border-color: var(--border-strong); }
+    .action-btn.secondary:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .action-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .summary { margin-left: auto; font-size: 12px; color: var(--text-3); }
+
+    footer { max-width: 1200px; margin: 0 auto; padding: 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; gap: 8px; }
+      .brand-sub { display: none; }
+      .page-header { padding: 24px 20px 8px; }
+      .page-header h1 { font-size: 22px; }
+      main { padding: 8px 16px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="15" width="48" height="22" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M20 19.5 Q19 19.8 18 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <path d="M28 19.5 Q29 19.8 30 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <circle cx="15.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <circle cx="32.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <path d="M24 27 Q18.5 29 19.5 32.5 Q24 33.5 28.5 32.5 Q29.5 29 24 27 Z" fill="#FCD34D"/>
+          <path d="M19.5 32.5 Q24 33.5 28.5 32.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep" aria-hidden="true">/</span>
+    <span class="topbar-current">見出し抽出</span>
+    <div class="topbar-spacer"></div>
+    <button type="button" class="icon-btn" aria-label="ヘルプ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="page-header">
+  <h1>見出し抽出</h1>
+  <p>WEBページの見出し（H1〜H6）を一括抽出して階層構造で表示します</p>
+</div>
+
+<main>
+
+  <!-- 入力 -->
+  <div class="block">
+    <div class="block-header">
+      <span class="block-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M6 12h12"/></svg>
+      </span>
+      <span class="block-header-title">入力</span>
+    </div>
+    <div class="block-body">
+      <div class="mode-bar" role="tablist">
+        <button class="mode-btn active" data-mode="url"  onclick="setMode('url')"  role="tab" aria-selected="true">URLで指定</button>
+        <button class="mode-btn"        data-mode="html" onclick="setMode('html')" role="tab" aria-selected="false">HTMLを貼り付け</button>
+      </div>
+
+      <form id="url-form" class="url-row">
+        <input type="url" id="url-input" class="url-input" placeholder="https://example.com" required>
+        <button type="submit" class="fetch-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          見出しを抽出
+        </button>
+      </form>
+
+      <div id="html-mode" style="display:none">
+        <textarea id="html-input" class="text-area" placeholder="HTMLソースを貼り付け（&lt;html&gt;...&lt;/html&gt; 全体や、必要部分のみでも可）"></textarea>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="fetch-btn" onclick="extractFromHtml()" style="height:42px;min-height:42px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            このHTMLから抽出
+          </button>
+        </div>
+      </div>
+
+      <p class="hint" id="url-hint">CORS制限のため <code>corsproxy.io</code> 等のプロキシ経由でHTMLを取得します。<br>
+        プロキシが応答しない場合は「HTMLを貼り付け」タブをご利用ください。</p>
+    </div>
+    <div class="status-row" id="status-row" style="display:none"></div>
+  </div>
+
+  <!-- 結果 -->
+  <div class="block" id="result-block" style="display:none">
+    <div class="block-header">
+      <span class="block-header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </span>
+      <span class="block-header-title">見出しツリー</span>
+      <span class="block-header-count" id="h-count"></span>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="filters">
+      <span class="filter-label">表示</span>
+      <div class="seg-group" id="filter-group" role="radiogroup">
+        <button class="seg-btn active" data-level="0" role="radio" aria-checked="true">すべて</button>
+        <button class="seg-btn" data-level="1" role="radio" aria-checked="false">H1</button>
+        <button class="seg-btn" data-level="2" role="radio" aria-checked="false">H2</button>
+        <button class="seg-btn" data-level="3" role="radio" aria-checked="false">H3</button>
+        <button class="seg-btn" data-level="4" role="radio" aria-checked="false">H4</button>
+        <button class="seg-btn" data-level="5" role="radio" aria-checked="false">H5</button>
+        <button class="seg-btn" data-level="6" role="radio" aria-checked="false">H6</button>
+      </div>
+    </div>
+
+    <div class="headings" id="headings-list"></div>
+
+    <div class="actions-row">
+      <button class="action-btn primary" onclick="copyAs('markdown')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span id="md-label">Markdown でコピー</span>
+      </button>
+      <button class="action-btn secondary" onclick="copyAs('text')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span id="txt-label">テキストでコピー</span>
+      </button>
+      <span class="summary" id="summary"></span>
+    </div>
+  </div>
+
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<script>
+// 複数CORSプロキシをフォールバック
+const PROXIES = [
+  { name: 'corsproxy.io', html: async (url) => {
+      const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.text();
+  }},
+  { name: 'AllOrigins', html: async (url) => {
+      const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data.contents) throw new Error('contentsが空');
+      return data.contents;
+  }},
+  { name: 'CodeTabs', html: async (url) => {
+      const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.text();
+  }}
+];
+
+async function fetchHtmlWithFallback(url, onProgress) {
+  let lastError;
+  for (const p of PROXIES) {
+    try {
+      onProgress?.(p.name);
+      const html = await p.html(url);
+      if (html && html.length > 100) return { html, proxy: p };
+      throw new Error('HTMLが短すぎます');
+    } catch (e) {
+      console.warn(`[${p.name}]`, e.message);
+      lastError = e;
+    }
+  }
+  throw new Error(`すべてのプロキシで失敗 (${lastError?.message || '不明'})`);
+}
+
+const state = {
+  headings: [],   // { level, text, id, anchor }
+  filter: 0,
+  baseUrl: ''
+};
+
+const urlForm = document.getElementById('url-form');
+const urlInput = document.getElementById('url-input');
+const urlHint = document.getElementById('url-hint');
+const htmlMode = document.getElementById('html-mode');
+const htmlInput = document.getElementById('html-input');
+const statusRow = document.getElementById('status-row');
+const resultBlock = document.getElementById('result-block');
+const headingsList = document.getElementById('headings-list');
+const hCount = document.getElementById('h-count');
+const statsEl = document.getElementById('stats');
+const filterGroup = document.getElementById('filter-group');
+const summaryEl = document.getElementById('summary');
+const mdLabel = document.getElementById('md-label');
+const txtLabel = document.getElementById('txt-label');
+
+let currentMode = 'url';
+
+function setMode(m) {
+  currentMode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    const a = b.dataset.mode === m;
+    b.classList.toggle('active', a);
+    b.setAttribute('aria-selected', a);
+  });
+  urlForm.style.display = m === 'url' ? '' : 'none';
+  htmlMode.style.display = m === 'html' ? '' : 'none';
+  urlHint.style.display = m === 'url' ? '' : 'none';
+}
+
+function setStatus(msg, type='info') {
+  if (!msg) { statusRow.style.display = 'none'; return; }
+  statusRow.style.display = '';
+  statusRow.className = 'status-row' + (type === 'error' ? ' error' : '');
+  statusRow.innerHTML = (type === 'loading' ? '<span class="spinner"></span>' : '') + `<span>${msg}</span>`;
+}
+
+function normalizeUrl(u) {
+  u = (u || '').trim();
+  if (!u) return '';
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  return u;
+}
+
+urlForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const url = normalizeUrl(urlInput.value);
+  if (!url) return;
+  try { new URL(url); } catch { setStatus('正しいURLを入力してください', 'error'); return; }
+  urlInput.value = url;
+  state.baseUrl = url;
+
+  urlForm.querySelector('button').disabled = true;
+  setStatus('ページを取得しています...', 'loading');
+  resultBlock.style.display = 'none';
+
+  try {
+    const { html, proxy } = await fetchHtmlWithFallback(url, name => setStatus(`プロキシ「${name}」で取得中...`, 'loading'));
+    extractFromHtmlString(html);
+    setStatus(`${state.headings.length}件の見出しを検出（${proxy.name} 経由）`);
+  } catch (e) {
+    console.error(e);
+    let msg = e.message;
+    if (msg === 'Failed to fetch') msg = 'ネットワークまたはプロキシサービスに接続できませんでした。「HTMLを貼り付け」タブもお試しください。';
+    setStatus('取得に失敗しました: ' + msg, 'error');
+  } finally {
+    urlForm.querySelector('button').disabled = false;
+  }
+});
+
+function extractFromHtml() {
+  const html = htmlInput.value.trim();
+  if (!html) { setStatus('HTMLを貼り付けてください', 'error'); return; }
+  state.baseUrl = '';
+  extractFromHtmlString(html);
+  setStatus(`${state.headings.length}件の見出しを検出`);
+}
+
+function extractFromHtmlString(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const els = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
+  state.headings = Array.from(els).map(el => ({
+    level: parseInt(el.tagName.charAt(1), 10),
+    text: (el.textContent || '').trim().replace(/\s+/g, ' '),
+    id: el.id || '',
+    anchor: el.id ? '#' + el.id : ''
+  })).filter(h => h.text.length > 0);
+
+  if (state.headings.length === 0) {
+    resultBlock.style.display = 'none';
+    setStatus('見出し（H1〜H6）が見つかりませんでした', 'error');
+    return;
+  }
+  resultBlock.style.display = '';
+  state.filter = 0;
+  filterGroup.querySelectorAll('.seg-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.level === '0');
+    b.setAttribute('aria-checked', b.dataset.level === '0');
+  });
+  renderStats();
+  render();
+}
+
+function renderStats() {
+  const counts = [0, 0, 0, 0, 0, 0, 0]; // index 1-6
+  state.headings.forEach(h => counts[h.level]++);
+  const total = state.headings.length;
+  let html = `<span class="stat-pill total">合計 ${total}</span>`;
+  for (let lv = 1; lv <= 6; lv++) {
+    if (counts[lv] === 0) continue;
+    html += `<span class="stat-pill h${lv}-color">H${lv}: ${counts[lv]}</span>`;
+  }
+  statsEl.innerHTML = html;
+  hCount.textContent = `(${total})`;
+}
+
+function filtered() {
+  if (state.filter === 0) return state.headings;
+  return state.headings.filter(h => h.level === state.filter);
+}
+
+function escapeHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+function render() {
+  const list = filtered();
+  if (list.length === 0) {
+    headingsList.innerHTML = '<div class="empty">フィルタ条件に一致する見出しがありません</div>';
+    summaryEl.textContent = '0件';
+    return;
+  }
+  headingsList.innerHTML = list.map((h) => {
+    const indent = (h.level - 1) * 22;
+    const anchorHref = state.baseUrl && h.anchor ? new URL(h.anchor, state.baseUrl).href : '';
+    return `<div class="h-row h${h.level}-color" data-level="${h.level}" style="padding-left:${20 + indent}px" onclick="copyHeading(this, ${state.headings.indexOf(h)})">
+      <span class="h-level">H${h.level}</span>
+      <div style="flex:1;min-width:0">
+        <div class="h-text">${escapeHtml(h.text)}</div>
+        ${h.anchor ? (anchorHref
+          ? `<a class="h-anchor" href="${escapeHtml(anchorHref)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escapeHtml(h.anchor)} ↗</a>`
+          : `<span class="h-anchor">${escapeHtml(h.anchor)}</span>`
+        ) : ''}
+      </div>
+    </div>`;
+  }).join('');
+  summaryEl.textContent = `${list.length}件 表示中`;
+}
+
+function copyHeading(el, idx) {
+  const h = state.headings[idx];
+  if (!h) return;
+  navigator.clipboard.writeText(h.text).then(() => {
+    const orig = el.style.background;
+    el.style.background = 'var(--primary-bg)';
+    setTimeout(() => el.style.background = orig, 600);
+  }).catch(() => {});
+}
+
+filterGroup.addEventListener('click', e => {
+  const btn = e.target.closest('.seg-btn');
+  if (!btn) return;
+  filterGroup.querySelectorAll('.seg-btn').forEach(b => {
+    b.classList.toggle('active', b === btn);
+    b.setAttribute('aria-checked', b === btn);
+  });
+  state.filter = parseInt(btn.dataset.level, 10);
+  render();
+});
+
+function copyAs(format) {
+  const list = filtered();
+  if (list.length === 0) return;
+  let text;
+  if (format === 'markdown') {
+    text = list.map(h => '#'.repeat(h.level) + ' ' + h.text).join('\n');
+  } else {
+    text = list.map(h => '  '.repeat(h.level - 1) + h.text).join('\n');
+  }
+  navigator.clipboard.writeText(text).then(() => {
+    const label = format === 'markdown' ? mdLabel : txtLabel;
+    const orig = label.textContent;
+    label.textContent = '✓ コピーしました';
+    setTimeout(() => label.textContent = orig, 1500);
+  }).catch(() => alert('コピーに失敗しました'));
+}
+</script>
+</body>
+</html>

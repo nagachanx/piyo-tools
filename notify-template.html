@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>社内通知テンプレ — ぴよツールズ</title>
+  <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F5F5F4; --surface:#FFFFFF; --border:#E7E5E4; --border-strong:#D6D3D1;
+      --text-1:#1C1917; --text-2:#44403C; --text-3:#78716C; --text-4:#A8A29E;
+      --icon-bg:#F3F4F6; --primary:#43A86A; --primary-dk:#2D8D57; --primary-lt:#C5E5D1; --primary-bg:#EEF7F1;
+      --danger:#EF4444;
+      --radius-card:14px; --radius:8px;
+      --shadow-sm:0 1px 2px rgba(15,23,42,0.04);
+      --ring:0 0 0 3px rgba(61,167,107,0.20); --transition:150ms ease-out;
+    }
+    /* カテゴリカラー */
+    .cat-meeting  { --cc:#43A86A; --cc-bg:#EEF7F1; }
+    .cat-leave    { --cc:#10B981; --cc-bg:#ECFDF5; }
+    .cat-info     { --cc:#F59E0B; --cc-bg:#FFFBEB; }
+    .cat-urgent   { --cc:#EF4444; --cc-bg:#FEF2F2; }
+    .cat-deadline { --cc:#8B5CF6; --cc-bg:#F5F3FF; }
+    .cat-custom   { --cc:#78716C; --cc-bg:#F5F5F4; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif; background: var(--bg); min-height: 100vh; color: var(--text-1); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); }
+    .topbar-sep { color: var(--text-4); font-size: 18px; margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+    .topbar-spacer { flex: 1; }
+    .icon-btn { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition); }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-btn:hover { color: var(--text-1); border-color: var(--border-strong); }
+    .icon-btn:focus-visible { outline: none; box-shadow: var(--ring); border-color: var(--primary); }
+
+    .page-header { max-width: 1200px; margin: 0 auto; padding: 32px 24px 16px; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-3); }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 8px 24px 80px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); margin-bottom: 16px; overflow: hidden; }
+    .block-header { padding: 14px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+    .block-header-icon { width: 18px; height: 18px; color: var(--text-3); }
+    .block-header-icon svg { width: 100%; height: 100%; }
+    .block-header-title { font-size: 14px; font-weight: 600; flex: 1; }
+    .block-body { padding: 16px 18px; }
+
+    /* Category tabs */
+    .cat-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 18px 8px; border-bottom: 1px solid var(--border); background: #FAFAF9; }
+    .cat-tab {
+      padding: 6px 12px;
+      min-height: 30px;
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--text-3);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition);
+    }
+    .cat-tab:hover:not(.active) { color: var(--text-1); border-color: var(--text-4); }
+    .cat-tab.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+    .cat-tab:focus-visible { outline: none; box-shadow: var(--ring); }
+
+    /* Template list */
+    .tpl-list { padding: 8px 0; max-height: 600px; overflow-y: auto; }
+    .tpl-item {
+      padding: 12px 18px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .tpl-item:last-child { border-bottom: none; }
+    .tpl-item:hover { background: #FAFAF9; }
+    .tpl-item.active {
+      background: var(--primary-bg);
+      border-left: 3px solid var(--primary);
+      padding-left: 15px;
+    }
+    .tpl-cat-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--cc);
+      flex-shrink: 0;
+    }
+    .tpl-info { flex: 1; min-width: 0; }
+    .tpl-title { font-size: 13px; font-weight: 600; color: var(--text-1); margin-bottom: 2px; }
+    .tpl-snippet {
+      font-size: 11px;
+      color: var(--text-3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tpl-cat-tag {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--cc-bg);
+      color: var(--cc);
+      flex-shrink: 0;
+    }
+    .tpl-empty {
+      padding: 36px 20px;
+      text-align: center;
+      color: var(--text-4);
+      font-size: 13px;
+    }
+
+    /* Editor / Variables */
+    .var-list { padding: 6px 0; }
+    .var-row {
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .var-row:last-child { border-bottom: none; }
+    .var-label {
+      min-width: 100px;
+      max-width: 120px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-3);
+      font-family: 'SF Mono', monospace;
+    }
+    .var-input {
+      flex: 1;
+      padding: 8px 12px;
+      min-height: 36px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text-1);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+    .var-input:focus-visible { outline: none; border-color: var(--primary); box-shadow: var(--ring); }
+    .var-helpers { display: flex; gap: 4px; flex-wrap: wrap; }
+    .helper-btn {
+      padding: 5px 9px;
+      min-height: 28px;
+      font-size: 11px;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text-3);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition);
+    }
+    .helper-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+
+    /* Preview */
+    .preview-block {
+      padding: 16px 18px;
+      background: #FAFAF9;
+      border-top: 1px solid var(--border);
+    }
+    .preview-text {
+      width: 100%;
+      min-height: 180px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text-1);
+      background: var(--surface);
+      resize: vertical;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+    .preview-text:focus-visible { outline: none; border-color: var(--primary); box-shadow: var(--ring); }
+    .preview-text .var-placeholder {
+      background: #FEF3C7;
+      color: #92400E;
+      padding: 0 4px;
+      border-radius: 3px;
+    }
+
+    /* Actions */
+    .actions-row { display: flex; gap: 10px; flex-wrap: wrap; padding: 14px 18px; background: #FAFAF9; border-top: 1px solid var(--border); align-items: center; }
+    .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; min-height: 40px; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all var(--transition); border: 1px solid transparent; }
+    .action-btn svg { width: 14px; height: 14px; }
+    .action-btn.primary { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 1px 2px rgba(15,23,42,0.05); }
+    .action-btn.primary:hover { background: var(--primary-dk); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(61,167,107,0.28); }
+    .action-btn.secondary { background: var(--surface); color: var(--text-2); border-color: var(--border-strong); }
+    .action-btn.secondary:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .action-btn.danger { background: var(--surface); color: var(--danger); border-color: var(--border-strong); margin-left: auto; }
+    .action-btn.danger:hover { background: #FEF2F2; border-color: var(--danger); }
+    .action-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .add-btn {
+      padding: 9px 14px;
+      min-height: 38px;
+      background: var(--primary);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .add-btn svg { width: 14px; height: 14px; }
+    .add-btn:hover { background: var(--primary-dk); }
+    .add-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+
+    .empty-pick {
+      padding: 60px 24px;
+      text-align: center;
+      color: var(--text-4);
+      font-size: 13px;
+    }
+    .empty-pick svg { width: 48px; height: 48px; margin: 0 auto 12px; opacity: 0.4; display: block; }
+
+    /* Editor for custom template */
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .field input, .field textarea, .field select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text-1);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+    .field textarea {
+      min-height: 140px;
+      resize: vertical;
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .field input:focus-visible, .field textarea:focus-visible, .field select:focus-visible {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: var(--ring);
+    }
+    .field-hint { margin-top: 6px; font-size: 11px; color: var(--text-4); }
+
+    footer { max-width: 1200px; margin: 0 auto; padding: 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; gap: 8px; }
+      .brand-sub { display: none; }
+      .page-header { padding: 24px 20px 8px; }
+      .page-header h1 { font-size: 22px; }
+      main { padding: 8px 16px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="15" width="48" height="22" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M20 19.5 Q19 19.8 18 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <path d="M28 19.5 Q29 19.8 30 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <circle cx="15.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <circle cx="32.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <path d="M24 27 Q18.5 29 19.5 32.5 Q24 33.5 28.5 32.5 Q29.5 29 24 27 Z" fill="#FCD34D"/>
+          <path d="M19.5 32.5 Q24 33.5 28.5 32.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep" aria-hidden="true">/</span>
+    <span class="topbar-current">社内通知テンプレ</span>
+    <div class="topbar-spacer"></div>
+    <button type="button" class="icon-btn" aria-label="ヘルプ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="page-header">
+  <h1>社内通知テンプレ</h1>
+  <p>よく使うお知らせ文をテンプレ化。{{変数}} に値を入れるだけで完成、ワンクリックでコピー。</p>
+</div>
+
+<main>
+
+  <div class="layout">
+
+    <!-- 左：テンプレ一覧 -->
+    <div>
+      <div class="block">
+        <div class="block-header">
+          <span class="block-header-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </span>
+          <span class="block-header-title">テンプレート</span>
+          <button class="add-btn" onclick="startAdd()" title="新規テンプレートを追加">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            新規
+          </button>
+        </div>
+        <div class="cat-tabs" id="cat-tabs"></div>
+        <div class="tpl-list" id="tpl-list"></div>
+      </div>
+    </div>
+
+    <!-- 右：選択中テンプレの編集・プレビュー -->
+    <div id="right-pane">
+      <div class="block">
+        <div class="empty-pick">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+          <div>左の一覧からテンプレートを選択してください</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<script>
+const STORAGE_KEY = 'piyo-notify-templates-v1';
+
+const CATEGORIES = [
+  { id: 'all',      label: 'すべて',    className: '' },
+  { id: 'meeting',  label: '会議',      className: 'cat-meeting' },
+  { id: 'leave',    label: '勤怠',      className: 'cat-leave' },
+  { id: 'info',     label: 'お知らせ',  className: 'cat-info' },
+  { id: 'urgent',   label: '緊急',      className: 'cat-urgent' },
+  { id: 'deadline', label: '締切',      className: 'cat-deadline' },
+  { id: 'custom',   label: 'カスタム',  className: 'cat-custom' }
+];
+
+// 初期テンプレート（よく使う社内通知）
+const DEFAULT_TEMPLATES = [
+  {
+    id: 'def-meeting-cancel',
+    title: '会議のキャンセル',
+    category: 'meeting',
+    body: 'お疲れさまです。\n\n本日 {{time}} からの「{{meeting}}」は、{{reason}}のためキャンセルとなりました。\n振替日程は別途ご連絡いたします。\nご迷惑をおかけし申し訳ございません。'
+  },
+  {
+    id: 'def-meeting-reschedule',
+    title: '会議のリスケ',
+    category: 'meeting',
+    body: 'お疲れさまです。\n\n「{{meeting}}」の日程変更のご連絡です。\n旧: {{old_date}} {{old_time}}\n新: {{new_date}} {{new_time}}\n\n{{location}} にて開催します。よろしくお願いします。'
+  },
+  {
+    id: 'def-meeting-remind',
+    title: '会議リマインド',
+    category: 'meeting',
+    body: '【リマインド】\n本日 {{time}} から「{{meeting}}」を開催します。\n場所: {{location}}\nアジェンダ: {{agenda}}\n\nご出席よろしくお願いします。'
+  },
+  {
+    id: 'def-leave-sick',
+    title: '体調不良で休み',
+    category: 'leave',
+    body: 'お疲れさまです、{{name}}です。\n\n体調不良のため、本日({{date}})はお休みをいただきます。\n緊急のご連絡は {{contact}} までお願いいたします。\n明日には復帰予定です。'
+  },
+  {
+    id: 'def-leave-wfh',
+    title: '在宅勤務連絡',
+    category: 'leave',
+    body: 'お疲れさまです、{{name}}です。\n\n本日({{date}})は在宅勤務とさせていただきます。\n通常通り Slack と メールで対応可能です。\nよろしくお願いいたします。'
+  },
+  {
+    id: 'def-leave-early',
+    title: '早退の連絡',
+    category: 'leave',
+    body: 'お疲れさまです、{{name}}です。\n\n{{reason}}のため、本日 {{time}} 頃に早退させていただきます。\n業務の引き継ぎは {{contact}} にお願いしてあります。\nご迷惑をおかけしますがよろしくお願いします。'
+  },
+  {
+    id: 'def-leave-vacation',
+    title: '休暇の事前連絡',
+    category: 'leave',
+    body: 'お疲れさまです、{{name}}です。\n\n{{start_date}}〜{{end_date}}の期間、{{reason}}のためお休みをいただきます。\n不在中の対応は {{substitute}} にお願いしておりますので、何卒よろしくお願いいたします。'
+  },
+  {
+    id: 'def-info-new-member',
+    title: '新メンバー紹介',
+    category: 'info',
+    body: 'みなさま、お疲れさまです。\n\n本日({{date}})より、{{department}}に新しく {{name}} さんが入社されました。\n担当業務: {{role}}\nひとこと: {{comment}}\n\nどうぞよろしくお願いいたします！'
+  },
+  {
+    id: 'def-info-release',
+    title: 'リリース予定のお知らせ',
+    category: 'info',
+    body: '【リリース予告】\n{{date}} {{time}} に「{{feature}}」をリリース予定です。\n\n■ 内容\n{{description}}\n\n■ 影響範囲\n{{impact}}\n\nご確認のほどよろしくお願いします。'
+  },
+  {
+    id: 'def-info-visitor',
+    title: '来客予定',
+    category: 'info',
+    body: '【来客予定】\n{{date}} {{time}} に {{company}} の {{name}} 様がお越しになります。\n\n■ 用件: {{purpose}}\n■ 対応: {{host}}\n■ 場所: {{location}}\n\nご共有まで。'
+  },
+  {
+    id: 'def-urgent-incident',
+    title: '障害発生連絡',
+    category: 'urgent',
+    body: '【障害発生】\n発生時刻: {{time}}\n影響サービス: {{service}}\n症状: {{symptom}}\n\n現在 {{owner}} が対応中です。\n復旧見込み・続報は追ってご連絡します。'
+  },
+  {
+    id: 'def-urgent-resolved',
+    title: '障害復旧連絡',
+    category: 'urgent',
+    body: '【障害復旧】\n先ほど発生していた {{service}} の障害が、{{time}} に復旧いたしました。\n\n■ 影響時間: {{duration}}\n■ 原因: {{cause}}\n■ 対応: {{action}}\n\nご迷惑をおかけし申し訳ありませんでした。詳細は後ほど共有します。'
+  },
+  {
+    id: 'def-urgent-maint',
+    title: 'システムメンテナンス',
+    category: 'urgent',
+    body: '【システムメンテナンスのお知らせ】\n日時: {{date}} {{start_time}} 〜 {{end_time}}\n対象: {{system}}\n影響: メンテナンス時間中はご利用いただけません\n\nご不便をおかけしますがご協力をお願いいたします。'
+  },
+  {
+    id: 'def-deadline-remind',
+    title: '締切リマインド',
+    category: 'deadline',
+    body: '【リマインド】\n「{{task}}」の締切が {{deadline}} となっております。\n\n進捗状況のご共有、または完了報告をお願いいたします。\nご不明点があれば {{contact}} までお気軽にどうぞ。'
+  },
+  {
+    id: 'def-deadline-final',
+    title: '締切直前リマインド',
+    category: 'deadline',
+    body: '【⚠️ 締切直前】\n「{{task}}」の締切まで残り {{remaining}} です。\n締切: {{deadline}}\n\n未提出の方は急ぎご対応をお願いします。'
+  }
+];
+
+let state = {
+  templates: [],
+  currentCat: 'all',
+  selectedId: null,
+  values: {},        // 変数の値
+  editing: null      // 編集中のテンプレID（null=非編集、'new'=新規）
+};
+
+// ─── 永続化（カスタムテンプレのみ保存）
+function load() {
+  state.templates = [...DEFAULT_TEMPLATES];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) state.templates = state.templates.concat(data);
+    }
+  } catch (e) {}
+}
+function saveCustom() {
+  const custom = state.templates.filter(t => !t.id.startsWith('def-'));
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(custom)); } catch (e) {}
+}
+
+// ─── ユーティリティ
+function uid() { return 't-' + Math.random().toString(36).slice(2, 9); }
+function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function extractVars(body) {
+  const set = new Set();
+  const re = /\{\{(\w+)\}\}/g;
+  let m;
+  while ((m = re.exec(body || '')) !== null) set.add(m[1]);
+  return Array.from(set);
+}
+function fillBody(body, values) {
+  return (body || '').replace(/\{\{(\w+)\}\}/g, (_, key) => {
+    const v = values[key];
+    return (v && v.trim()) ? v : `{{${key}}}`;
+  });
+}
+function catClass(cat) {
+  const c = CATEGORIES.find(x => x.id === cat);
+  return c ? c.className : 'cat-custom';
+}
+function catLabel(cat) {
+  const c = CATEGORIES.find(x => x.id === cat);
+  return c ? c.label : 'カスタム';
+}
+
+// ─── 描画
+function renderTabs() {
+  const tabs = document.getElementById('cat-tabs');
+  const counts = {};
+  state.templates.forEach(t => { counts[t.category] = (counts[t.category] || 0) + 1; });
+  tabs.innerHTML = CATEGORIES.map(c => {
+    const n = c.id === 'all' ? state.templates.length : (counts[c.id] || 0);
+    return `<button class="cat-tab ${state.currentCat === c.id ? 'active' : ''}" onclick="setCat('${c.id}')">${c.label} <span style="opacity:0.6">${n}</span></button>`;
+  }).join('');
+}
+
+function renderList() {
+  const list = document.getElementById('tpl-list');
+  const tpls = state.currentCat === 'all'
+    ? state.templates
+    : state.templates.filter(t => t.category === state.currentCat);
+  if (tpls.length === 0) {
+    list.innerHTML = '<div class="tpl-empty">該当するテンプレートがありません</div>';
+    return;
+  }
+  list.innerHTML = tpls.map(t => `
+    <div class="tpl-item ${state.selectedId === t.id ? 'active' : ''} ${catClass(t.category)}" onclick="selectTpl('${t.id}')">
+      <span class="tpl-cat-dot"></span>
+      <div class="tpl-info">
+        <div class="tpl-title">${esc(t.title)}</div>
+        <div class="tpl-snippet">${esc((t.body || '').replace(/\n/g, ' ').slice(0, 60))}</div>
+      </div>
+      <span class="tpl-cat-tag">${catLabel(t.category)}</span>
+    </div>
+  `).join('');
+}
+
+function renderPane() {
+  const pane = document.getElementById('right-pane');
+  if (state.editing) {
+    renderEditor(pane);
+    return;
+  }
+  const tpl = state.templates.find(t => t.id === state.selectedId);
+  if (!tpl) {
+    pane.innerHTML = `<div class="block"><div class="empty-pick">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+      <div>左の一覧からテンプレートを選択してください</div>
+    </div></div>`;
+    return;
+  }
+  const vars = extractVars(tpl.body);
+  pane.innerHTML = `
+    <div class="block ${catClass(tpl.category)}">
+      <div class="block-header">
+        <span class="block-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+        <span class="block-header-title">${esc(tpl.title)}</span>
+        <span class="tpl-cat-tag">${catLabel(tpl.category)}</span>
+      </div>
+      ${vars.length > 0 ? `
+        <div style="padding: 8px 18px 4px; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em;">変数を入力</div>
+        <div class="var-list">${vars.map(v => `
+          <div class="var-row">
+            <span class="var-label">{{${v}}}</span>
+            <input type="text" class="var-input" data-var="${v}" value="${esc(state.values[v] || '')}" oninput="onVarInput('${v}', this.value)" placeholder="${getPlaceholder(v)}">
+            ${getHelpers(v)}
+          </div>
+        `).join('')}</div>
+      ` : `<div style="padding: 12px 18px; font-size: 12px; color: var(--text-4);">このテンプレには変数がありません</div>`}
+      <div class="preview-block">
+        <div style="font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">プレビュー</div>
+        <textarea class="preview-text" id="preview-text">${esc(fillBody(tpl.body, state.values))}</textarea>
+      </div>
+      <div class="actions-row">
+        <button class="action-btn primary" onclick="copyResult()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span id="copy-label">クリップボードにコピー</span>
+        </button>
+        <button class="action-btn secondary" onclick="clearValues()">入力をクリア</button>
+        <button class="action-btn secondary" onclick="startEdit('${tpl.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          テンプレを編集
+        </button>
+        ${!tpl.id.startsWith('def-') ? `<button class="action-btn danger" onclick="deleteTpl('${tpl.id}')">削除</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function getPlaceholder(name) {
+  const map = {
+    name: '田中 太郎', date: '2026年5月13日', time: '14:00',
+    start_time: '10:00', end_time: '12:00', start_date: '5/14', end_date: '5/16',
+    old_date: '5/14', old_time: '10:00', new_date: '5/16', new_time: '15:00',
+    meeting: '週次定例MTG', agenda: '○○の進捗共有',
+    location: '会議室A / Zoom',
+    reason: '体調不良 / 別件対応',
+    contact: '担当者名', substitute: '代理担当者',
+    department: '開発部', role: 'エンジニア', comment: 'よろしくお願いします',
+    feature: '新機能名', description: '機能の詳細', impact: 'ユーザー全体',
+    company: '○○株式会社', purpose: '商談', host: '担当者',
+    service: '本番環境', symptom: 'ログインができない', owner: '担当者',
+    duration: '15分', cause: '○○の影響', action: '設定変更',
+    system: '社内システム',
+    task: 'タスク名', deadline: '5/20(月) 17:00', remaining: '2時間'
+  };
+  return map[name] || `${name}の値`;
+}
+
+function getHelpers(varName) {
+  const dateLike = /date|deadline/i.test(varName);
+  const timeLike = /^time$|start_time|end_time|old_time|new_time/i.test(varName);
+  if (!dateLike && !timeLike) return '';
+  const helpers = [];
+  if (dateLike) {
+    const today = formatDate(new Date());
+    const tomorrow = formatDate(new Date(Date.now() + 86400000));
+    helpers.push(`<button class="helper-btn" onclick="setVar('${varName}','${today}')">今日</button>`);
+    helpers.push(`<button class="helper-btn" onclick="setVar('${varName}','${tomorrow}')">明日</button>`);
+  }
+  if (timeLike) {
+    helpers.push(`<button class="helper-btn" onclick="setVar('${varName}','10:00')">10:00</button>`);
+    helpers.push(`<button class="helper-btn" onclick="setVar('${varName}','14:00')">14:00</button>`);
+  }
+  return `<div class="var-helpers">${helpers.join('')}</div>`;
+}
+function formatDate(d) {
+  const wk = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+  return `${d.getMonth() + 1}/${d.getDate()}(${wk})`;
+}
+
+// ─── 編集モード
+function renderEditor(pane) {
+  const isNew = state.editing === 'new';
+  const tpl = isNew ? { title: '', category: 'custom', body: '' } : state.templates.find(t => t.id === state.editing);
+  if (!tpl) { state.editing = null; renderPane(); return; }
+  pane.innerHTML = `
+    <div class="block">
+      <div class="block-header">
+        <span class="block-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>
+        <span class="block-header-title">${isNew ? '新規テンプレートを作成' : 'テンプレートを編集'}</span>
+      </div>
+      <div class="block-body">
+        <div class="field">
+          <label>タイトル</label>
+          <input type="text" id="edit-title" value="${esc(tpl.title)}" placeholder="例：会議のキャンセル">
+        </div>
+        <div class="field">
+          <label>カテゴリ</label>
+          <select id="edit-cat">
+            ${CATEGORIES.filter(c => c.id !== 'all').map(c => `<option value="${c.id}" ${tpl.category === c.id ? 'selected' : ''}>${c.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>本文</label>
+          <textarea id="edit-body" placeholder="本文を入力。{{変数名}} で置換用プレースホルダを設定できます。">${esc(tpl.body)}</textarea>
+          <div class="field-hint">変数は <code>{{name}}</code> のように二重波括弧で囲んでください。</div>
+        </div>
+      </div>
+      <div class="actions-row">
+        <button class="action-btn primary" onclick="saveTpl()">保存</button>
+        <button class="action-btn secondary" onclick="cancelEdit()">キャンセル</button>
+        ${(!isNew && !tpl.id.startsWith('def-')) ? `<button class="action-btn danger" onclick="deleteTpl('${tpl.id}')">削除</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+function startAdd() {
+  state.editing = 'new';
+  renderPane();
+}
+function startEdit(id) {
+  // デフォルトテンプレを編集すると複製してカスタムとして扱う
+  const t = state.templates.find(x => x.id === id);
+  if (t && t.id.startsWith('def-')) {
+    if (!confirm('組み込みテンプレートは直接編集できないため、コピーを作成します。よろしいですか？')) return;
+    const copy = { id: uid(), title: t.title + '（コピー）', category: t.category, body: t.body };
+    state.templates.push(copy);
+    state.editing = copy.id;
+    saveCustom();
+    renderTabs();
+    renderList();
+    renderPane();
+    return;
+  }
+  state.editing = id;
+  renderPane();
+}
+function cancelEdit() {
+  state.editing = null;
+  renderPane();
+}
+function saveTpl() {
+  const title = document.getElementById('edit-title').value.trim();
+  const cat = document.getElementById('edit-cat').value;
+  const body = document.getElementById('edit-body').value;
+  if (!title) { alert('タイトルを入力してください'); return; }
+  if (!body.trim()) { alert('本文を入力してください'); return; }
+  if (state.editing === 'new') {
+    const id = uid();
+    state.templates.push({ id, title, category: cat, body });
+    state.selectedId = id;
+  } else {
+    const t = state.templates.find(x => x.id === state.editing);
+    if (t) { t.title = title; t.category = cat; t.body = body; }
+  }
+  saveCustom();
+  state.editing = null;
+  state.values = {};
+  renderTabs();
+  renderList();
+  renderPane();
+}
+function deleteTpl(id) {
+  const t = state.templates.find(x => x.id === id);
+  if (!t || t.id.startsWith('def-')) return;
+  if (!confirm(`「${t.title}」を削除しますか？`)) return;
+  state.templates = state.templates.filter(x => x.id !== id);
+  if (state.selectedId === id) state.selectedId = null;
+  if (state.editing === id) state.editing = null;
+  saveCustom();
+  renderTabs();
+  renderList();
+  renderPane();
+}
+
+// ─── 選択 / 入力
+function setCat(cat) {
+  state.currentCat = cat;
+  renderTabs();
+  renderList();
+}
+function selectTpl(id) {
+  state.selectedId = id;
+  state.values = {};
+  state.editing = null;
+  renderList();
+  renderPane();
+}
+function onVarInput(name, val) {
+  state.values[name] = val;
+  const tpl = state.templates.find(t => t.id === state.selectedId);
+  if (!tpl) return;
+  const preview = document.getElementById('preview-text');
+  if (preview) preview.value = fillBody(tpl.body, state.values);
+}
+function setVar(name, val) {
+  state.values[name] = val;
+  // 該当入力欄も更新
+  const input = document.querySelector(`.var-input[data-var="${name}"]`);
+  if (input) input.value = val;
+  const tpl = state.templates.find(t => t.id === state.selectedId);
+  if (!tpl) return;
+  const preview = document.getElementById('preview-text');
+  if (preview) preview.value = fillBody(tpl.body, state.values);
+}
+function clearValues() {
+  state.values = {};
+  document.querySelectorAll('.var-input').forEach(i => i.value = '');
+  const tpl = state.templates.find(t => t.id === state.selectedId);
+  if (!tpl) return;
+  const preview = document.getElementById('preview-text');
+  if (preview) preview.value = fillBody(tpl.body, state.values);
+}
+
+function copyResult() {
+  const preview = document.getElementById('preview-text');
+  if (!preview) return;
+  navigator.clipboard.writeText(preview.value).then(() => {
+    const lbl = document.getElementById('copy-label');
+    const orig = lbl.textContent;
+    lbl.textContent = '✓ コピーしました';
+    setTimeout(() => lbl.textContent = orig, 1500);
+  }).catch(() => alert('コピーに失敗しました'));
+}
+
+// ─── 初期化
+load();
+renderTabs();
+renderList();
+renderPane();
+</script>
+</body>
+</html>

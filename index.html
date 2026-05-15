@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ぴよツールズ</title>
+  <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,15 +19,15 @@
       --text-3:        #78716C;
       --text-4:        #A8A29E;
       --icon-bg:       #F3F4F6;
-      --primary:       #2563EB;
-      --primary-lt:    #DBEAFE;
-      --primary-bg:    #EFF6FF;
+      --primary:       #43A86A;
+      --primary-lt:    #C5E5D1;
+      --primary-bg:    #EEF7F1;
       --radius-card:   14px;
       --radius-sm:     8px;
       --radius-icon:   10px;
       --shadow-sm:     0 1px 2px rgba(15,23,42,0.04);
       --shadow-md:     0 4px 12px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.04);
-      --ring:          0 0 0 3px rgba(37,99,235,0.20);
+      --ring:          0 0 0 3px rgba(61,167,107,0.20);
       --transition:    150ms ease-out;
     }
 
@@ -153,7 +154,7 @@
     /* ─ Section header ────────────────────── */
     .section-header {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: 8px;
       margin: 32px 0 14px;
     }
@@ -168,6 +169,53 @@
       color: var(--text-4);
       font-weight: 500;
     }
+    .section-spacer { flex: 1; }
+    .reorder-hint {
+      font-size: 12px;
+      color: var(--text-4);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .reorder-hint svg { width: 12px; height: 12px; }
+    .reset-order-btn {
+      padding: 5px 10px;
+      min-height: 28px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text-3);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition);
+      display: none;
+      align-items: center;
+      gap: 4px;
+    }
+    .reset-order-btn.show { display: inline-flex; }
+    .reset-order-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .reset-order-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .reset-order-btn svg { width: 12px; height: 12px; }
+
+    /* ─ Sortable feedback ─ */
+    .tool-card { user-select: none; -webkit-touch-callout: none; }
+    .tool-card.sortable-ghost {
+      opacity: 0.35;
+      background: var(--primary-bg) !important;
+      border-style: dashed !important;
+      border-color: var(--primary) !important;
+    }
+    .tool-card.sortable-chosen {
+      box-shadow: 0 8px 24px rgba(15,23,42,0.15);
+    }
+    .tool-card.sortable-drag {
+      box-shadow: 0 16px 40px rgba(15,23,42,0.22);
+      transform: rotate(2deg) !important;
+      cursor: grabbing;
+    }
+    .tool-card.sortable-drag .hover-piyo-wrap { display: none; }
 
     /* ─ Cards grid ────────────────────────── */
     .cards-grid {
@@ -195,7 +243,7 @@
       transform: translateY(-2px);
       box-shadow: var(--shadow-md);
       border-color: var(--primary-lt);
-      background: #EFF6FF;
+      background: #EEF7F1;
     }
     .tool-card:focus-visible {
       outline: none;
@@ -208,27 +256,63 @@
       pointer-events: none;
     }
 
-    /* ─ Hover piyo (right-top peek) ─ */
-    .hover-piyo {
+    /* ─ Hover piyo (floating + eye dart + ground shadow) ─ */
+    @keyframes piyoFloat {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-12px); }
+    }
+    @keyframes piyoEye {
+      0%, 28%   { transform: translateX(0); }
+      30%, 33%  { transform: translateX(1.4px); }   /* チラッと右 */
+      35%, 67%  { transform: translateX(0); }       /* じっとしている */
+      69%, 72%  { transform: translateX(-1.4px); }  /* チラッと左 */
+      74%, 100% { transform: translateX(0); }
+    }
+    @keyframes piyoShadow {
+      0%, 100% { transform: translateX(-50%) scale(1, 1);     opacity: 0.34; }
+      50%      { transform: translateX(-50%) scale(0.5, 0.65); opacity: 0.10; }
+    }
+    .hover-piyo-wrap {
       position: absolute;
       top: -18px;
       right: -14px;
       width: 64px;
-      height: 64px;
+      height: 76px;       /* SVG 64 + 影スペース */
       opacity: 0;
-      transform: scale(0.4) rotate(-25deg) translateY(20px);
-      transition: opacity 180ms ease, transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: opacity 240ms ease-out;
       pointer-events: none;
       z-index: 5;
-      filter: drop-shadow(0 4px 10px rgba(15,23,42,0.18));
     }
-    .hover-piyo svg { width: 100%; height: 100%; display: block; }
-    .tool-card:hover .hover-piyo {
+    .hover-piyo {
+      width: 64px;
+      height: 64px;
+      filter: drop-shadow(0 3px 6px rgba(15,23,42,0.12));
+      animation: piyoFloat 4.5s ease-in-out infinite;
+    }
+    .hover-piyo svg { width: 100%; height: 100%; display: block; overflow: visible; }
+    .hover-piyo .piyo-eye {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: piyoEye 16s ease-in-out infinite;
+    }
+    .hover-piyo-shadow {
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      width: 36px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.55);
+      filter: blur(2.5px);
+      transform: translateX(-50%);
+      transform-origin: center center;
+      animation: piyoShadow 4.5s ease-in-out infinite;
+    }
+    .tool-card:hover .hover-piyo-wrap {
       opacity: 1;
-      transform: scale(1) rotate(12deg) translateY(0);
     }
     .tool-card:hover .card-icon {
-      background: #BFDBFE;
+      background: #B5DCC1;
       color: var(--primary-dk);
     }
 
@@ -326,17 +410,17 @@
     <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
       <div class="brand-logo" aria-hidden="true">
         <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
-          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
-          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.8"/>
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2"/>
           <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
-          <rect x="0" y="20" width="48" height="16" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
-          <path d="M15 24 Q17 22.5 19 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-          <path d="M29 24 Q31 22.5 33 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-          <circle cx="17" cy="28" r="1.5" fill="#3D2F1F"/>
-          <circle cx="31" cy="28" r="1.5" fill="#3D2F1F"/>
-          <path d="M20 30 L28 30 L24 36 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2" stroke-linejoin="round"/>
-          <path d="M20 35 Q24 38 28 35" stroke="#3D2F1F" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <rect x="0" y="15" width="48" height="22" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M20 19.5 Q19 19.8 18 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <path d="M28 19.5 Q29 19.8 30 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <circle cx="15.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <circle cx="32.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <path d="M24 27 Q18.5 29 19.5 32.5 Q24 33.5 28.5 32.5 Q29.5 29 24 27 Z" fill="#FCD34D"/>
+          <path d="M19.5 32.5 Q24 33.5 28.5 32.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
         </svg>
       </div>
       <div class="brand-text">
@@ -363,9 +447,29 @@
   <!-- 利用可能 -->
   <div class="section-header">
     <span class="section-title">利用可能</span>
-    <span class="section-count" aria-label="14件">14</span>
+    <span class="section-count" aria-label="17件">17</span>
+    <div class="section-spacer"></div>
+    <span class="reorder-hint" id="reorder-hint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+      ドラッグで並び替え
+    </span>
+    <button class="reset-order-btn" id="reset-order-btn" onclick="resetToolOrder()" aria-label="並び順をデフォルトに戻す">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      デフォルト順
+    </button>
   </div>
   <div class="cards-grid">
+
+    <a href="schedule.html" class="tool-card" aria-label="日程調整ツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+      </div>
+      <div class="card-name">日程調整</div>
+      <div class="card-desc">候補日を共有して◯△×で集計（社外OK）</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
 
     <a href="lottery.html" class="tool-card" aria-label="くじ引きツールを開く">
       <div class="card-icon" aria-hidden="true">
@@ -373,39 +477,6 @@
       </div>
       <div class="card-name">くじ引き</div>
       <div class="card-desc">名前や数字をランダム抽選</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="stopwatch.html" class="tool-card" aria-label="ストップウォッチツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="2" x2="14" y2="2"/><circle cx="12" cy="14" r="8"/><path d="M12 10v4l3-1"/><path d="M18 8l1-1"/></svg>
-      </div>
-      <div class="card-name">ストップウォッチ</div>
-      <div class="card-desc">ラップ計測もできる</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="char-count.html" class="tool-card" aria-label="文字数カウントツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-      </div>
-      <div class="card-name">文字数カウント</div>
-      <div class="card-desc">日本語・英語・バイト数を瞬時に集計</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="qr-code.html" class="tool-card" aria-label="QRコード作成ツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><line x1="20" y1="14" x2="20" y2="14"/><line x1="14" y1="20" x2="14" y2="21"/><line x1="20" y1="17" x2="20" y2="21"/><line x1="17" y1="20" x2="20" y2="20"/></svg>
-      </div>
-      <div class="card-name">QRコード作成</div>
-      <div class="card-desc">URLやテキストをQRコード化</div>
       <div class="card-arrow" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </div>
@@ -433,6 +504,17 @@
       </div>
     </a>
 
+    <a href="char-count.html" class="tool-card" aria-label="文字数カウントツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+      </div>
+      <div class="card-name">文字数カウント</div>
+      <div class="card-desc">日本語・英語・バイト数を瞬時に集計</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+
     <a href="page-images.html" class="tool-card" aria-label="WEBページ画像抽出ツールを開く">
       <div class="card-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><circle cx="9" cy="14" r="1.3" fill="currentColor" stroke="none"/><path d="M21 18l-4-3-8 5"/></svg>
@@ -444,12 +526,45 @@
       </div>
     </a>
 
+    <a href="headings.html" class="tool-card" aria-label="見出し抽出ツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M6 12h12"/></svg>
+      </div>
+      <div class="card-name">見出し抽出</div>
+      <div class="card-desc">WEBページのH1〜H6を階層で一覧化</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+
+    <a href="stopwatch.html" class="tool-card" aria-label="ストップウォッチツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="2" x2="14" y2="2"/><circle cx="12" cy="14" r="8"/><path d="M12 10v4l3-1"/><path d="M18 8l1-1"/></svg>
+      </div>
+      <div class="card-name">ストップウォッチ</div>
+      <div class="card-desc">ラップ計測もできる</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+
     <a href="timer.html" class="tool-card" aria-label="タイマーツールを開く">
       <div class="card-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
       <div class="card-name">タイマー</div>
       <div class="card-desc">カウントダウンタイマー</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+
+    <a href="qr-code.html" class="tool-card" aria-label="QRコード作成ツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><line x1="20" y1="14" x2="20" y2="14"/><line x1="14" y1="20" x2="14" y2="21"/><line x1="20" y1="17" x2="20" y2="21"/><line x1="17" y1="20" x2="20" y2="20"/></svg>
+      </div>
+      <div class="card-name">QRコード作成</div>
+      <div class="card-desc">URLやテキストをQRコード化</div>
       <div class="card-arrow" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </div>
@@ -521,12 +636,135 @@
       </div>
     </a>
 
+    <a href="slack-mention.html" class="tool-card" aria-label="Slackメンションツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg>
+      </div>
+      <div class="card-name">Slackメンション</div>
+      <div class="card-desc">チームの@メンションを一括コピー</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+
+    <a href="notify-template.html" class="tool-card" aria-label="社内通知テンプレを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+      </div>
+      <div class="card-name">社内通知テンプレ</div>
+      <div class="card-desc">よく使う通知文をテンプレ化</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+
+    <a href="#rewrite-coming-soon" class="tool-card coming-soon" aria-label="文章リライト（近日公開）" aria-disabled="true">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </div>
+      <div class="card-name">文章リライト</div>
+      <div class="card-desc">トーンに合わせて文章を整える（AI）</div>
+      <div class="card-badge">近日公開</div>
+    </a>
+
+    <a href="#translate-coming-soon" class="tool-card coming-soon" aria-label="翻訳（近日公開）" aria-disabled="true">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+      </div>
+      <div class="card-name">翻訳</div>
+      <div class="card-desc">日英・日葡・日比のビジネス翻訳（AI）</div>
+      <div class="card-badge">近日公開</div>
+    </a>
+
   </div>
 </main>
 
 <footer>ぴよツールズ — 社内専用</footer>
 
+<!-- Sortable.js for tool reordering -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
+// ─── ツール並び替え（localStorage 永続化）
+(function() {
+  const ORDER_KEY = 'piyo-tools-order-v1';
+  const grid = document.querySelector('.cards-grid');
+  const resetBtn = document.getElementById('reset-order-btn');
+  const hintEl = document.getElementById('reorder-hint');
+  if (!grid) return;
+
+  // 各カードの一意IDとして href を使う
+  function getCardId(card) {
+    return card.getAttribute('href') || '';
+  }
+
+  function getDefaultOrder() {
+    return Array.from(grid.children).map(getCardId).filter(Boolean);
+  }
+
+  const DEFAULT_ORDER = getDefaultOrder();
+
+  function applyOrder(ids) {
+    if (!Array.isArray(ids) || ids.length === 0) return;
+    const cardMap = new Map();
+    Array.from(grid.children).forEach(card => {
+      const id = getCardId(card);
+      if (id) cardMap.set(id, card);
+    });
+    // 保存された順で append（既に居る要素を appendChild すると末尾に移動する）
+    ids.forEach(id => {
+      const card = cardMap.get(id);
+      if (card) grid.appendChild(card);
+    });
+    // 保存に含まれないカード（新規追加されたツール）は末尾に
+    cardMap.forEach((card, id) => {
+      if (!ids.includes(id)) grid.appendChild(card);
+    });
+  }
+
+  function saveOrder() {
+    const ids = Array.from(grid.children).map(getCardId).filter(Boolean);
+    try { localStorage.setItem(ORDER_KEY, JSON.stringify(ids)); } catch (e) {}
+    updateResetVisibility();
+  }
+
+  function updateResetVisibility() {
+    const current = Array.from(grid.children).map(getCardId).filter(Boolean);
+    const isDefault = current.length === DEFAULT_ORDER.length &&
+                      current.every((id, i) => id === DEFAULT_ORDER[i]);
+    resetBtn.classList.toggle('show', !isDefault);
+    // 並び替え済みなら「ドラッグで並び替え」ヒントは控えめに
+    hintEl.style.opacity = isDefault ? '1' : '0.5';
+  }
+
+  // 起動時に保存された順を適用
+  try {
+    const saved = JSON.parse(localStorage.getItem(ORDER_KEY) || 'null');
+    if (Array.isArray(saved)) applyOrder(saved);
+  } catch (e) {}
+  updateResetVisibility();
+
+  // Sortable.js 有効化
+  if (window.Sortable) {
+    Sortable.create(grid, {
+      animation: 200,
+      delay: 180,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 4,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      dragClass: 'sortable-drag',
+      onEnd: saveOrder
+    });
+  }
+
+  // リセット
+  window.resetToolOrder = function() {
+    try { localStorage.removeItem(ORDER_KEY); } catch (e) {}
+    applyOrder(DEFAULT_ORDER);
+    updateResetVisibility();
+  };
+})();
+
 // ─── 検索フィルタ
 (function() {
   const searchInput = document.querySelector('.search-input');
@@ -583,24 +821,30 @@
 // 各カードにホバー時のぴよを追加
 (function() {
   const piyoSVG = (uid) => `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-    <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
-    <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.4" stroke-linejoin="round"/>
-    <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.8"/>
+    <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+    <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2"/>
     <clipPath id="${uid}"><circle cx="24" cy="28" r="18"/></clipPath>
-    <rect x="0" y="20" width="48" height="16" fill="#F5EFE0" clip-path="url(#${uid})"/>
-    <path d="M15 24 Q17 22.5 19 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-    <path d="M29 24 Q31 22.5 33 24" stroke="#3D2F1F" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-    <circle cx="17" cy="28" r="1.5" fill="#3D2F1F"/>
-    <circle cx="31" cy="28" r="1.5" fill="#3D2F1F"/>
-    <path d="M20 30 L28 30 L24 36 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2" stroke-linejoin="round"/>
-    <path d="M20 35 Q24 38 28 35" stroke="#3D2F1F" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <rect x="0" y="15" width="48" height="22" fill="#F5EFE0" clip-path="url(#${uid})"/>
+    <path d="M20 19.5 Q19 19.8 18 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+    <path d="M28 19.5 Q29 19.8 30 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+    <circle class="piyo-eye" cx="15.5" cy="27" r="1.5" fill="#3D2F1F"/>
+    <circle class="piyo-eye" cx="32.5" cy="27" r="1.5" fill="#3D2F1F"/>
+    <path d="M24 27 Q18.5 29 19.5 32.5 Q24 33.5 28.5 32.5 Q29.5 29 24 27 Z" fill="#FCD34D"/>
+    <path d="M19.5 32.5 Q24 33.5 28.5 32.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
   </svg>`;
   let counter = 0;
   document.querySelectorAll('.tool-card:not(.coming-soon)').forEach(card => {
     const wrap = document.createElement('div');
-    wrap.className = 'hover-piyo';
+    wrap.className = 'hover-piyo-wrap';
     wrap.setAttribute('aria-hidden', 'true');
-    wrap.innerHTML = piyoSVG(`piyoHover${++counter}`);
+    const piyo = document.createElement('div');
+    piyo.className = 'hover-piyo';
+    piyo.innerHTML = piyoSVG(`piyoHover${++counter}`);
+    const shadow = document.createElement('div');
+    shadow.className = 'hover-piyo-shadow';
+    wrap.appendChild(piyo);
+    wrap.appendChild(shadow);
     card.appendChild(wrap);
   });
 })();
