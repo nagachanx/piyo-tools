@@ -681,6 +681,11 @@ const supa = (SUPABASE_URL && SUPABASE_ANON_KEY)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
+// ─── 共有URLの公開ベース（参加・管理URLは別ホストの piyo-schedule に発行する）
+//      ※ 既に発行済みの旧URL（piyo-tools/schedule.html?event=...）は
+//        この schedule.html 上でこれまで通り view/manage を動かす（後方互換）
+const SHARE_BASE_URL = 'https://nagachanx.github.io/piyo-schedule/';
+
 // ─── 共通ユーティリティ ───
 function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function nanoid(len) {
@@ -1052,9 +1057,8 @@ async function renderMyEvents() {
     events.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     listEl.innerHTML = events.map(ev => {
       const mKey = map[ev.id] || '';
-      const base = location.origin + location.pathname;
-      const viewUrl = `${base}?event=${ev.id}`;
-      const manageUrl = `${base}?event=${ev.id}&key=${mKey}`;
+      const viewUrl = `${SHARE_BASE_URL}?event=${ev.id}`;
+      const manageUrl = `${SHARE_BASE_URL}?event=${ev.id}&key=${mKey}`;
       const partN = partCount[ev.id] || 0;
       return `
         <div class="my-event-card" data-eid="${ev.id}">
@@ -1170,10 +1174,9 @@ function initCreateMode() {
       // localStorage に管理キー保存
       saveMyEvent(id, mKey);
 
-      // URL を表示
-      const base = location.origin + location.pathname;
-      const joinUrl = `${base}?event=${id}`;
-      const manageUrl = `${base}?event=${id}&key=${mKey}`;
+      // URL を表示（参加・管理URLは別ホストの公開ドメインで発行）
+      const joinUrl = `${SHARE_BASE_URL}?event=${id}`;
+      const manageUrl = `${SHARE_BASE_URL}?event=${id}&key=${mKey}`;
       document.getElementById('join-url').value = joinUrl;
       document.getElementById('manage-url').value = manageUrl;
       document.getElementById('open-event-btn').href = joinUrl;
