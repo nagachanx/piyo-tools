@@ -389,7 +389,7 @@
 
 <header class="topbar" role="banner">
   <div class="topbar-inner">
-    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+    <a class="brand" data-brand>
       <div class="brand-logo" aria-hidden="true">
         <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
           <path d="M24 9 C19 5 18 1 21 1 C22.5 1 23 4 24 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
@@ -739,17 +739,23 @@ function setMode(mode) {
   document.querySelectorAll('.mode-section').forEach(s => s.classList.remove('active'));
   const el = document.getElementById(mode);
   if (el) el.classList.add('active');
-  // 公開モード（参加・管理時）はヘッダー簡素化＋社外ユーザーが内部ツール一覧に遷移できないようにする
+  const brand = document.querySelector('.brand');
   if (mode === 'mode-view' || mode === 'mode-manage') {
+    // 公開モード（参加・管理時）はヘッダー簡素化＋社外ユーザーが内部ツール一覧に遷移しないように
     document.body.classList.add('public-mode');
-    // ブランドリンクから href を削除（右クリック「新しいタブで開く」も無効化）
-    const brand = document.querySelector('.brand');
+    // ブランドリンクの href/aria-label を最終的にも除去（HTMLには元々付いていない）
     if (brand) {
       brand.removeAttribute('href');
       brand.removeAttribute('aria-label');
     }
     // フッターも内部リンクなしのテキストに
     document.getElementById('footer').textContent = 'Powered by ぴよツールズ';
+  } else {
+    // 作成モードは社内利用なので、href を有効化してホーム導線を付与
+    if (brand) {
+      brand.setAttribute('href', 'index.html');
+      brand.setAttribute('aria-label', 'ぴよツールズ ホーム');
+    }
   }
 }
 
