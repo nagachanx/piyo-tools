@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>日程調整 — ぴよツールズ</title>
   <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="piyo-theme.css">
+  <script src="piyo-theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -29,9 +31,9 @@
     .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
     .topbar-inner { max-width: 1100px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
     .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
-    .brand-logo { width: 48px; height: 48px; flex-shrink: 0; }
-    .brand-logo svg { width: 100%; height: 100%; }
-    .brand-name { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
     .brand-sub { font-size: 12px; color: var(--text-3); }
     .topbar-sep { color: var(--text-4); margin-left: 4px; }
     .topbar-current { font-size: 14px; font-weight: 600; color: var(--text-2); }
@@ -110,6 +112,49 @@
       flex: 0 0 290px;
       max-width: 290px;
     }
+
+    /* マイイベント一覧（作成済みストック） */
+    .my-events-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 18px 20px;
+      margin-bottom: 18px;
+    }
+    .my-events-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
+    .my-events-title { font-size: 14px; font-weight: 700; color: var(--text-1); display: inline-flex; align-items: center; gap: 6px; }
+    .my-events-title svg { width: 16px; height: 16px; color: var(--primary); }
+    .my-events-title .count { color: var(--text-4); font-weight: 500; font-size: 12px; margin-left: 4px; }
+    .my-events-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+    .my-event-card {
+      padding: 12px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex; flex-direction: column; gap: 8px;
+      transition: all var(--transition);
+    }
+    .my-event-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(15,23,42,0.06); }
+    .my-event-title { font-size: 14px; font-weight: 600; color: var(--text-1); line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .my-event-meta { font-size: 11.5px; color: var(--text-4); display: flex; gap: 10px; flex-wrap: wrap; }
+    .my-event-meta b { color: var(--text-2); font-weight: 600; }
+    .my-event-actions { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+    .my-event-actions .btn-sm {
+      padding: 4px 10px; min-height: 28px;
+      border: 1px solid var(--border-strong); background: var(--surface);
+      border-radius: 6px;
+      font-size: 11.5px; font-weight: 500; font-family: inherit; color: var(--text-2);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex; align-items: center; gap: 4px;
+      text-decoration: none;
+    }
+    .my-event-actions .btn-sm svg { width: 12px; height: 12px; }
+    .my-event-actions .btn-sm:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .my-event-actions .btn-sm.primary { background: var(--primary); border-color: var(--primary); color: white; }
+    .my-event-actions .btn-sm.primary:hover { background: var(--primary-dk); border-color: var(--primary-dk); color: white; }
+    .my-event-actions .btn-sm.icon-only { padding: 0; width: 28px; justify-content: center; color: var(--text-3); }
+    .my-event-actions .btn-sm.icon-only:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
+    .my-event-actions .btn-sm.copied { background: #10B981 !important; border-color: #10B981 !important; color: white !important; }
+    .my-events-empty { color: var(--text-4); font-size: 12.5px; padding: 10px 0; text-align: center; }
 
     /* 時刻設定エリア */
     .time-toggle-row {
@@ -365,6 +410,7 @@
     </a>
     <span class="topbar-sep">/</span>
     <span class="topbar-current">日程調整</span>
+    <button type="button" class="theme-toggle" aria-label="テーマ切替"></button>
   </div>
 </header>
 
@@ -389,6 +435,17 @@
     <div class="page-header" style="padding-left:0;padding-right:0;max-width:none">
       <h1>日程調整を作成</h1>
       <p>候補日を入力して URL を発行 → 参加者は社外でもURLからそのまま回答できます</p>
+    </div>
+
+    <!-- あなたが作成した調整（このブラウザ内のみ） -->
+    <div class="my-events-panel" id="my-events-panel" style="display:none">
+      <div class="my-events-head">
+        <div class="my-events-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+          あなたが作成した調整 <span class="count" id="my-events-count"></span>
+        </div>
+      </div>
+      <div class="my-events-list" id="my-events-list"></div>
     </div>
 
     <div class="panel">
@@ -943,10 +1000,108 @@ function initCalendarPicker() {
 }
 
 // ╔════════════════════════════════════════════════════════════════════╗
+// ║ あなたが作成した調整（ローカルストレージのリストから一覧表示）         ║
+// ╚════════════════════════════════════════════════════════════════════╝
+async function renderMyEvents() {
+  const panel = document.getElementById('my-events-panel');
+  const listEl = document.getElementById('my-events-list');
+  const countEl = document.getElementById('my-events-count');
+  if (!panel || !supa) return;
+  const map = getMyEvents();
+  const ids = Object.keys(map);
+  if (ids.length === 0) { panel.style.display = 'none'; return; }
+
+  // Supabaseからイベント情報を取得（参加者数も）
+  try {
+    const [evRes, partRes] = await Promise.all([
+      supa.from('events').select('id, title, created_at, expires_at, manage_key').in('id', ids),
+      supa.from('participants').select('id, event_id').in('event_id', ids)
+    ]);
+    const events = evRes.data || [];
+    const participants = partRes.data || [];
+    // 参加者数を集計
+    const partCount = {};
+    participants.forEach(p => { partCount[p.event_id] = (partCount[p.event_id] || 0) + 1; });
+    // DBから消えたIDはlocalStorageから掃除
+    const aliveIds = new Set(events.map(e => e.id));
+    let cleaned = false;
+    ids.forEach(id => {
+      if (!aliveIds.has(id)) { delete map[id]; cleaned = true; }
+    });
+    if (cleaned) localStorage.setItem(LS_MY_EVENTS, JSON.stringify(map));
+
+    if (events.length === 0) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+    countEl.textContent = `(${events.length})`;
+    // 新しい順
+    events.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    listEl.innerHTML = events.map(ev => {
+      const mKey = map[ev.id] || '';
+      const base = location.origin + location.pathname;
+      const viewUrl = `${base}?event=${ev.id}`;
+      const manageUrl = `${base}?event=${ev.id}&key=${mKey}`;
+      const partN = partCount[ev.id] || 0;
+      return `
+        <div class="my-event-card" data-eid="${ev.id}">
+          <div class="my-event-title" title="${esc(ev.title)}">${esc(ev.title)}</div>
+          <div class="my-event-meta">
+            <span>作成: <b>${fmtDate(ev.created_at)}</b></span>
+            <span>回答: <b>${partN}名</b></span>
+          </div>
+          <div class="my-event-actions">
+            <a class="btn-sm primary" href="${manageUrl}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              管理画面
+            </a>
+            <a class="btn-sm" href="${viewUrl}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              参加URL
+            </a>
+            <button type="button" class="btn-sm" data-action="copy-view" data-url="${viewUrl}" title="参加URLをコピー">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              コピー
+            </button>
+            <button type="button" class="btn-sm icon-only" data-action="remove" data-eid="${ev.id}" title="一覧から削除（DBの調整は消えません）">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // イベント結線
+    listEl.querySelectorAll('[data-action="copy-view"]').forEach(btn => {
+      btn.onclick = () => {
+        navigator.clipboard.writeText(btn.dataset.url).then(() => {
+          btn.classList.add('copied');
+          const orig = btn.innerHTML;
+          btn.innerHTML = '✓ コピー済';
+          setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 1500);
+        });
+      };
+    });
+    listEl.querySelectorAll('[data-action="remove"]').forEach(btn => {
+      btn.onclick = () => {
+        if (!confirm('一覧から削除します。日程調整自体（参加URL）は引き続き有効なまま残ります。\n（管理URLが必要になったらブックマーク等をご利用ください）')) return;
+        const eid = btn.dataset.eid;
+        const m = getMyEvents();
+        delete m[eid];
+        localStorage.setItem(LS_MY_EVENTS, JSON.stringify(m));
+        renderMyEvents();
+      };
+    });
+  } catch (err) {
+    console.error('[my-events]', err);
+    panel.style.display = 'none';
+  }
+}
+
+// ╔════════════════════════════════════════════════════════════════════╗
 // ║ ① 作成モード                                                       ║
 // ╚════════════════════════════════════════════════════════════════════╝
 function initCreateMode() {
   initCalendarPicker();
+  renderMyEvents();
   const form = document.getElementById('create-form');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1010,6 +1165,9 @@ function initCreateMode() {
       document.getElementById('open-manage-btn').href = manageUrl;
       document.getElementById('created-panel').style.display = '';
       document.getElementById('created-panel').scrollIntoView({ behavior:'smooth' });
+
+      // 「あなたが作成した調整」一覧を更新
+      renderMyEvents();
     } catch (err) {
       alert('作成に失敗しました: ' + (err.message || err));
       console.error(err);

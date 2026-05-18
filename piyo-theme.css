@@ -1,0 +1,112 @@
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ ぴよツールズ ダークモード共通スタイル                       ║
+   ║ <html data-theme="dark"> のとき有効になる CSS変数オーバーライド ║
+   ╚════════════════════════════════════════════════════════════╝ */
+
+html[data-theme="dark"] {
+  --bg:            #18181B;
+  --surface:       #27272A;
+  --border:        #3F3F46;
+  --border-strong: #52525B;
+  --text-1:        #FAFAF9;
+  --text-2:        #E7E5E4;
+  --text-3:        #A1A1AA;
+  --text-4:        #71717A;
+  --icon-bg:       #3F3F46;
+  --primary:       #4ADE80;
+  --primary-dk:    #22C55E;
+  --primary-lt:    rgba(74, 222, 128, 0.28);
+  --primary-bg:    rgba(74, 222, 128, 0.12);
+  --shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-md:     0 4px 12px rgba(0, 0, 0, 0.36), 0 1px 3px rgba(0, 0, 0, 0.30);
+  --ring:          0 0 0 3px rgba(74, 222, 128, 0.30);
+}
+
+/* ダーク時のbodyベース */
+html[data-theme="dark"] body { background: var(--bg); color: var(--text-1); }
+
+/* スクロールバーも少し馴染ませる */
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* テーマ切替ボタン共通スタイル */
+.theme-toggle {
+  width: 36px; height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease-out;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 0;
+  flex-shrink: 0;
+  margin-left: auto;  /* topbar-spacer がなくても右端に押し出す */
+}
+/* 既に icon-btn 等で右側コンテンツがあるレイアウトでは隣接配置に */
+.topbar-spacer ~ .theme-toggle,
+.icon-btn + .theme-toggle,
+.theme-toggle + .icon-btn { margin-left: 0; }
+.theme-toggle:hover {
+  color: var(--text-1);
+  border-color: var(--border-strong);
+}
+.theme-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-color: var(--primary);
+}
+.theme-toggle svg { width: 16px; height: 16px; }
+.theme-toggle .icon-sun  { display: none; }
+.theme-toggle .icon-moon { display: block; }
+html[data-theme="dark"] .theme-toggle .icon-sun  { display: block; }
+html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+/* 個別ツールの細かい色補正 */
+html[data-theme="dark"] .topbar { background: var(--surface); border-bottom-color: var(--border); }
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] .tool-card,
+html[data-theme="dark"] .quick-card { background: var(--surface); border-color: var(--border); }
+html[data-theme="dark"] .field input[type="text"],
+html[data-theme="dark"] .field input[type="email"],
+html[data-theme="dark"] .field input[type="number"],
+html[data-theme="dark"] .field input[type="search"],
+html[data-theme="dark"] .field textarea,
+html[data-theme="dark"] .search-input,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] input[type="text"],
+html[data-theme="dark"] input[type="number"],
+html[data-theme="dark"] input[type="search"],
+html[data-theme="dark"] input[type="email"] {
+  /* shorthand "background" は背景画像（虫眼鏡アイコン）を消してしまうので longhand を使う */
+  background-color: var(--bg);
+  color: var(--text-1);
+  border-color: var(--border-strong);
+}
+
+/* 検索フィールド: 虫眼鏡アイコンを明るい色に差し替え（暗背景でも視認可能に） */
+html[data-theme="dark"] .search-input {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23A1A1AA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>');
+}
+html[data-theme="dark"] .search-input::placeholder,
+html[data-theme="dark"] textarea::placeholder,
+html[data-theme="dark"] input::placeholder { color: var(--text-4); }
+
+/* セクションヘッダの薄背景 */
+html[data-theme="dark"] table.matrix thead th,
+html[data-theme="dark"] table.matrix .row-total,
+html[data-theme="dark"] table.matrix .row-total td.col-name,
+html[data-theme="dark"] table.matrix th.col-name,
+html[data-theme="dark"] table.matrix td.col-name { background: #2F2F33; }
+
+/* アラート系の文字色を読みやすく */
+html[data-theme="dark"] .alert-info,
+html[data-theme="dark"] .currency-meta { color: #BBF7D0; }
+html[data-theme="dark"] .alert-warn { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.40); color: #FCD34D; }
+
+/* くじ引きの紙吹雪オーバーレイ内の色は維持（タイムズスクエア演出のためそのまま） */

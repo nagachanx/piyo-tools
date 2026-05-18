@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>プロンプトビルダー — ぴよツールズ</title>
+  <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="piyo-theme.css">
+  <script src="piyo-theme.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F5F5F4; --surface:#FFFFFF; --border:#E7E5E4; --border-strong:#D6D3D1;
+      --text-1:#1C1917; --text-2:#44403C; --text-3:#78716C; --text-4:#A8A29E;
+      --icon-bg:#F3F4F6;
+      --primary:#43A86A; --primary-dk:#2D8D57; --primary-lt:#C5E5D1; --primary-bg:#EEF7F1;
+      --danger:#EF4444; --danger-bg:#FEF2F2;
+      --code-bg:#1c1917; --code-text:#e7e5e4;
+      --radius-card:14px; --radius:8px;
+      --ring:0 0 0 3px rgba(61,167,107,0.20);
+      --transition:150ms ease-out;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter','Noto Sans JP',-apple-system,sans-serif; background: var(--bg); min-height: 100vh; color: var(--text-1); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1300px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); }
+    .topbar-sep { color: var(--text-4); margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+
+    .page-header { max-width: 1300px; margin: 0 auto; padding: 28px 24px 4px; }
+    .page-header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-3); }
+
+    main { max-width: 1300px; margin: 0 auto; padding: 16px 24px 80px; }
+
+    /* テンプレ選択 */
+    .templates {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 12px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      margin-bottom: 14px;
+    }
+    .tmpl-label { font-size: 12px; font-weight: 700; color: var(--text-3); margin-right: 8px; align-self: center; }
+    .tmpl-chip {
+      padding: 7px 13px; min-height: 32px;
+      border: 1px solid var(--border-strong); background: var(--surface);
+      border-radius: 999px;
+      font-size: 12.5px; font-weight: 500; color: var(--text-2);
+      cursor: pointer; font-family: inherit;
+      transition: all var(--transition);
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .tmpl-chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .tmpl-chip.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+    /* 2カラム */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 18px 20px; }
+    .panel h2 { font-size: 14px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .panel-sub { font-size: 12px; color: var(--text-3); margin-bottom: 12px; line-height: 1.6; }
+
+    /* セクション */
+    .field-block { padding: 14px 0; border-bottom: 1px dashed var(--border); }
+    .field-block:first-child { padding-top: 4px; }
+    .field-block:last-child { border-bottom: none; padding-bottom: 0; }
+    .field-block-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .field-block-title { font-size: 13px; font-weight: 700; color: var(--text-1); display: inline-flex; align-items: center; gap: 6px; }
+    .field-block-title .emoji { font-size: 15px; }
+    .field-block-optional { font-size: 11px; color: var(--text-4); }
+    .field-block-hint { font-size: 11.5px; color: var(--text-4); margin-bottom: 8px; line-height: 1.6; }
+
+    /* チップ（プリセット） */
+    .chip-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+    .preset-chip {
+      padding: 4px 10px; min-height: 26px;
+      border: 1px solid var(--border-strong); background: var(--surface);
+      border-radius: 999px;
+      font-size: 11.5px; font-family: inherit; color: var(--text-2);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .preset-chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+
+    /* テキストエリア */
+    textarea.block-input, input.block-input {
+      width: 100%; box-sizing: border-box;
+      padding: 9px 11px;
+      border: 1px solid var(--border-strong); border-radius: var(--radius);
+      font-size: 13px; line-height: 1.6;
+      font-family: inherit;
+      color: var(--text-1); background: var(--surface);
+      transition: all var(--transition);
+      resize: vertical;
+    }
+    textarea.block-input { min-height: 60px; }
+    textarea.block-input:focus-visible, input.block-input:focus-visible {
+      outline: none; border-color: var(--primary); box-shadow: var(--ring);
+    }
+
+    /* 例（Few-shot）の入出力ペア */
+    .example-pair {
+      padding: 10px 12px;
+      background: var(--icon-bg);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+    }
+    .example-pair-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .example-pair-label { font-size: 11px; font-weight: 600; color: var(--text-3); }
+    .example-pair textarea { width: 100%; box-sizing: border-box; padding: 7px 9px; font-size: 12.5px; min-height: 40px; border: 1px solid var(--border); border-radius: 6px; font-family: 'SF Mono','Menlo',monospace; resize: vertical; }
+    .example-pair textarea:focus-visible { outline: none; border-color: var(--primary); box-shadow: var(--ring); }
+    .example-pair .small-label { font-size: 11px; color: var(--text-3); margin-bottom: 3px; display: block; }
+    .add-row-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 12px; min-height: 28px;
+      border: 1px dashed var(--border-strong); background: var(--surface);
+      border-radius: 6px;
+      font-size: 11.5px; font-family: inherit; color: var(--text-3);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .add-row-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); border-style: solid; }
+
+    .icon-remove, .icon-edit, .icon-copy {
+      width: 22px; height: 22px;
+      border: 1px solid var(--border); background: var(--surface);
+      border-radius: 5px;
+      color: var(--text-3); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition);
+      flex-shrink: 0;
+    }
+    .icon-remove:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+    .icon-remove svg, .icon-edit svg, .icon-copy svg { width: 12px; height: 12px; }
+    .icon-edit:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    /* ワンクリックコピー（主アクションっぽく目立たせる） */
+    .icon-copy {
+      background: var(--primary-bg); border-color: var(--primary-lt); color: var(--primary-dk);
+      width: 26px; height: 26px;
+    }
+    .icon-copy:hover { background: var(--primary); border-color: var(--primary); color: white; }
+    .icon-copy svg { width: 13px; height: 13px; }
+    .icon-copy.copied { background: #10B981 !important; border-color: #10B981 !important; color: white !important; }
+    .saved-item-name-edit {
+      width: 100%; padding: 4px 8px;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      border: 1px solid var(--primary); border-radius: 4px;
+      background: var(--surface); color: var(--text-1);
+    }
+    .saved-item-name-edit:focus-visible { outline: none; box-shadow: var(--ring); }
+
+    /* プレビュー */
+    .preview-card { position: sticky; top: 88px; }
+    .preview-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+    .preview-title { font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; }
+    .preview-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .preview {
+      background: var(--code-bg); color: var(--code-text);
+      padding: 16px 18px; border-radius: var(--radius-card);
+      font-family: 'SF Mono','Menlo','Courier New',monospace;
+      font-size: 12.5px; line-height: 1.65;
+      overflow: auto;
+      max-height: 60vh; min-height: 280px;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .preview-meta { display: flex; gap: 14px; margin-top: 8px; font-size: 11.5px; color: var(--text-4); }
+    .preview-meta b { color: var(--text-2); font-weight: 600; }
+
+    /* ボタン */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 7px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all var(--transition); border: 1px solid transparent; }
+    .btn svg { width: 13px; height: 13px; }
+    .btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dk); }
+    .btn-secondary { background: var(--surface); border-color: var(--border-strong); color: var(--text-2); }
+    .btn-secondary:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .btn.copied { background: #10B981 !important; border-color: #10B981 !important; color: white !important; }
+
+    /* 変数 */
+    .vars-panel {
+      background: var(--primary-bg); border: 1px solid var(--primary-lt);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    .vars-title { font-size: 11.5px; font-weight: 700; color: var(--primary-dk); margin-bottom: 6px; }
+    .var-row { display: flex; gap: 6px; margin-bottom: 5px; align-items: center; }
+    .var-row code { font-family: 'SF Mono','Menlo',monospace; padding: 2px 6px; background: white; border-radius: 4px; font-size: 11px; flex-shrink: 0; min-width: 80px; }
+    .var-row input {
+      flex: 1; padding: 4px 8px;
+      border: 1px solid var(--primary-lt); background: white;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+    .var-row input:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(61,167,107,0.2); }
+
+    /* ライブラリ */
+    .library {
+      margin-top: 22px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 18px 20px;
+    }
+    /* 上部のブラウズ用ライブラリ（テンプレの前） */
+    .library.browse-panel { margin-top: 0; margin-bottom: 14px; }
+    /* 保存パネル（テンプレ直下、コンパクト表示） */
+    .library.save-panel { margin-top: 12px; padding: 10px 16px; }
+    .library.save-panel .library-head { margin-bottom: 0; }
+    .library.save-panel .library-title { font-size: 13px; }
+    .library-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+    .library-title { font-size: 14px; font-weight: 700; color: var(--text-1); display: inline-flex; align-items: center; gap: 6px; }
+    .library-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .library-save { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .library-save input, .library-save select { padding: 6px 10px; font-size: 12.5px; border: 1px solid var(--border-strong); border-radius: 6px; font-family: inherit; background: var(--surface); color: var(--text-1); }
+    .library-save input { min-width: 180px; }
+    .library-save select { min-width: 110px; }
+
+    /* フォルダ */
+    .folder-group { margin-bottom: 14px; }
+    .folder-group:last-child { margin-bottom: 0; }
+    .folder-header {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 10px;
+      background: var(--icon-bg);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+    .folder-toggle {
+      width: 18px; height: 18px;
+      color: var(--text-3);
+      transition: transform var(--transition);
+      flex-shrink: 0;
+    }
+    .folder-group.collapsed .folder-toggle { transform: rotate(-90deg); }
+    .folder-icon { width: 14px; height: 14px; color: var(--text-3); flex-shrink: 0; }
+    .folder-name {
+      font-size: 13px; font-weight: 700; color: var(--text-1);
+      flex: 1; min-width: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .folder-name-edit {
+      flex: 1; padding: 3px 8px;
+      font-size: 13px; font-weight: 700; font-family: inherit;
+      border: 1px solid var(--primary); border-radius: 4px;
+      background: var(--surface); color: var(--text-1);
+    }
+    .folder-name-edit:focus-visible { outline: none; box-shadow: var(--ring); }
+    .folder-count { font-size: 11px; color: var(--text-4); padding-right: 4px; }
+    .folder-actions { display: flex; gap: 4px; }
+
+    .folder-body {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px;
+      padding: 6px 0 6px 8px;
+    }
+    .folder-group.collapsed .folder-body { display: none; }
+    .folder-empty { color: var(--text-4); font-size: 11.5px; padding: 8px 0; font-style: italic; grid-column: 1 / -1; }
+
+    .saved-item {
+      padding: 10px 12px;
+      border: 1px solid var(--border); background: var(--surface);
+      border-radius: 8px;
+      display: flex; align-items: center; gap: 6px;
+      transition: all var(--transition);
+    }
+    .saved-item:hover { border-color: var(--primary); background: var(--primary-bg); }
+    .saved-item-info { flex: 1; min-width: 0; cursor: pointer; }
+    .saved-item-name { font-size: 13px; font-weight: 600; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .saved-item-meta { font-size: 11px; color: var(--text-4); }
+    .saved-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .saved-item .move-select {
+      padding: 3px 6px; font-size: 10.5px;
+      border: 1px solid var(--border); border-radius: 5px;
+      background: var(--surface); color: var(--text-2);
+      font-family: inherit;
+      max-width: 100px;
+    }
+    .empty { color: var(--text-4); font-size: 12.5px; padding: 14px 0; text-align: center; }
+
+    footer { max-width: 1300px; margin: 0 auto; padding: 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; }
+      .page-header { padding: 18px 16px 4px; }
+      main { padding: 12px 16px 60px; }
+      .panel { padding: 16px; }
+      .preview-card { position: static; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="15" width="48" height="22" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M20 19.5 Q19 19.8 18 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <path d="M28 19.5 Q29 19.8 30 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <circle cx="15.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <circle cx="32.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <path d="M24 27 Q18.5 29 19.5 32.5 Q24 33.5 28.5 32.5 Q29.5 29 24 27 Z" fill="#FCD34D"/>
+          <path d="M19.5 32.5 Q24 33.5 28.5 32.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-current">プロンプトビルダー</span>
+    <button type="button" class="theme-toggle" aria-label="テーマ切替"></button>
+  </div>
+</header>
+
+<div class="page-header">
+  <h1>プロンプトビルダー</h1>
+  <p>生成AI（Claude / ChatGPT / Gemini ほか）への指示を、テンプレ＆セクション式で組み立て</p>
+</div>
+
+<main>
+
+  <!-- 保存済みプロンプト（最上部 = 起点） -->
+  <div class="library browse-panel">
+    <div class="library-head">
+      <span class="library-title">💾 保存済みプロンプト</span>
+      <div class="library-actions">
+        <button type="button" class="btn btn-secondary" id="new-folder-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+          フォルダ作成
+        </button>
+      </div>
+    </div>
+    <div id="library-list"></div>
+  </div>
+
+  <!-- テンプレート選択 -->
+  <div class="templates">
+    <span class="tmpl-label">テンプレ:</span>
+    <div id="tmpl-chips" style="display:contents"></div>
+  </div>
+
+  <!-- 作ったプロンプトを保存（テンプレ直下） -->
+  <div class="library save-panel">
+    <div class="library-head">
+      <span class="library-title">💾 作ったプロンプトを保存</span>
+      <div class="library-actions">
+        <div class="library-save">
+          <input type="text" id="save-name" placeholder="保存名（例：毎週議事録）" maxlength="40">
+          <select id="save-folder" title="保存先フォルダ"></select>
+          <button type="button" class="btn btn-primary" id="save-btn">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <!-- 左: フォーム -->
+    <div class="panel">
+      <!-- 役割 -->
+      <div class="field-block">
+        <div class="field-block-head">
+          <span class="field-block-title"><span class="emoji">🎭</span>役割（Role / Persona）</span>
+          <span class="field-block-optional">推奨</span>
+        </div>
+        <div class="field-block-hint">AIに「どんな立場・専門性で答えてほしいか」を伝えると精度が大きく上がります。</div>
+        <div class="chip-row" id="role-presets"></div>
+        <textarea class="block-input" id="in-role" rows="2" placeholder="例: あなたはビジネス文書のプロフェッショナルです。"></textarea>
+      </div>
+
+      <!-- タスク -->
+      <div class="field-block">
+        <div class="field-block-head">
+          <span class="field-block-title"><span class="emoji">🎯</span>タスク（やってほしいこと）</span>
+          <span class="field-block-optional">必須</span>
+        </div>
+        <div class="field-block-hint">動詞で始めて、何をしてほしいか1〜2文で。</div>
+        <textarea class="block-input" id="in-task" rows="2" placeholder="例: 以下の会議メモから議事録を作成してください。"></textarea>
+      </div>
+
+      <!-- 背景・前提 -->
+      <div class="field-block">
+        <div class="field-block-head">
+          <span class="field-block-title"><span class="emoji">🗂️</span>背景・前提（Context）</span>
+          <span class="field-block-optional">任意</span>
+        </div>
+        <div class="field-block-hint">対象読者、関連情報、AIに前提として知っておいてほしいこと。</div>
+        <textarea class="block-input" id="in-context" rows="3" placeholder="例: 対象読者は社内のチームメンバーと管理職。週次定例の議事録。"></textarea>
+      </div>
+
+      <!-- 制約 -->
+      <div class="field-block">
+        <div class="field-block-head">
+          <span class="field-block-title"><span class="emoji">🚧</span>制約（Constraints）</span>
+          <span class="field-block-optional">任意</span>
+        </div>
+        <div class="field-block-hint">守ってほしいルール・避けてほしいこと。箇条書き推奨。</div>
+        <textarea class="block-input" id="in-constraints" rows="3" placeholder="例:&#10;- 主観的な意見は含めない&#10;- 1ページ以内に収める&#10;- 敬語で書く"></textarea>
+      </div>
+
+      <!-- 出力形式 -->
+      <div class="field-block">
+        <div class="field-block-head">
+          <span class="field-block-title"><span class="emoji">📐</span>出力形式（Format）</span>
+          <span class="field-block-optional">推奨</span>
+        </div>
+        <div class="field-block-hint">欲しい形を指定するとそのまま使える出力になります。</div>
+        <div class="chip-row" id="format-presets"></div>
+        <textarea class="block-input" id="in-format" rows="3" placeholder="例:&#10;## 概要&#10;## 決定事項&#10;## アクションアイテム"></textarea>
+      </div>
+
+      <!-- 例 -->
+      <div class="field-block">
+        <div class="field-block-head">
+          <span class="field-block-title"><span class="emoji">💡</span>例（Few-shot Examples）</span>
+          <span class="field-block-optional">任意</span>
+        </div>
+        <div class="field-block-hint">入力例＋望ましい出力例を見せると、AIが形式を真似しやすくなります。</div>
+        <div id="examples-list"></div>
+        <button type="button" class="add-row-btn" id="add-example">+ 例を追加</button>
+      </div>
+
+      <!-- 入力データ -->
+      <div class="field-block">
+        <div class="field-block-head">
+          <span class="field-block-title"><span class="emoji">📥</span>入力データ（任意）</span>
+        </div>
+        <div class="field-block-hint">毎回内容を変える素材は <code>{topic}</code> のような変数で置いておくと再利用可能に。</div>
+        <textarea class="block-input" id="in-input" rows="3" placeholder="例: {topic} について説明してください。&#10;または、実際の素材を貼り付け"></textarea>
+      </div>
+    </div>
+
+    <!-- 右: プレビュー -->
+    <div>
+      <div class="preview-card">
+        <!-- 変数置換 -->
+        <div class="vars-panel" id="vars-panel" style="display:none">
+          <div class="vars-title">🔧 検出された変数（値を入れるとプレビューに反映）</div>
+          <div id="vars-list"></div>
+        </div>
+
+        <div class="preview-head">
+          <span class="preview-title">組み上がったプロンプト</span>
+          <div class="preview-actions">
+            <button type="button" class="btn btn-secondary" id="copy-prompt">📋 コピー</button>
+            <button type="button" class="btn btn-secondary" id="dl-prompt">⬇ ダウンロード</button>
+          </div>
+        </div>
+        <pre class="preview" id="preview-out"></pre>
+        <div class="preview-meta">
+          <span><b id="m-chars">0</b> 文字</span>
+          <span><b id="m-lines">0</b> 行</span>
+          <span><b id="m-tokens">0</b> tokens 目安</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║ プリセット（チップ）                                              ║
+// ╚══════════════════════════════════════════════════════════════════╝
+const ROLE_PRESETS = [
+  'あなたはビジネス文書のプロフェッショナルです。',
+  'あなたは校正・編集のベテランです。',
+  'あなたは要約のエキスパートです。',
+  'あなたは英日翻訳の専門家です。',
+  'あなたはマーケティングのコピーライターです。',
+  'あなたはプロダクトマネージャーです。',
+  'あなたはコードレビュアーです（Reactとtypescript専門）。',
+  'あなたは経営コンサルタントです。',
+  'あなたは小学校の先生で、難しい話を子供にもわかりやすく説明できます。'
+];
+const FORMAT_PRESETS = [
+  '## 見出し付きのMarkdownで',
+  '- 箇条書きで',
+  '表形式（Markdown table）で',
+  'JSON形式で',
+  '敬語・ですます調で',
+  'カジュアルな話し言葉で',
+  '300文字以内で',
+  '段落 + 例 + まとめの3部構成で'
+];
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║ テンプレート                                                       ║
+// ╚══════════════════════════════════════════════════════════════════╝
+const TEMPLATES = [
+  {
+    id: 'minutes', name: '議事録作成', emoji: '📝',
+    role: 'あなたは記録係のプロフェッショナルです。',
+    task: '以下の会議メモから、関係者が後から読んで素早く理解できる議事録を作成してください。',
+    context: '対象読者: 社内のチームメンバーと管理職',
+    constraints: '- 主観的な意見は含めず、事実のみ記載\n- 決定事項とアクションアイテムを明確に分ける\n- 敬体（です・ます）で書く',
+    format: '## 概要\n## 議論内容\n## 決定事項\n## アクションアイテム（誰が・何を・いつまでに）\n## 次回の論点',
+    input: '{会議メモを貼り付け}',
+    examples: []
+  },
+  {
+    id: 'email', name: 'メール下書き', emoji: '📧',
+    role: 'あなたはビジネスメール文章作成のプロです。',
+    task: '以下の条件をもとに、社外向けのビジネスメールを作成してください。',
+    context: '宛先: {取引先名}\n目的: {打ち合わせ依頼／お礼／案内 etc.}',
+    constraints: '- 敬語、丁寧かつ簡潔に\n- 結論を最初に\n- 自分の名前は最後に',
+    format: '件名: 〜〜\n（本文）\n署名',
+    input: '盛り込みたい内容:\n- {ポイント1}\n- {ポイント2}',
+    examples: []
+  },
+  {
+    id: 'summary', name: '要約', emoji: '🪶',
+    role: 'あなたは長文を読み解く専門家です。',
+    task: '以下のテキストを要約してください。',
+    context: '対象読者: 短時間で内容を把握したい人',
+    constraints: '- 元のニュアンスを保つ\n- 主観や追加情報を入れない',
+    format: '## 一行要約（30字以内）\n## 3行要約（各60字程度）\n## キーポイント（箇条書き5項目以内）',
+    input: '{要約したいテキストを貼り付け}',
+    examples: []
+  },
+  {
+    id: 'translate', name: '翻訳', emoji: '🌐',
+    role: 'あなたは英日翻訳の専門家です。',
+    task: '以下の文章を、ニュアンスを保ったまま自然な日本語に翻訳してください。',
+    context: '用途: {ビジネスメール／教材／ブログ記事 etc.}',
+    constraints: '- 直訳ではなく自然な日本語に\n- 専門用語はカタカナと英語併記\n- 元の語調を尊重',
+    format: '## 翻訳\n（翻訳文）\n\n## 補足（直訳との違いや判断の根拠）\n（あれば）',
+    input: '{原文を貼り付け}',
+    examples: []
+  },
+  {
+    id: 'review', name: 'コードレビュー', emoji: '🔍',
+    role: 'あなたはシニアエンジニアで、コードレビューが得意です。',
+    task: '以下のコードをレビューしてください。',
+    context: '言語/フレームワーク: {TypeScript / React}\n用途: {本番運用される機能}',
+    constraints: '- 設計、可読性、セキュリティ、パフォーマンスの観点で\n- 「良い点」と「改善点」を分けて\n- 重箱の隅は避け、重要度の高いものに絞る',
+    format: '## 総評（一言）\n## 良い点\n## 改善すべき点（重要度: 高 / 中 / 低）\n## 提案コード（差分形式）',
+    input: '```\n{コードを貼り付け}\n```',
+    examples: []
+  },
+  {
+    id: 'explain', name: '子供向け説明', emoji: '🧒',
+    role: 'あなたは小学校の先生です。',
+    task: '以下の概念を、小学5年生にもわかるように説明してください。',
+    context: '対象: 小学5年生程度。専門用語は知らない前提。',
+    constraints: '- 難しい言葉は使わない\n- 身近な例えを最低1つ入れる\n- 文章は短く、テンポよく',
+    format: '## それってなに？\n## どうしてあるの？\n## 身近な例\n## 一言まとめ',
+    input: '{説明してほしい概念や言葉}',
+    examples: []
+  },
+  {
+    id: 'proofread', name: '校正・添削', emoji: '✍️',
+    role: 'あなたは熟練の校正者・編集者です。',
+    task: '以下の文章を校正・添削してください。',
+    context: '用途: {ビジネス文書／ブログ／メール}',
+    constraints: '- 誤字脱字、文法ミス、ぎこちない表現を修正\n- 改善理由も簡潔に示す\n- 大幅な書き換えではなく、最小限の修正で',
+    format: '## 修正後の文章\n（全文を修正済みで）\n\n## 修正箇所一覧\n| 元の表現 | 修正後 | 理由 |\n|---|---|---|',
+    input: '{校正したい文章を貼り付け}',
+    examples: []
+  },
+  {
+    id: 'brainstorm', name: 'ブレスト相手', emoji: '💭',
+    role: 'あなたは経験豊富なブレストパートナーです。否定せず広げ、最後に整理してくれます。',
+    task: '以下のテーマで、私と一緒にアイデアを広げてください。',
+    context: '段階: 初期発散フェーズ。実現性より量を重視。',
+    constraints: '- 最低10案、できれば15案出す\n- 似たカテゴリにまとめる\n- 突拍子もないものも歓迎',
+    format: '## 王道のアイデア（3〜5）\n## 変化球のアイデア（3〜5）\n## 突拍子もないアイデア（3〜5）\n## 整理（カテゴリでグルーピング）\n## 個人的に推し（理由付き）',
+    input: 'テーマ: {ブレストしたいテーマ}',
+    examples: []
+  },
+  {
+    id: 'sales', name: '営業メール', emoji: '🤝',
+    role: 'あなたはBtoBセールスのトッププレーヤーです。',
+    task: '以下の情報をもとに、初回アプローチの営業メールを作成してください。',
+    context: '宛先: {会社名・部署・担当者}\n商材: {自社の商材}',
+    constraints: '- 件名は20文字以内、開封されやすく\n- 本文200文字以内、相手の課題から入る\n- 押し付けがましくならない',
+    format: '件名: 〜〜\n本文:\n（本文）\n署名',
+    input: '相手の状況・課題（仮説）: {課題仮説}',
+    examples: []
+  },
+  {
+    id: 'question', name: '質問を整理', emoji: '❓',
+    role: 'あなたは要件整理が得意なファシリテーターです。',
+    task: '私のあいまいな質問を、回答しやすい形に整理し直してください。',
+    context: '目的: 質問の意図を明確にし、必要に応じて分解する',
+    constraints: '- 元の質問の意図を変えない\n- 不明確な部分は前提を補う\n- 必要なら複数の質問に分解',
+    format: '## 元の質問\n## 整理された質問\n## 補足の質問（必要なら）\n## なぜそう整理したか',
+    input: '元の質問: {質問内容}',
+    examples: []
+  }
+];
+
+const STORE_KEY = 'piyo-prompts-saved-v1';
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║ DOM参照                                                            ║
+// ╚══════════════════════════════════════════════════════════════════╝
+const $ = (id) => document.getElementById(id);
+const inputs = {
+  role: $('in-role'),
+  task: $('in-task'),
+  context: $('in-context'),
+  constraints: $('in-constraints'),
+  format: $('in-format'),
+  input: $('in-input')
+};
+const examplesList = $('examples-list');
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║ プリセットチップ生成                                                ║
+// ╚══════════════════════════════════════════════════════════════════╝
+function buildChips(boxId, presets, targetEl) {
+  const box = $(boxId);
+  box.innerHTML = presets.map(p => `<button type="button" class="preset-chip">${p.replace(/</g,'&lt;')}</button>`).join('');
+  box.querySelectorAll('.preset-chip').forEach((btn, i) => {
+    btn.onclick = () => {
+      const cur = targetEl.value.trim();
+      targetEl.value = cur ? cur + (cur.endsWith('\n') ? '' : '\n') + presets[i] : presets[i];
+      render();
+    };
+  });
+}
+buildChips('role-presets', ROLE_PRESETS, inputs.role);
+buildChips('format-presets', FORMAT_PRESETS, inputs.format);
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║ テンプレートチップ                                                 ║
+// ╚══════════════════════════════════════════════════════════════════╝
+const tmplBox = $('tmpl-chips');
+tmplBox.innerHTML = TEMPLATES.map(t =>
+  `<button type="button" class="tmpl-chip" data-id="${t.id}"><span>${t.emoji}</span>${t.name}</button>`
+).join('');
+tmplBox.querySelectorAll('.tmpl-chip').forEach(btn => {
+  btn.onclick = () => {
+    const t = TEMPLATES.find(x => x.id === btn.dataset.id);
+    if (!t) return;
+    if (anyFieldFilled() && !confirm('現在の入力内容を置き換えてテンプレートを読み込みますか？')) return;
+    document.querySelectorAll('.tmpl-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    loadTemplate(t);
+  };
+});
+
+function anyFieldFilled() {
+  return Object.values(inputs).some(el => el.value.trim()) || examplesList.querySelectorAll('.example-pair').length > 0;
+}
+
+function loadTemplate(t) {
+  inputs.role.value = t.role || '';
+  inputs.task.value = t.task || '';
+  inputs.context.value = t.context || '';
+  inputs.constraints.value = t.constraints || '';
+  inputs.format.value = t.format || '';
+  inputs.input.value = t.input || '';
+  // 例を入れ直し
+  examplesList.innerHTML = '';
+  (t.examples || []).forEach(e => addExample(e.in, e.out));
+  render();
+}
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║ 例（Few-shot）の入出力ペア                                         ║
+// ╚══════════════════════════════════════════════════════════════════╝
+function addExample(inText = '', outText = '') {
+  const div = document.createElement('div');
+  div.className = 'example-pair';
+  div.innerHTML = `
+    <div class="example-pair-head">
+      <span class="example-pair-label">例 #${examplesList.children.length + 1}</span>
+      <button type="button" class="icon-remove" aria-label="削除">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <label class="small-label">入力</label>
+    <textarea class="ex-in" rows="2" placeholder="入力例">${inText}</textarea>
+    <label class="small-label" style="margin-top:6px">→ 望ましい出力</label>
+    <textarea class="ex-out" rows="2" placeholder="このように出力してほしい">${outText}</textarea>
+  `;
+  div.querySelector('.icon-remove').onclick = () => {
+    div.remove();
+    renumberExamples();
+    render();
+  };
+  div.querySelectorAll('textarea').forEach(t => t.addEventListener('input', render));
+  examplesList.appendChild(div);
+  render();
+}
+function renumberExamples() {
+  Array.from(examplesList.querySelectorAll('.example-pair-label')).forEach((el, i) => el.textContent = `例 #${i + 1}`);
+}
+$('add-example').onclick = () => addExample();
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║ プロンプト組み立て                                                  ║
+// ╚══════════════════════════════════════════════════════════════════╝
+function getCurrentFormData() {
+  return {
+    role: inputs.role.value, task: inputs.task.value, context: inputs.context.value,
+    constraints: inputs.constraints.value, format: inputs.format.value, input: inputs.input.value,
+    examples: Array.from(examplesList.querySelectorAll('.example-pair')).map(p => ({
+      in: p.querySelector('.ex-in').value, out: p.querySelector('.ex-out').value
+    }))
+  };
+}
+function buildPromptFromData(d) {
+  const parts = [];
+  if ((d.role || '').trim())        parts.push(`# 役割\n${d.role.trim()}`);
+  if ((d.task || '').trim())        parts.push(`# タスク\n${d.task.trim()}`);
+  if ((d.context || '').trim())     parts.push(`# 前提・背景\n${d.context.trim()}`);
+  if ((d.constraints || '').trim()) parts.push(`# 制約\n${d.constraints.trim()}`);
+  if ((d.format || '').trim())      parts.push(`# 出力形式\n${d.format.trim()}`);
+  const examples = (d.examples || []).map(e => ({ in: (e.in||'').trim(), out: (e.out||'').trim() })).filter(e => e.in || e.out);
+  if (examples.length) {
+    const exText = examples.map((e, i) => `## 例${i+1}\n【入力】\n${e.in}\n【出力】\n${e.out}`).join('\n\n');
+    parts.push(`# 例\n${exText}`);
+  }
+  if ((d.input || '').trim())       parts.push(`# 入力\n${d.input.trim()}`);
+  return parts.join('\n\n');
+}
+function buildPrompt() { return buildPromptFromData(getCurrentFormData()); }
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║ 変数 {var} 検出と置換                                              ║
+// ╚══════════════════════════════════════════════════════════════════╝
+const varValues = {};
+function detectVars(text) {
+  const re = /\{([^{}\n]+?)\}/g;
+  const set = new Set();
+  let m;
+  while ((m = re.exec(text)) !== null) set.add(m[1].trim());
+  return Array.from(set);
+}
+function renderVarsPanel(vars) {
+  const panel = $('vars-panel');
+  const list = $('vars-list');
+  if (vars.length === 0) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  list.innerHTML = vars.map(v => `
+    <div class="var-row">
+      <code>{${v.replace(/</g,'&lt;')}}</code>
+      <input type="text" data-var="${v.replace(/"/g,'&quot;')}" value="${(varValues[v] || '').replace(/"/g,'&quot;')}" placeholder="値を入れる…">
+    </div>
+  `).join('');
+  list.querySelectorAll('input').forEach(inp => {
+    inp.oninput = () => { varValues[inp.dataset.var] = inp.value; renderPreview(); };
+  });
+}
+function substituteVars(text) {
+  return text.replace(/\{([^{}\n]+?)\}/g, (m, name) => {
+    const v = varValues[name.trim()];
+    return (v != null && v !== '') ? v : m;
+  });
+}
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║ プレビュー更新                                                      ║
+// ╚══════════════════════════════════════════════════════════════════╝
+function renderPreview() {
+  const raw = buildPrompt();
+  const out = substituteVars(raw);
+  $('preview-out').textContent = out;
+  // メタ
+  const chars = out.length;
+  const lines = out === '' ? 0 : out.split(/\r?\n/).length;
+  const tokens = Math.round(chars / 1.5); // 日本語ざっくり目安
+  $('m-chars').textContent = chars;
+  $('m-lines').textContent = lines;
+  $('m-tokens').textContent = tokens;
+}
+function render() {
+  const raw = buildPrompt();
+  renderVarsPanel(detectVars(raw));
+  renderPreview();
+}
+Object.values(inputs).forEach(el => el.addEventListener('input', render));
+
+// コピー・ダウンロード
+function copyTextTo(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.classList.add('copied');
+    btn.textContent = '✓ コピー済';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = orig; }, 1500);
+  }).catch(() => alert('コピーに失敗しました'));
+}
+$('copy-prompt').onclick = (e) => copyTextTo($('preview-out').textContent, e.currentTarget);
+$('dl-prompt').onclick = () => {
+  const blob = new Blob([$('preview-out').textContent], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'prompt.txt';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║ 保存ライブラリ + フォルダ                                            ║
+// ╚══════════════════════════════════════════════════════════════════╝
+const FOLDER_KEY = 'piyo-prompts-folders-v1';
+const UNFILED_EXPANDED_KEY = 'piyo-prompts-unfiled-expanded-v1';
+function getSaved()    { try { return JSON.parse(localStorage.getItem(STORE_KEY)  || '[]'); } catch { return []; } }
+function setSaved(a)   { try { localStorage.setItem(STORE_KEY,  JSON.stringify(a)); } catch {} }
+function getFolders()  { try { return JSON.parse(localStorage.getItem(FOLDER_KEY) || '[]'); } catch { return []; } }
+function setFolders(a) { try { localStorage.setItem(FOLDER_KEY, JSON.stringify(a)); } catch {} }
+function getUnfiledExpanded() { try { return localStorage.getItem(UNFILED_EXPANDED_KEY) !== 'false'; } catch { return true; } }
+function setUnfiledExpanded(v) { try { localStorage.setItem(UNFILED_EXPANDED_KEY, v ? 'true' : 'false'); } catch {} }
+function genFolderId() { return 'f' + Math.random().toString(36).slice(2, 9); }
+
+// 保存フォーム横のフォルダ選択をリフレッシュ
+function refreshSaveFolderOptions() {
+  const sel = $('save-folder');
+  const folders = getFolders();
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">未分類</option>` +
+    folders.map(f => `<option value="${f.id}">${f.name.replace(/</g,'&lt;')}</option>`).join('');
+  if (Array.from(sel.options).some(o => o.value === cur)) sel.value = cur;
+}
+
+// ─── ライブラリ描画（フォルダグループ別）───
+function renderLibrary() {
+  refreshSaveFolderOptions();
+  const list = getSaved();
+  const folders = getFolders();
+  const wrap = $('library-list');
+
+  if (list.length === 0 && folders.length === 0) {
+    wrap.innerHTML = '<div class="empty">まだ保存されたプロンプトはありません。下のテンプレートやフォームから組み立てて、ページ下部の「保存」から登録できます。</div>';
+    return;
+  }
+
+  // フォルダ毎にグループ化
+  const groups = []; // [{folderId, name, isUnfiled, expanded, prompts:[{idx, item}]}]
+  const folderMap = new Map();
+  // 未分類は最初（折りたたみ状態をlocalStorageから取得）
+  groups.push({ folderId: null, name: '未分類', isUnfiled: true, expanded: getUnfiledExpanded(), prompts: [] });
+  folderMap.set(null, groups[0]);
+  folders.forEach(f => {
+    const g = { folderId: f.id, name: f.name, isUnfiled: false, expanded: f.expanded !== false, prompts: [] };
+    groups.push(g);
+    folderMap.set(f.id, g);
+  });
+
+  list.forEach((item, idx) => {
+    const fid = item.folderId || null;
+    const g = folderMap.get(fid) || groups[0]; // 既に削除されたフォルダIDは未分類へ
+    g.prompts.push({ idx, item });
+  });
+
+  // 未分類が空ならフォルダがある場合のみ非表示
+  let html = '';
+  groups.forEach(g => {
+    // 未分類は空でフォルダがある場合のみ隠す
+    if (g.isUnfiled && g.prompts.length === 0 && folders.length > 0) return;
+    const collapsed = g.expanded === false;
+    html += `<div class="folder-group${collapsed ? ' collapsed' : ''}" data-folder-id="${g.folderId || ''}">`;
+    // ヘッダ
+    html += `<div class="folder-header" data-action="toggle">`;
+    html += `<svg class="folder-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    html += `<svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">`;
+    if (g.isUnfiled) {
+      html += `<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>`;
+    } else {
+      html += `<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>`;
+    }
+    html += `</svg>`;
+    html += `<span class="folder-name">${g.name.replace(/</g,'&lt;')}</span>`;
+    html += `<span class="folder-count">${g.prompts.length}件</span>`;
+    if (!g.isUnfiled) {
+      html += `<div class="folder-actions">`;
+      html += `<button type="button" class="icon-edit" data-action="rename-folder" data-fid="${g.folderId}" aria-label="フォルダ名を編集" title="フォルダ名を編集"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>`;
+      html += `<button type="button" class="icon-remove" data-action="delete-folder" data-fid="${g.folderId}" aria-label="フォルダを削除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+      html += `</div>`;
+    }
+    html += `</div>`; // /folder-header
+    // ボディ
+    html += `<div class="folder-body">`;
+    if (g.prompts.length === 0) {
+      html += `<div class="folder-empty">空のフォルダ — 保存フォームか移動セレクトで入れる</div>`;
+    } else {
+      const folderOpts = `<option value="">未分類</option>` + folders.map(f => `<option value="${f.id}"${(g.folderId===f.id?' selected':'')}>${f.name.replace(/</g,'&lt;')}</option>`).join('');
+      g.prompts.forEach(({idx, item}) => {
+        html += `<div class="saved-item" data-idx="${idx}">`;
+        html += `<div class="saved-item-info"><div class="saved-item-name" title="クリックで読み込み">${item.name.replace(/</g,'&lt;')}</div><div class="saved-item-meta">${new Date(item.ts).toLocaleDateString('ja-JP')}</div></div>`;
+        html += `<div class="saved-item-actions">`;
+        html += `<button type="button" class="icon-copy" data-action="copy-prompt" data-idx="${idx}" aria-label="プロンプトをコピー" title="プロンプトをコピー"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>`;
+        html += `<select class="move-select" data-action="move" data-idx="${idx}" title="フォルダへ移動">${folderOpts.replace(`value="${g.folderId||''}"`,`value="${g.folderId||''}" selected`)}</select>`;
+        html += `<button type="button" class="icon-edit" data-action="rename-prompt" data-idx="${idx}" aria-label="名前を編集" title="名前を編集"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>`;
+        html += `<button type="button" class="icon-remove" data-action="delete-prompt" data-idx="${idx}" aria-label="削除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+        html += `</div></div>`;
+      });
+    }
+    html += `</div></div>`;
+  });
+
+  wrap.innerHTML = html;
+
+  // イベント結線
+  wrap.querySelectorAll('.folder-header').forEach(h => {
+    h.onclick = (e) => {
+      // ボタン押下時はトグルしない
+      if (e.target.closest('button')) return;
+      const group = h.closest('.folder-group');
+      const fid = group.dataset.folderId;
+      if (!fid) {
+        // 未分類 — 専用キーに状態保存
+        const cur = getUnfiledExpanded();
+        setUnfiledExpanded(!cur);
+        group.classList.toggle('collapsed', cur);
+        return;
+      }
+      const folders = getFolders();
+      const f = folders.find(x => x.id === fid);
+      if (!f) return;
+      f.expanded = f.expanded === false ? true : false;
+      setFolders(folders);
+      group.classList.toggle('collapsed', f.expanded === false);
+    };
+  });
+  wrap.querySelectorAll('.saved-item-info').forEach(el => {
+    el.onclick = () => loadSaved(parseInt(el.closest('.saved-item').dataset.idx, 10));
+  });
+  wrap.querySelectorAll('[data-action="rename-prompt"]').forEach(el => {
+    el.onclick = (e) => { e.stopPropagation(); startRenameSaved(parseInt(el.dataset.idx, 10)); };
+  });
+  wrap.querySelectorAll('[data-action="delete-prompt"]').forEach(el => {
+    el.onclick = (e) => { e.stopPropagation(); deleteSaved(parseInt(el.dataset.idx, 10)); };
+  });
+  wrap.querySelectorAll('[data-action="copy-prompt"]').forEach(el => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const idx = parseInt(el.dataset.idx, 10);
+      const item = getSaved()[idx];
+      if (!item) return;
+      const text = buildPromptFromData(item);
+      if (!text.trim()) { alert('このプロンプトは空です'); return; }
+      navigator.clipboard.writeText(text).then(() => {
+        el.classList.add('copied');
+        setTimeout(() => el.classList.remove('copied'), 1200);
+      }).catch(() => alert('コピーに失敗しました'));
+    };
+  });
+  wrap.querySelectorAll('[data-action="move"]').forEach(el => {
+    el.onclick = (e) => e.stopPropagation();
+    el.onchange = (e) => {
+      const list = getSaved();
+      const idx = parseInt(el.dataset.idx, 10);
+      if (list[idx]) {
+        list[idx].folderId = el.value || null;
+        setSaved(list);
+        renderLibrary();
+      }
+    };
+  });
+  wrap.querySelectorAll('[data-action="rename-folder"]').forEach(el => {
+    el.onclick = (e) => { e.stopPropagation(); startRenameFolder(el.dataset.fid); };
+  });
+  wrap.querySelectorAll('[data-action="delete-folder"]').forEach(el => {
+    el.onclick = (e) => { e.stopPropagation(); deleteFolder(el.dataset.fid); };
+  });
+}
+
+// ─── プロンプト名のインライン編集 ───
+function startRenameSaved(idx) {
+  const list = getSaved();
+  const item = list[idx];
+  if (!item) return;
+  const itemEl = document.querySelector(`.saved-item[data-idx="${idx}"]`);
+  if (!itemEl) return;
+  const nameEl = itemEl.querySelector('.saved-item-name');
+  const current = item.name;
+  const input = document.createElement('input');
+  input.type = 'text'; input.value = current; input.maxLength = 40;
+  input.className = 'saved-item-name-edit';
+  nameEl.replaceWith(input);
+  input.focus(); input.select();
+
+  let done = false;
+  function commit() {
+    if (done) return; done = true;
+    const newName = input.value.trim();
+    if (!newName || newName === current) { renderLibrary(); return; }
+    if (list.some((p, i) => i !== idx && p.name === newName)) {
+      alert('同じ名前が既に存在します。別の名前にしてください。'); renderLibrary(); return;
+    }
+    list[idx].name = newName;
+    setSaved(list); renderLibrary();
+  }
+  function cancel() { if (done) return; done = true; renderLibrary(); }
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    else if (e.key === 'Escape') { e.preventDefault(); input.removeEventListener('blur', commit); cancel(); }
+  });
+  input.addEventListener('click', (e) => e.stopPropagation());
+}
+
+// ─── フォルダ名のインライン編集 ───
+function startRenameFolder(fid) {
+  const folders = getFolders();
+  const folder = folders.find(f => f.id === fid);
+  if (!folder) return;
+  const group = document.querySelector(`.folder-group[data-folder-id="${fid}"]`);
+  if (!group) return;
+  const nameEl = group.querySelector('.folder-name');
+  const current = folder.name;
+  const input = document.createElement('input');
+  input.type = 'text'; input.value = current; input.maxLength = 30;
+  input.className = 'folder-name-edit';
+  nameEl.replaceWith(input);
+  input.focus(); input.select();
+
+  let done = false;
+  function commit() {
+    if (done) return; done = true;
+    const newName = input.value.trim();
+    if (!newName || newName === current) { renderLibrary(); return; }
+    if (folders.some(f => f.id !== fid && f.name === newName)) {
+      alert('同じ名前のフォルダが既に存在します。'); renderLibrary(); return;
+    }
+    folder.name = newName;
+    setFolders(folders); renderLibrary();
+  }
+  function cancel() { if (done) return; done = true; renderLibrary(); }
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    else if (e.key === 'Escape') { e.preventDefault(); input.removeEventListener('blur', commit); cancel(); }
+  });
+  input.addEventListener('click', (e) => e.stopPropagation());
+}
+
+// ─── 新規フォルダ作成 ───
+$('new-folder-btn').onclick = () => {
+  const name = prompt('新しいフォルダ名を入力してください', '新しいフォルダ');
+  if (name == null) return;
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const folders = getFolders();
+  if (folders.some(f => f.name === trimmed)) {
+    alert('同じ名前のフォルダが既に存在します。'); return;
+  }
+  folders.push({ id: genFolderId(), name: trimmed, expanded: true });
+  setFolders(folders);
+  renderLibrary();
+};
+
+// ─── フォルダ削除 ───
+function deleteFolder(fid) {
+  const folders = getFolders();
+  const folder = folders.find(f => f.id === fid);
+  if (!folder) return;
+  if (!confirm(`「${folder.name}」フォルダを削除します。中身のプロンプトは「未分類」に移動します。よろしいですか？`)) return;
+  const list = getSaved();
+  list.forEach(p => { if (p.folderId === fid) p.folderId = null; });
+  setSaved(list);
+  setFolders(folders.filter(f => f.id !== fid));
+  renderLibrary();
+}
+
+// ─── 保存 ───
+$('save-btn').onclick = () => {
+  const name = $('save-name').value.trim();
+  if (!name) { alert('保存名を入力してください'); return; }
+  const folderId = $('save-folder').value || null;
+  const list = getSaved();
+  const data = {
+    name, ts: Date.now(), folderId,
+    role: inputs.role.value, task: inputs.task.value, context: inputs.context.value,
+    constraints: inputs.constraints.value, format: inputs.format.value, input: inputs.input.value,
+    examples: Array.from(examplesList.querySelectorAll('.example-pair')).map(p => ({
+      in: p.querySelector('.ex-in').value, out: p.querySelector('.ex-out').value
+    }))
+  };
+  const existing = list.findIndex(x => x.name === name);
+  if (existing >= 0) {
+    if (!confirm(`「${name}」はすでに保存されています。上書きしますか？`)) return;
+    list[existing] = data;
+  } else {
+    list.push(data);
+  }
+  setSaved(list);
+  $('save-name').value = '';
+  renderLibrary();
+};
+
+function loadSaved(idx) {
+  const item = getSaved()[idx];
+  if (!item) return;
+  if (anyFieldFilled() && !confirm('現在の入力内容を置き換えますか？')) return;
+  inputs.role.value = item.role || '';
+  inputs.task.value = item.task || '';
+  inputs.context.value = item.context || '';
+  inputs.constraints.value = item.constraints || '';
+  inputs.format.value = item.format || '';
+  inputs.input.value = item.input || '';
+  examplesList.innerHTML = '';
+  (item.examples || []).forEach(e => addExample(e.in, e.out));
+  render();
+}
+
+function deleteSaved(idx) {
+  const list = getSaved();
+  const item = list[idx];
+  if (!item) return;
+  if (!confirm(`「${item.name}」を削除しますか？`)) return;
+  list.splice(idx, 1);
+  setSaved(list);
+  renderLibrary();
+}
+
+// 初期化
+renderLibrary();
+render();
+</script>
+</body>
+</html>

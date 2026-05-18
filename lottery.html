@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>くじ引き — ぴよツールズ</title>
   <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="piyo-theme.css">
+  <script src="piyo-theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -552,6 +554,49 @@
     .result-retry:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
     .result-retry:focus-visible { outline: none; box-shadow: var(--ring); border-color: var(--primary); }
 
+    /* ─ おめでとうティッカー ──────────────── */
+    .result-ticker {
+      height: 40px;
+      background: linear-gradient(90deg, #FFD700 0%, #FFC107 50%, #FFD700 100%);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      border-top: 2px solid #B8860B;
+      position: relative;
+    }
+    .result-ticker::before, .result-ticker::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0; width: 24px;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .result-ticker::before { left: 0; background: linear-gradient(90deg, #FFD700 0%, transparent 100%); }
+    .result-ticker::after  { right: 0; background: linear-gradient(90deg, transparent 0%, #FFD700 100%); }
+    .result-ticker-scroll {
+      white-space: nowrap;
+      font-size: 15px;
+      font-weight: 800;
+      color: #1c1917;
+      letter-spacing: 0.03em;
+      padding-left: 100%;
+      animation: resultTickerScroll 16s linear infinite;
+    }
+    @keyframes resultTickerScroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-100%); }
+    }
+    /* スパークル装飾 */
+    #result-card.show .result-header-label::after {
+      content: ' ✨';
+      animation: sparkle 1.4s ease-in-out infinite;
+    }
+    @keyframes sparkle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.5; transform: scale(1.3); }
+    }
+
+
     /* ─ Sticky Start Button ──────────────── */
     .start-btn-bar {
       position: fixed;
@@ -796,9 +841,7 @@
     <span class="topbar-sep" aria-hidden="true">/</span>
     <span class="topbar-current">くじ引き</span>
     <div class="topbar-spacer"></div>
-    <button type="button" class="icon-btn" aria-label="ヘルプ">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    </button>
+    <button type="button" class="theme-toggle" aria-label="テーマ切替"></button>
   </div>
 </header>
 
@@ -847,7 +890,7 @@
           <div class="save-form-inner">
             <input type="text" id="preset-name-input"
               placeholder="保存名（例：朝会ファシリテーター）" maxlength="24"
-              onkeydown="if(event.key==='Enter') savePreset()" aria-label="保存名">
+              onkeydown="if(event.key==='Enter'){event.preventDefault();}" aria-label="保存名">
             <button class="save-confirm-btn" onclick="savePreset()">保存</button>
             <button class="save-cancel-btn"  onclick="toggleSaveForm()" aria-label="キャンセル">×</button>
           </div>
@@ -896,7 +939,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="9" y1="13" x2="9.01" y2="13"/><line x1="9" y1="17" x2="9.01" y2="17"/></svg>
             </span>
             <span class="anim-info">
-              <span class="anim-title">タイムズスクエア</span>
+              <span class="anim-title">ドラムロール</span>
               <span class="anim-desc">迫力の大画面演出</span>
             </span>
           </button>
@@ -934,6 +977,9 @@
     <div class="result-body">
       <div id="result-body"></div>
       <button class="result-retry" onclick="resetResult()" aria-label="もう一度抽選する">もう一度引く</button>
+    </div>
+    <div class="result-ticker" aria-hidden="true">
+      <div class="result-ticker-scroll">🎉 おめでとうございます！　🎊 おめでとうございます！　✨ おめでとうございます！　🥳 おめでとうございます！　</div>
     </div>
   </div>
 </aside>

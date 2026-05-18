@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ぴよツールズ</title>
   <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="piyo-theme.css">
+  <script src="piyo-theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -159,6 +161,7 @@
       margin: 32px 0 14px;
     }
     .section-header:first-child { margin-top: 16px; }
+    .section-header.first-visible { margin-top: 16px; }
     .section-title {
       font-size: 13px;
       font-weight: 600;
@@ -223,6 +226,27 @@
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 14px;
     }
+
+    /* ─ カテゴリタブ ───────────────────────── */
+    .category-tabs {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .category-tab {
+      padding: 6px 14px; min-height: 32px;
+      border: 1px solid var(--border); background: var(--surface);
+      border-radius: 999px;
+      font-size: 12.5px; font-weight: 600; font-family: inherit; color: var(--text-3);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex; align-items: center; gap: 5px;
+      white-space: nowrap;
+    }
+    .category-tab:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .category-tab.active { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 2px 8px rgba(61,167,107,0.25); }
+    .category-tab .cat-count { font-size: 11px; opacity: 0.7; font-weight: 500; }
 
     /* ─ Tool card (compact) ───────────────── */
     .tool-card {
@@ -366,6 +390,72 @@
     }
     .tool-card.coming-soon .card-arrow { display: none; }
 
+    /* ─ お気に入り★ボタン（右下、矢印の位置） ───────────────── */
+    .card-fav {
+      position: absolute;
+      bottom: 10px; right: 12px;
+      width: 30px; height: 30px;
+      border: none; background: transparent;
+      cursor: pointer; color: var(--text-4);
+      font-size: 19px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      transition: all var(--transition);
+      z-index: 5;
+      padding: 0;
+    }
+    .card-fav:hover { background: var(--icon-bg); color: var(--text-2); transform: scale(1.18); }
+    .card-fav.active { color: #F59E0B; }
+    .card-fav.active:hover { color: #D97706; }
+    .tool-card.coming-soon .card-fav { display: none; }
+
+    /* 矢印は非表示（星に置き換え） */
+    .card-arrow { display: none !important; }
+
+    /* お気に入り・最近使ったツールのセクション */
+    .quick-section { margin-bottom: 20px; }
+    .quick-section-head {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .quick-section-head .section-spacer { flex: 1; }
+    .quick-section-title {
+      font-size: 13px; font-weight: 700; color: var(--text-2);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .quick-section-title svg { width: 14px; height: 14px; }
+    .quick-section-title .count { color: var(--text-4); font-weight: 500; font-size: 12px; margin-left: 4px; }
+
+    .quick-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    .quick-card {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      text-decoration: none; color: inherit;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+    .quick-card:hover { border-color: var(--primary); background: var(--primary-bg); transform: translateY(-1px); }
+    .quick-card { user-select: none; -webkit-touch-callout: none; cursor: grab; }
+    .quick-card.sortable-ghost { opacity: 0.35; background: var(--primary-bg) !important; border-style: dashed !important; border-color: var(--primary) !important; }
+    .quick-card.sortable-chosen { box-shadow: 0 4px 14px rgba(15,23,42,0.12); }
+    .quick-card.sortable-drag { box-shadow: 0 10px 24px rgba(15,23,42,0.18); transform: rotate(1deg) !important; cursor: grabbing; }
+    .quick-card-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--icon-bg); color: var(--text-2);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .quick-card-icon svg { width: 16px; height: 16px; }
+    .quick-card-name { font-size: 13.5px; font-weight: 600; color: var(--text-1); }
+
     .card-badge {
       position: absolute;
       top: 18px;
@@ -430,9 +520,7 @@
     </a>
     <div class="topbar-spacer"></div>
     <input type="search" class="search-input" placeholder="ツールを検索" aria-label="ツールを検索">
-    <button type="button" class="icon-btn" aria-label="ヘルプ">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    </button>
+    <button type="button" class="theme-toggle" aria-label="テーマ切替"></button>
   </div>
 </header>
 
@@ -444,10 +532,26 @@
 
 <main>
 
+  <!-- お気に入り（星付けたツールが並ぶ） -->
+  <div class="quick-section" id="favorites-section" style="display:none">
+    <div class="quick-section-head">
+      <div class="quick-section-title">
+        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        お気に入り <span class="count" id="favorites-count"></span>
+      </div>
+      <div class="section-spacer"></div>
+      <span class="reorder-hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+        ドラッグで並び替え
+      </span>
+    </div>
+    <div class="quick-cards" id="favorites-cards"></div>
+  </div>
+
   <!-- 利用可能 -->
   <div class="section-header">
     <span class="section-title">利用可能</span>
-    <span class="section-count" aria-label="17件">17</span>
+    <span class="section-count" aria-label="23件">23</span>
     <div class="section-spacer"></div>
     <span class="reorder-hint" id="reorder-hint">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
@@ -458,9 +562,42 @@
       デフォルト順
     </button>
   </div>
+
+  <!-- カテゴリタブ -->
+  <div class="category-tabs" id="category-tabs">
+    <button class="category-tab active" data-cat="all">すべて <span class="cat-count" id="cnt-all"></span></button>
+    <button class="category-tab" data-cat="ai">🤖 AI <span class="cat-count" id="cnt-ai"></span></button>
+    <button class="category-tab" data-cat="comm">🤝 コミュニケーション <span class="cat-count" id="cnt-comm"></span></button>
+    <button class="category-tab" data-cat="time">⏱ 時間管理 <span class="cat-count" id="cnt-time"></span></button>
+    <button class="category-tab" data-cat="text">📝 文書・テキスト <span class="cat-count" id="cnt-text"></span></button>
+    <button class="category-tab" data-cat="web">🌐 Web・画像 <span class="cat-count" id="cnt-web"></span></button>
+    <button class="category-tab" data-cat="util">🔧 計算・その他 <span class="cat-count" id="cnt-util"></span></button>
+  </div>
+
   <div class="cards-grid">
 
-    <a href="schedule.html" class="tool-card" aria-label="日程調整ツールを開く">
+    <a href="claude-start.html" data-category="ai" class="tool-card" aria-label="Claude Code はじめかたを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
+      </div>
+      <div class="card-name">Claude Code はじめかた</div>
+      <div class="card-desc">初めての方向け。OS別のインストールから初回起動まで30分で</div>
+    </a>
+    <a href="prompt-builder.html" data-category="ai" class="tool-card" aria-label="プロンプトビルダーを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h6"/><path d="m15 17 4-4-4-4"/></svg>
+      </div>
+      <div class="card-name">プロンプトビルダー</div>
+      <div class="card-desc">生成AIへの指示をテンプレ＋セクションで簡単作成</div>
+    </a>
+    <a href="claude-config.html" data-category="ai" class="tool-card" aria-label="Claude設定アシスタントを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      <div class="card-name">Claude 設定アシスタント</div>
+      <div class="card-desc">settings.json／CLAUDE.md／コマンド／エージェントをフォームで生成（中・上級者向け）</div>
+    </a>
+    <a href="schedule.html" data-category="comm" class="tool-card" aria-label="日程調整ツールを開く">
       <div class="card-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
       </div>
@@ -470,8 +607,27 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </div>
     </a>
-
-    <a href="lottery.html" class="tool-card" aria-label="くじ引きツールを開く">
+    <a href="vote.html" data-category="comm" class="tool-card" aria-label="投票ツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="11"/></svg>
+      </div>
+      <div class="card-name">投票</div>
+      <div class="card-desc">その場で集計</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="team-split.html" data-category="comm" class="tool-card" aria-label="チーム分けツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="card-name">チーム分け</div>
+      <div class="card-desc">ランダムにチーム編成</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="lottery.html" data-category="comm" class="tool-card" aria-label="くじ引きツールを開く">
       <div class="card-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
       </div>
@@ -481,8 +637,155 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </div>
     </a>
+    <a href="notify-template.html" data-category="comm" class="tool-card" aria-label="社内通知テンプレを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+      </div>
+      <div class="card-name">社内通知テンプレ</div>
+      <div class="card-desc">よく使う通知文をテンプレ化</div>
+    </a>
 
-    <a href="password.html" class="tool-card" aria-label="パスワード生成ツールを開く">
+    <a href="dice.html" data-category="comm" class="tool-card" aria-label="サイコロツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <div class="card-name">サイコロ</div>
+      <div class="card-desc">複数同時に振れます</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="stopwatch.html" data-category="time" class="tool-card" aria-label="ストップウォッチツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="2" x2="14" y2="2"/><circle cx="12" cy="14" r="8"/><path d="M12 10v4l3-1"/><path d="M18 8l1-1"/></svg>
+      </div>
+      <div class="card-name">ストップウォッチ</div>
+      <div class="card-desc">ラップ計測もできる</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="timer.html" data-category="time" class="tool-card" aria-label="タイマーツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div class="card-name">タイマー</div>
+      <div class="card-desc">カウントダウンタイマー</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="pomodoro.html" data-category="time" class="tool-card" aria-label="ポモドーロタイマーを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/><path d="M12 2v3"/></svg>
+      </div>
+      <div class="card-name">ポモドーロ</div>
+      <div class="card-desc">25分集中→5分休憩のサイクルで集中力アップ</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="world-clock.html" data-category="time" class="tool-card" aria-label="世界時計ツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      </div>
+      <div class="card-name">世界時計</div>
+      <div class="card-desc">Tokyo / Cebu / Brazil / Hanoi の時差を一目で</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="char-count.html" data-category="text" class="tool-card" aria-label="文字数カウントツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+      </div>
+      <div class="card-name">文字数カウント</div>
+      <div class="card-desc">日本語・英語・バイト数を瞬時に集計</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="text-convert.html" data-category="text" class="tool-card" aria-label="テキスト変換ツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>
+      </div>
+      <div class="card-name">テキスト変換</div>
+      <div class="card-desc">大文字小文字などの加工</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="markdown.html" data-category="text" class="tool-card" aria-label="Markdownプレビューツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M7 15V9l3 4 3-4v6"/><path d="M17 9v6"/><path d="M14 12l3 3 3-3"/></svg>
+      </div>
+      <div class="card-name">Markdownプレビュー</div>
+      <div class="card-desc">左に書いて右で確認、書式付きでコピー可</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="page-images.html" data-category="web" class="tool-card" aria-label="WEBページ画像抽出ツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><circle cx="9" cy="14" r="1.3" fill="currentColor" stroke="none"/><path d="M21 18l-4-3-8 5"/></svg>
+      </div>
+      <div class="card-name">WEBページ画像抽出</div>
+      <div class="card-desc">URLからページ内の画像を一括取得</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="headings.html" data-category="web" class="tool-card" aria-label="見出し抽出ツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M6 12h12"/></svg>
+      </div>
+      <div class="card-name">見出し抽出</div>
+      <div class="card-desc">WEBページのH1〜H6を階層で一覧化</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="qr-code.html" data-category="web" class="tool-card" aria-label="QRコード作成ツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><line x1="20" y1="14" x2="20" y2="14"/><line x1="14" y1="20" x2="14" y2="21"/><line x1="20" y1="17" x2="20" y2="21"/><line x1="17" y1="20" x2="20" y2="20"/></svg>
+      </div>
+      <div class="card-name">QRコード作成</div>
+      <div class="card-desc">URLやテキストをQRコード化</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="image-compress.html" data-category="web" class="tool-card" aria-label="画像圧縮ツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="2"/><circle cx="8" cy="8" r="1.3"/><path d="M17 11l-3.5-3.5L7 14"/><line x1="16" y1="15" x2="16" y2="22"/><polyline points="13 19 16 22 19 19"/></svg>
+      </div>
+      <div class="card-name">画像圧縮</div>
+      <div class="card-desc">ブラウザだけで画像を軽量化</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="calculator.html" data-category="util" class="tool-card" aria-label="電卓ツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><circle cx="8" cy="11" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="11" r="0.6" fill="currentColor" stroke="none"/><circle cx="16" cy="11" r="0.6" fill="currentColor" stroke="none"/><circle cx="8" cy="15" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="15" r="0.6" fill="currentColor" stroke="none"/><line x1="14" y1="18" x2="18" y2="18"/></svg>
+      </div>
+      <div class="card-name">電卓</div>
+      <div class="card-desc">四則演算 ・ メモリ ・ 履歴つき</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="unit-convert.html" data-category="util" class="tool-card" aria-label="単位・通貨変換ツールを開く">
+      <div class="card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      </div>
+      <div class="card-name">単位・通貨変換</div>
+      <div class="card-desc">長さ・重さ・体積・温度・時間・通貨を一発変換</div>
+      <div class="card-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+    <a href="password.html" data-category="util" class="tool-card" aria-label="パスワード生成ツールを開く">
       <div class="card-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.85 12.15L20 3"/><path d="M18 5l2 2"/><path d="M15 8l2 2"/></svg>
       </div>
@@ -493,170 +796,27 @@
       </div>
     </a>
 
-    <a href="image-compress.html" class="tool-card" aria-label="画像圧縮ツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="2"/><circle cx="8" cy="8" r="1.3"/><path d="M17 11l-3.5-3.5L7 14"/><line x1="16" y1="15" x2="16" y2="22"/><polyline points="13 19 16 22 19 19"/></svg>
-      </div>
-      <div class="card-name">画像圧縮</div>
-      <div class="card-desc">ブラウザだけで画像を軽量化</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
 
-    <a href="char-count.html" class="tool-card" aria-label="文字数カウントツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-      </div>
-      <div class="card-name">文字数カウント</div>
-      <div class="card-desc">日本語・英語・バイト数を瞬時に集計</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
+  </div>
 
-    <a href="page-images.html" class="tool-card" aria-label="WEBページ画像抽出ツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><circle cx="9" cy="14" r="1.3" fill="currentColor" stroke="none"/><path d="M21 18l-4-3-8 5"/></svg>
-      </div>
-      <div class="card-name">WEBページ画像抽出</div>
-      <div class="card-desc">URLからページ内の画像を一括取得</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
+  <!-- 近日公開 -->
+  <div class="section-header" style="margin-top:36px">
+    <span class="section-title">近日公開</span>
+    <span class="section-count" aria-label="3件">3</span>
+    <div class="section-spacer"></div>
+  </div>
+  <div class="cards-grid cards-grid-soon">
 
-    <a href="headings.html" class="tool-card" aria-label="見出し抽出ツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M6 12h12"/></svg>
-      </div>
-      <div class="card-name">見出し抽出</div>
-      <div class="card-desc">WEBページのH1〜H6を階層で一覧化</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
 
-    <a href="stopwatch.html" class="tool-card" aria-label="ストップウォッチツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="2" x2="14" y2="2"/><circle cx="12" cy="14" r="8"/><path d="M12 10v4l3-1"/><path d="M18 8l1-1"/></svg>
-      </div>
-      <div class="card-name">ストップウォッチ</div>
-      <div class="card-desc">ラップ計測もできる</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="timer.html" class="tool-card" aria-label="タイマーツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      </div>
-      <div class="card-name">タイマー</div>
-      <div class="card-desc">カウントダウンタイマー</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="qr-code.html" class="tool-card" aria-label="QRコード作成ツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><line x1="20" y1="14" x2="20" y2="14"/><line x1="14" y1="20" x2="14" y2="21"/><line x1="20" y1="17" x2="20" y2="21"/><line x1="17" y1="20" x2="20" y2="20"/></svg>
-      </div>
-      <div class="card-name">QRコード作成</div>
-      <div class="card-desc">URLやテキストをQRコード化</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="world-clock.html" class="tool-card" aria-label="世界時計ツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-      </div>
-      <div class="card-name">世界時計</div>
-      <div class="card-desc">Tokyo / Cebu / Brazil / Hanoi の時差を一目で</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="calculator.html" class="tool-card" aria-label="電卓ツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><circle cx="8" cy="11" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="11" r="0.6" fill="currentColor" stroke="none"/><circle cx="16" cy="11" r="0.6" fill="currentColor" stroke="none"/><circle cx="8" cy="15" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="15" r="0.6" fill="currentColor" stroke="none"/><line x1="14" y1="18" x2="18" y2="18"/></svg>
-      </div>
-      <div class="card-name">電卓</div>
-      <div class="card-desc">四則演算 ・ メモリ ・ 履歴つき</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="team-split.html" class="tool-card" aria-label="チーム分けツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      </div>
-      <div class="card-name">チーム分け</div>
-      <div class="card-desc">ランダムにチーム編成</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="dice.html" class="tool-card" aria-label="サイコロツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>
-      </div>
-      <div class="card-name">サイコロ</div>
-      <div class="card-desc">複数同時に振れます</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="vote.html" class="tool-card" aria-label="投票ツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="11"/></svg>
-      </div>
-      <div class="card-name">投票</div>
-      <div class="card-desc">その場で集計</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="text-convert.html" class="tool-card" aria-label="テキスト変換ツールを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>
-      </div>
-      <div class="card-name">テキスト変換</div>
-      <div class="card-desc">大文字小文字などの加工</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
-
-    <a href="slack-mention.html" class="tool-card" aria-label="Slackメンションツールを開く">
+    <a href="#slack-mention-coming-soon" class="tool-card coming-soon" aria-label="Slackメンション（近日公開）" aria-disabled="true">
       <div class="card-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg>
       </div>
       <div class="card-name">Slackメンション</div>
       <div class="card-desc">チームの@メンションを一括コピー</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
+      <div class="card-badge">近日公開</div>
     </a>
 
-    <a href="notify-template.html" class="tool-card" aria-label="社内通知テンプレを開く">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
-      </div>
-      <div class="card-name">社内通知テンプレ</div>
-      <div class="card-desc">よく使う通知文をテンプレ化</div>
-      <div class="card-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </a>
 
     <a href="#rewrite-coming-soon" class="tool-card coming-soon" aria-label="文章リライト（近日公開）" aria-disabled="true">
       <div class="card-icon" aria-hidden="true">
@@ -667,6 +827,7 @@
       <div class="card-badge">近日公開</div>
     </a>
 
+
     <a href="#translate-coming-soon" class="tool-card coming-soon" aria-label="翻訳（近日公開）" aria-disabled="true">
       <div class="card-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
@@ -675,8 +836,8 @@
       <div class="card-desc">日英・日葡・日比のビジネス翻訳（AI）</div>
       <div class="card-badge">近日公開</div>
     </a>
-
   </div>
+
 </main>
 
 <footer>ぴよツールズ — 社内専用</footer>
@@ -777,17 +938,31 @@
   noResults.innerHTML = '<div style="margin-bottom:8px;font-size:20px">🔍</div>該当するツールが見つかりません';
   main.appendChild(noResults);
 
+  // 現在選択中のカテゴリ（"all" / "ai" / "comm" / ...）
+  let currentCat = 'all';
+
   function applyFilter() {
     const q = searchInput.value.toLowerCase().trim();
     let visible = 0;
     document.querySelectorAll('.tool-card').forEach(card => {
       const name = (card.querySelector('.card-name')?.textContent || '').toLowerCase();
       const desc = (card.querySelector('.card-desc')?.textContent || '').toLowerCase();
-      const match = q === '' || name.includes(q) || desc.includes(q);
-      card.style.display = match ? '' : 'none';
-      if (match) visible++;
+      const cardCat = card.dataset.category || '';
+      const matchText = q === '' || name.includes(q) || desc.includes(q);
+      const matchCat  = currentCat === 'all' || cardCat === currentCat;
+      const show = matchText && matchCat;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
     });
-    noResults.style.display = (q !== '' && visible === 0) ? 'block' : 'none';
+    // お気に入りのミニカードも同じロジックでフィルタ
+    document.querySelectorAll('.quick-card').forEach(card => {
+      const name = (card.querySelector('.quick-card-name')?.textContent || '').toLowerCase();
+      const cardCat = card.dataset.category || '';
+      const matchText = q === '' || name.includes(q);
+      const matchCat  = currentCat === 'all' || cardCat === currentCat;
+      card.style.display = (matchText && matchCat) ? '' : 'none';
+    });
+    noResults.style.display = (visible === 0 && (q !== '' || currentCat !== 'all')) ? 'block' : 'none';
     // 全カード非表示のセクションは見出しも隠す
     document.querySelectorAll('.cards-grid').forEach(grid => {
       const hasVisible = Array.from(grid.children).some(c => c.style.display !== 'none');
@@ -798,6 +973,31 @@
       grid.style.display = hasVisible ? '' : 'none';
     });
   }
+
+  // カテゴリタブ
+  function initCategoryTabs() {
+    const tabs = document.querySelectorAll('#category-tabs .category-tab');
+    if (tabs.length === 0) return;
+    // 各カテゴリの件数を集計
+    const counts = { all: 0 };
+    document.querySelectorAll('.cards-grid:not(.cards-grid-soon) .tool-card').forEach(card => {
+      const cat = card.dataset.category || 'util';
+      counts[cat] = (counts[cat] || 0) + 1;
+      counts.all++;
+    });
+    tabs.forEach(t => {
+      const cat = t.dataset.cat;
+      const span = t.querySelector('.cat-count');
+      if (span) span.textContent = counts[cat] != null ? `(${counts[cat]})` : '';
+      t.onclick = () => {
+        tabs.forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        currentCat = cat;
+        applyFilter();
+      };
+    });
+  }
+  initCategoryTabs();
 
   searchInput.addEventListener('input', applyFilter);
   // Esc でクリア
@@ -847,6 +1047,120 @@
     wrap.appendChild(shadow);
     card.appendChild(wrap);
   });
+})();
+
+// ═══════════════════════════════════════════════════════
+// お気に入り★
+// ═══════════════════════════════════════════════════════
+(function() {
+  const FAV_KEY = 'piyo-favorites-v1';
+  const grid = document.querySelector('.cards-grid');
+  if (!grid) return;
+
+  function getFavs()  { try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch { return []; } }
+  function setFavs(a) { try { localStorage.setItem(FAV_KEY, JSON.stringify(a)); } catch {} }
+
+  function attachFavButtons() {
+    const favs = getFavs();
+    document.querySelectorAll('.tool-card:not(.coming-soon)').forEach(card => {
+      if (card.querySelector('.card-fav')) return;
+      const href = card.getAttribute('href');
+      if (!href) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'card-fav' + (favs.includes(href) ? ' active' : '');
+      btn.setAttribute('aria-label', 'お気に入りに追加');
+      btn.title = 'お気に入り';
+      btn.textContent = '★';
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleFav(href);
+      });
+      card.appendChild(btn);
+    });
+  }
+
+  function toggleFav(href) {
+    const favs = getFavs();
+    const idx = favs.indexOf(href);
+    if (idx >= 0) favs.splice(idx, 1); else favs.push(href);
+    setFavs(favs);
+    document.querySelectorAll('.card-fav').forEach(b => {
+      const cardHref = b.closest('.tool-card')?.getAttribute('href');
+      if (cardHref === href) b.classList.toggle('active', favs.includes(href));
+    });
+    renderFavorites();
+  }
+
+  function findCardByHref(href) {
+    return Array.from(grid.children).find(c => c.getAttribute && c.getAttribute('href') === href);
+  }
+
+  function makeQuickCard(href) {
+    const orig = findCardByHref(href);
+    if (!orig) return null;
+    const icon = orig.querySelector('.card-icon');
+    const name = orig.querySelector('.card-name')?.textContent || '';
+    const cat = orig.dataset.category || '';
+    const a = document.createElement('a');
+    a.href = href;
+    a.className = 'quick-card';
+    if (cat) a.setAttribute('data-category', cat);
+    a.innerHTML = `
+      <span class="quick-card-icon">${icon ? icon.innerHTML : ''}</span>
+      <span class="quick-card-name">${name.replace(/</g,'&lt;')}</span>
+    `;
+    return a;
+  }
+
+  function renderFavorites() {
+    const favs = getFavs();
+    const section = document.getElementById('favorites-section');
+    const wrap = document.getElementById('favorites-cards');
+    const count = document.getElementById('favorites-count');
+    if (!section) return;
+    const valid = favs.filter(href => findCardByHref(href));
+    const mainHint = document.getElementById('reorder-hint');
+    const firstHeader = document.querySelector('main .section-header');
+    if (valid.length === 0) {
+      section.style.display = 'none';
+      if (mainHint) mainHint.style.display = '';        // お気に入り無しならメインに表示
+      firstHeader?.classList.add('first-visible');     // ヘッダーが実質一番上なので上マージン縮小
+      return;
+    }
+    section.style.display = '';
+    if (mainHint) mainHint.style.display = 'none';      // お気に入りある時はメインのヒントを隠す
+    firstHeader?.classList.remove('first-visible');    // 通常マージンに戻す
+    count.textContent = `(${valid.length})`;
+    wrap.innerHTML = '';
+    valid.forEach(href => {
+      const el = makeQuickCard(href);
+      if (el) wrap.appendChild(el);
+    });
+    // 並び替え（Sortable.js は既にページに読み込み済み）
+    if (window.Sortable) {
+      if (wrap.__sortable) { wrap.__sortable.destroy(); }
+      wrap.__sortable = Sortable.create(wrap, {
+        animation: 200,
+        delay: 180,
+        delayOnTouchOnly: true,
+        touchStartThreshold: 4,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        onEnd: () => {
+          const newOrder = Array.from(wrap.children)
+            .map(a => a.getAttribute && a.getAttribute('href'))
+            .filter(Boolean);
+          if (newOrder.length) setFavs(newOrder);
+        }
+      });
+    }
+  }
+
+  attachFavButtons();
+  renderFavorites();
 })();
 </script>
 

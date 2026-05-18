@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdownプレビュー — ぴよツールズ</title>
+  <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="piyo-theme.css">
+  <script src="piyo-theme.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F5F5F4; --surface:#FFFFFF; --border:#E7E5E4; --border-strong:#D6D3D1;
+      --text-1:#1C1917; --text-2:#44403C; --text-3:#78716C; --text-4:#A8A29E;
+      --icon-bg:#F3F4F6;
+      --primary:#43A86A; --primary-dk:#2D8D57; --primary-lt:#C5E5D1; --primary-bg:#EEF7F1;
+      --radius-card:14px; --radius:8px;
+      --ring:0 0 0 3px rgba(61,167,107,0.20);
+      --transition:150ms ease-out;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter','Noto Sans JP',-apple-system,sans-serif; background: var(--bg); min-height: 100vh; color: var(--text-1); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1300px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); }
+    .topbar-sep { color: var(--text-4); margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+
+    .page-header { max-width: 1300px; margin: 0 auto; padding: 28px 24px 8px; }
+    .page-header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+    .page-header p { font-size: 13px; color: var(--text-3); }
+
+    main { max-width: 1300px; margin: 0 auto; padding: 16px 24px 80px; }
+
+    /* ツールバー */
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+    .toolbar-spacer { flex: 1; }
+    .btn {
+      padding: 7px 14px; min-height: 34px;
+      border: 1px solid var(--border-strong); background: var(--surface);
+      border-radius: 6px;
+      font-size: 12px; font-weight: 500; color: var(--text-2);
+      cursor: pointer; font-family: inherit;
+      transition: all var(--transition);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn svg { width: 13px; height: 13px; }
+    .btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .btn.copied { background: #10B981; border-color: #10B981; color: white; }
+
+    /* 2カラム */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-height: 70vh; }
+    @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+    .pane { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); overflow: hidden; }
+    .pane-head {
+      padding: 8px 14px;
+      background: #FAFAF9;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 700; color: var(--text-3);
+      letter-spacing: 0.06em; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .pane-head-actions { display: flex; gap: 4px; }
+    .pane-head-actions button {
+      width: 28px; height: 28px;
+      border: 1px solid var(--border); background: var(--surface);
+      border-radius: 5px;
+      cursor: pointer; color: var(--text-3);
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition);
+    }
+    .pane-head-actions button:hover { color: var(--primary); border-color: var(--primary); }
+    .pane-head-actions button svg { width: 13px; height: 13px; }
+    .pane-head-actions button.copied { color: #10B981; border-color: #10B981; }
+
+    #md-input {
+      flex: 1; width: 100%;
+      padding: 16px;
+      border: none; resize: none;
+      font-family: 'SF Mono','Menlo','Courier New',monospace;
+      font-size: 13.5px; line-height: 1.7;
+      color: var(--text-1); background: var(--surface);
+    }
+    #md-input:focus-visible { outline: none; }
+
+    /* プレビュー */
+    .md-preview {
+      flex: 1;
+      padding: 20px 24px;
+      overflow-y: auto;
+      font-family: 'Inter','Noto Sans JP',-apple-system,sans-serif;
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--text-1);
+    }
+    .md-preview h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--border); }
+    .md-preview h1:first-child { margin-top: 0; }
+    .md-preview h2 { font-size: 21px; font-weight: 700; margin: 24px 0 10px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+    .md-preview h3 { font-size: 17px; font-weight: 700; margin: 20px 0 8px; }
+    .md-preview h4 { font-size: 15px; font-weight: 700; margin: 16px 0 6px; }
+    .md-preview h5, .md-preview h6 { font-size: 13px; font-weight: 700; margin: 14px 0 6px; color: var(--text-2); }
+    .md-preview p { margin: 0 0 12px; }
+    .md-preview ul, .md-preview ol { margin: 0 0 12px; padding-left: 22px; }
+    .md-preview li { margin-bottom: 4px; }
+    .md-preview blockquote {
+      border-left: 4px solid var(--primary);
+      padding: 6px 14px;
+      background: var(--primary-bg);
+      color: var(--text-2);
+      margin: 0 0 12px;
+      border-radius: 0 6px 6px 0;
+    }
+    .md-preview blockquote p:last-child { margin-bottom: 0; }
+    .md-preview code {
+      font-family: 'SF Mono','Menlo','Courier New',monospace;
+      font-size: 0.88em;
+      background: var(--icon-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #C2185B;
+    }
+    .md-preview pre {
+      background: #1c1917;
+      color: #e7e5e4;
+      padding: 14px 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 0 0 14px;
+      font-family: 'SF Mono','Menlo','Courier New',monospace;
+      font-size: 12.5px;
+      line-height: 1.6;
+    }
+    .md-preview pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+    .md-preview a { color: var(--primary-dk); text-decoration: underline; }
+    .md-preview hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+    .md-preview table { border-collapse: collapse; margin: 0 0 14px; width: 100%; font-size: 13px; }
+    .md-preview th, .md-preview td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+    .md-preview th { background: var(--icon-bg); font-weight: 700; }
+    .md-preview img { max-width: 100%; border-radius: 6px; }
+    .md-preview input[type="checkbox"] { accent-color: var(--primary); }
+    .md-preview del { color: var(--text-4); }
+
+    /* メタ情報 */
+    .meta-bar { display: flex; gap: 18px; margin-top: 10px; font-size: 11.5px; color: var(--text-4); flex-wrap: wrap; }
+    .meta-bar b { color: var(--text-2); font-weight: 600; }
+
+    footer { max-width: 1300px; margin: 0 auto; padding: 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; }
+      .page-header { padding: 18px 16px 6px; }
+      main { padding: 12px 16px 60px; }
+      .split { min-height: 60vh; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="15" width="48" height="22" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M20 19.5 Q19 19.8 18 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <path d="M28 19.5 Q29 19.8 30 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <circle cx="15.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <circle cx="32.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <path d="M24 27 Q18.5 29 19.5 32.5 Q24 33.5 28.5 32.5 Q29.5 29 24 27 Z" fill="#FCD34D"/>
+          <path d="M19.5 32.5 Q24 33.5 28.5 32.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-current">Markdownプレビュー</span>
+    <button type="button" class="theme-toggle" aria-label="テーマ切替"></button>
+  </div>
+</header>
+
+<div class="page-header">
+  <h1>Markdownプレビュー</h1>
+  <p>左に書くと右にすぐ反映。Slackやドキュメントにそのまま貼れる形でコピーできます</p>
+</div>
+
+<main>
+
+  <div class="toolbar">
+    <button class="btn" onclick="loadSample()" title="サンプルを表示">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      サンプル
+    </button>
+    <button class="btn" onclick="clearEditor()" title="クリア">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      クリア
+    </button>
+    <div class="toolbar-spacer"></div>
+    <button class="btn" id="dl-md" onclick="downloadMd()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      .mdをダウンロード
+    </button>
+  </div>
+
+  <div class="split">
+    <div class="pane">
+      <div class="pane-head">
+        <span>Markdown（編集）</span>
+        <div class="pane-head-actions">
+          <button id="copy-md" title="Markdown原文をコピー" onclick="copyText('md', this)" aria-label="Markdownをコピー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+      <textarea id="md-input" spellcheck="false" placeholder="# 見出し&#10;**太字**、*斜体*、~~取り消し線~~&#10;- 箇条書き&#10;1. 番号付き&#10;`コード`&#10;&gt; 引用&#10;[リンク](https://example.com)"></textarea>
+    </div>
+    <div class="pane">
+      <div class="pane-head">
+        <span>プレビュー</span>
+        <div class="pane-head-actions">
+          <button id="copy-html" title="HTMLをコピー" onclick="copyText('html', this)" aria-label="HTMLをコピー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </button>
+          <button id="copy-rich" title="リッチテキストでコピー（GoogleドキュメントやNotionに貼れます）" onclick="copyRich(this)" aria-label="書式付きでコピー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v12a3 3 0 1 0 3 3"/><path d="M18 9V3"/><line x1="10" y1="9" x2="14" y2="9"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="md-preview" id="md-preview"></div>
+    </div>
+  </div>
+
+  <div class="meta-bar">
+    <span><b id="char-count">0</b> 文字</span>
+    <span><b id="word-count">0</b> 単語</span>
+    <span><b id="line-count">0</b> 行</span>
+    <span><b id="read-time">0</b> 分（読了目安）</span>
+  </div>
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<!-- marked.js（軽量Markdownパーサー）-->
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script>
+const STORAGE_KEY = 'piyo-markdown-draft';
+
+const SAMPLE = `# ぴよツールズ Markdown サンプル
+
+## 概要
+このページは **Markdown** を入力すると、すぐに *プレビュー* が右側に反映されます。
+
+## 使い方
+1. 左の入力欄に Markdown を書く
+2. 右側でレンダリング結果を確認
+3. 上のボタンで原文・HTML・書式付きでコピー可能
+
+## 主な記法
+- **太字** / *斜体* / ~~取り消し線~~
+- インライン \`code\`
+- [リンク](https://example.com)
+- リスト
+  - ネスト可能
+  - チェックリスト：
+    - [x] 完了
+    - [ ] 未完了
+
+## 引用
+> 大事なことは目に見えない。
+> — サン＝テグジュペリ
+
+## コードブロック
+\`\`\`js
+function hello(name) {
+  return \`Hello, \${name}!\`;
+}
+\`\`\`
+
+## 表
+| ツール | 用途 | ホットキー |
+|---|---|---|
+| ストップウォッチ | 経過時間計測 | — |
+| タイマー | 一定時間の通知 | — |
+| ポモドーロ | 集中→休憩 | Space |
+
+---
+
+> Tip: 左で書いた内容はブラウザに自動保存されます。
+`;
+
+// marked 設定（チェックリストON）
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+  pedantic: false
+});
+
+const editor  = document.getElementById('md-input');
+const preview = document.getElementById('md-preview');
+
+function render() {
+  const md = editor.value;
+  preview.innerHTML = marked.parse(md || '');
+  updateMeta(md);
+  try { localStorage.setItem(STORAGE_KEY, md); } catch {}
+}
+function updateMeta(md) {
+  const chars = md.length;
+  const words = (md.match(/\S+/g) || []).length;
+  const lines = md === '' ? 0 : md.split(/\r?\n/).length;
+  const minutes = Math.max(1, Math.ceil(words / 400)); // 日本語混在を想定して保守的に
+  document.getElementById('char-count').textContent = chars;
+  document.getElementById('word-count').textContent = words;
+  document.getElementById('line-count').textContent = lines;
+  document.getElementById('read-time').textContent  = md ? minutes : 0;
+}
+
+editor.addEventListener('input', render);
+
+function loadSample() {
+  if (editor.value.trim() && !confirm('現在の内容を置き換えてサンプルを読み込みますか？')) return;
+  editor.value = SAMPLE;
+  render();
+  editor.focus();
+}
+function clearEditor() {
+  if (!editor.value.trim()) return;
+  if (!confirm('編集内容をすべて消去します。よろしいですか？')) return;
+  editor.value = '';
+  render();
+  editor.focus();
+}
+
+function copyText(kind, btn) {
+  const text = kind === 'md' ? editor.value : preview.innerHTML;
+  navigator.clipboard.writeText(text).then(() => flashCopied(btn));
+}
+async function copyRich(btn) {
+  // text/html と text/plain を ClipboardItem で送る → Googleドキュメント等で書式が保たれる
+  if (!navigator.clipboard || !window.ClipboardItem) {
+    // フォールバック: HTML文字列だけコピー
+    navigator.clipboard.writeText(preview.innerHTML).then(() => flashCopied(btn));
+    return;
+  }
+  try {
+    const html = preview.innerHTML;
+    const text = preview.innerText;
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html':  new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([text], { type: 'text/plain' })
+      })
+    ]);
+    flashCopied(btn);
+  } catch (e) {
+    console.warn(e);
+    navigator.clipboard.writeText(preview.innerHTML).then(() => flashCopied(btn));
+  }
+}
+function flashCopied(btn) {
+  btn.classList.add('copied');
+  setTimeout(() => btn.classList.remove('copied'), 1400);
+}
+
+function downloadMd() {
+  const md = editor.value;
+  if (!md.trim()) { alert('入力が空です'); return; }
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `markdown-${date}.md`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// 初期化: 保存されたドラフトを復元、なければサンプル
+try {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved !== null) {
+    editor.value = saved;
+  } else {
+    editor.value = SAMPLE;
+  }
+} catch {
+  editor.value = SAMPLE;
+}
+render();
+
+// キーボードショートカット: タブインデント
+editor.addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = editor.selectionStart, t = editor.selectionEnd;
+    editor.value = editor.value.slice(0, s) + '  ' + editor.value.slice(t);
+    editor.selectionStart = editor.selectionEnd = s + 2;
+    render();
+  }
+});
+</script>
+</body>
+</html>

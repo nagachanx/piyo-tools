@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QRコード作成 — ぴよツールズ</title>
   <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="piyo-theme.css">
+  <script src="piyo-theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -327,9 +329,7 @@
     <span class="topbar-sep" aria-hidden="true">/</span>
     <span class="topbar-current">QRコード作成</span>
     <div class="topbar-spacer"></div>
-    <button type="button" class="icon-btn" aria-label="ヘルプ">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    </button>
+    <button type="button" class="theme-toggle" aria-label="テーマ切替"></button>
   </div>
 </header>
 
@@ -353,8 +353,8 @@
       <span class="block-header-title">テキスト / URL</span>
     </div>
     <div class="block-body">
-      <textarea id="qr-input" class="text-area" placeholder="QRコード化したいテキストやURLを入力&#10;&#10;例：&#10;https://nagachanx.github.io/piyo-tools/&#10;朝会MTG: 9:30〜">https://nagachanx.github.io/piyo-tools/</textarea>
-      <p class="field-hint">最大約2,953文字（誤り訂正レベル L 時）</p>
+      <textarea id="qr-input" class="text-area" placeholder="QRコード化したいテキストやURLを入力&#10;&#10;例：&#10;https://nagachanx.github.io/piyo-tools/&#10;朝会MTG: 9:30〜"></textarea>
+      <p class="field-hint">入力するとリアルタイムで生成されます。最大約2,953文字（誤り訂正レベル L 時）</p>
     </div>
   </div>
 
@@ -431,8 +431,8 @@
 
 <footer>ぴよツールズ — 社内専用</footer>
 
-<!-- node-qrcode (browser build) -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<!-- node-qrcode (ローカル同梱、CDN依存なし) -->
+<script src="qrcode.min.js"></script>
 <script>
 const inputEl   = document.getElementById('qr-input');
 const canvasEl  = document.getElementById('qr-canvas');
@@ -527,6 +527,7 @@ function render() {
   });
 }
 
+// 入力中に自動生成（デバウンス）
 inputEl.addEventListener('input', scheduleRender);
 
 // ダウンロード関数

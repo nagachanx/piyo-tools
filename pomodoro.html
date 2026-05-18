@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ポモドーロ — ぴよツールズ</title>
+  <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="piyo-theme.css">
+  <script src="piyo-theme.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F5F5F4; --surface:#FFFFFF; --border:#E7E5E4; --border-strong:#D6D3D1;
+      --text-1:#1C1917; --text-2:#44403C; --text-3:#78716C; --text-4:#A8A29E;
+      --icon-bg:#F3F4F6;
+      --primary:#43A86A; --primary-dk:#2D8D57; --primary-lt:#C5E5D1; --primary-bg:#EEF7F1;
+      --focus:#EF4444; --break:#3B82F6; --long-break:#8B5CF6;
+      --radius-card:14px; --radius:8px;
+      --ring:0 0 0 3px rgba(61,167,107,0.20);
+      --transition:150ms ease-out;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter','Noto Sans JP',-apple-system,sans-serif; background: var(--bg); min-height: 100vh; color: var(--text-1); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 700px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); }
+    .topbar-sep { color: var(--text-4); margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+
+    .page-header { max-width: 700px; margin: 0 auto; padding: 28px 24px 8px; }
+    .page-header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+    .page-header p { font-size: 13px; color: var(--text-3); }
+
+    main { max-width: 700px; margin: 0 auto; padding: 16px 24px 80px; }
+
+    /* フェーズタブ */
+    .phase-tabs { display: flex; gap: 6px; justify-content: center; margin-bottom: 18px; flex-wrap: wrap; }
+    .phase-tab {
+      padding: 8px 16px; min-height: 36px;
+      border: 1.5px solid var(--border); background: var(--surface);
+      border-radius: 999px;
+      font-size: 13px; font-weight: 600; color: var(--text-3);
+      cursor: pointer; font-family: inherit;
+      transition: all var(--transition);
+    }
+    .phase-tab.active[data-phase="focus"]      { background: var(--focus);      border-color: var(--focus);      color: white; }
+    .phase-tab.active[data-phase="break"]      { background: var(--break);      border-color: var(--break);      color: white; }
+    .phase-tab.active[data-phase="long-break"] { background: var(--long-break); border-color: var(--long-break); color: white; }
+
+    /* メインカード */
+    .timer-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+      padding: 32px 24px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    .timer-card[data-phase="focus"]      { border-color: var(--focus);      box-shadow: 0 8px 28px rgba(239,68,68,0.10); }
+    .timer-card[data-phase="break"]      { border-color: var(--break);      box-shadow: 0 8px 28px rgba(59,130,246,0.10); }
+    .timer-card[data-phase="long-break"] { border-color: var(--long-break); box-shadow: 0 8px 28px rgba(139,92,246,0.10); }
+
+    .phase-label { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+    .timer-card[data-phase="focus"]      .phase-label { color: var(--focus); }
+    .timer-card[data-phase="break"]      .phase-label { color: var(--break); }
+    .timer-card[data-phase="long-break"] .phase-label { color: var(--long-break); }
+
+    .round-counter { font-size: 12px; color: var(--text-4); margin-bottom: 24px; }
+
+    /* 円形プログレス */
+    .progress-wrap { position: relative; width: 280px; height: 280px; margin: 0 auto 24px; }
+    .progress-ring { transform: rotate(-90deg); }
+    .progress-ring circle.bg { stroke: var(--border); }
+    .progress-ring circle.fg { transition: stroke-dashoffset 0.4s linear; }
+    .timer-card[data-phase="focus"]      .progress-ring circle.fg { stroke: var(--focus); }
+    .timer-card[data-phase="break"]      .progress-ring circle.fg { stroke: var(--break); }
+    .timer-card[data-phase="long-break"] .progress-ring circle.fg { stroke: var(--long-break); }
+    .time-display {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .time-num {
+      font-size: 60px; font-weight: 700; letter-spacing: -0.04em;
+      color: var(--text-1); font-family: 'Inter', monospace;
+    }
+    .time-status { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+
+    /* コントロール */
+    .controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .ctrl-btn {
+      min-height: 48px; padding: 12px 28px;
+      border-radius: 999px; border: 1.5px solid var(--border-strong);
+      background: var(--surface); color: var(--text-2);
+      font-size: 14px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: all var(--transition);
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .ctrl-btn svg { width: 18px; height: 18px; }
+    .ctrl-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .ctrl-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .ctrl-btn-primary { background: var(--primary); border-color: var(--primary); color: white; padding: 12px 36px; }
+    .ctrl-btn-primary:hover { background: var(--primary-dk); border-color: var(--primary-dk); color: white; }
+
+    /* 設定 */
+    .settings { margin-top: 18px; padding: 18px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); }
+    .settings-title { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+    .settings-title-text { font-size: 13px; font-weight: 700; color: var(--text-2); display: inline-flex; align-items: center; gap: 8px; }
+    .settings-title-text svg { width: 14px; height: 14px; }
+    .settings-chevron { transition: transform var(--transition); color: var(--text-4); }
+    .settings.open .settings-chevron { transform: rotate(180deg); }
+    .settings-body { display: none; margin-top: 14px; }
+    .settings.open .settings-body { display: block; }
+    .settings-row {
+      display: grid; grid-template-columns: 1fr auto auto;
+      align-items: center; gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px dashed var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-label { font-size: 13px; color: var(--text-2); }
+    .settings-row input[type="number"] {
+      width: 70px; padding: 6px 10px;
+      border: 1px solid var(--border-strong); border-radius: 6px;
+      font-size: 14px; text-align: center; font-family: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+    .settings-row input:focus-visible { outline: none; border-color: var(--primary); box-shadow: var(--ring); }
+    .settings-row .unit-suffix { font-size: 12px; color: var(--text-4); }
+    .settings-row input[type="checkbox"] { accent-color: var(--primary); width: 18px; height: 18px; cursor: pointer; }
+
+    /* セッション履歴 */
+    .history { margin-top: 18px; padding: 18px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); }
+    .history-title { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 10px; }
+    .history-stats { display: flex; gap: 16px; }
+    .stat { flex: 1; text-align: center; padding: 10px; background: var(--icon-bg); border-radius: 8px; }
+    .stat-value { font-size: 22px; font-weight: 700; color: var(--text-1); font-variant-numeric: tabular-nums; }
+    .stat-label { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .reset-link {
+      display: block; text-align: center; margin-top: 10px;
+      font-size: 12px; color: var(--text-4); text-decoration: underline;
+      background: none; border: none; cursor: pointer; width: 100%;
+    }
+    .reset-link:hover { color: var(--text-2); }
+
+    footer { max-width: 700px; margin: 0 auto; padding: 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; }
+      .page-header { padding: 18px 16px 6px; }
+      main { padding: 12px 16px 60px; }
+      .timer-card { padding: 24px 16px; }
+      .progress-wrap { width: 240px; height: 240px; }
+      .time-num { font-size: 50px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="15" width="48" height="22" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M20 19.5 Q19 19.8 18 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <path d="M28 19.5 Q29 19.8 30 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <circle cx="15.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <circle cx="32.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <path d="M24 27 Q18.5 29 19.5 32.5 Q24 33.5 28.5 32.5 Q29.5 29 24 27 Z" fill="#FCD34D"/>
+          <path d="M19.5 32.5 Q24 33.5 28.5 32.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-current">ポモドーロ</span>
+    <button type="button" class="theme-toggle" aria-label="テーマ切替"></button>
+  </div>
+</header>
+
+<div class="page-header">
+  <h1>ポモドーロタイマー</h1>
+  <p>25分集中 → 5分休憩を繰り返し、4回ごとに長めの休憩</p>
+</div>
+
+<main>
+  <div class="phase-tabs">
+    <button class="phase-tab active" data-phase="focus" onclick="switchPhase('focus')">🍅 集中</button>
+    <button class="phase-tab" data-phase="break" onclick="switchPhase('break')">☕ 休憩</button>
+    <button class="phase-tab" data-phase="long-break" onclick="switchPhase('long-break')">🌿 長休憩</button>
+  </div>
+
+  <div class="timer-card" id="timer-card" data-phase="focus">
+    <div class="phase-label" id="phase-label">FOCUS</div>
+    <div class="round-counter" id="round-counter">ラウンド 1 / 4</div>
+
+    <div class="progress-wrap">
+      <svg class="progress-ring" width="280" height="280" viewBox="0 0 280 280">
+        <circle class="bg" cx="140" cy="140" r="124" fill="none" stroke-width="12"/>
+        <circle class="fg" cx="140" cy="140" r="124" fill="none" stroke-width="12"
+                stroke-linecap="round" stroke-dasharray="778.99" stroke-dashoffset="0"/>
+      </svg>
+      <div class="time-display">
+        <div class="time-num" id="time-num">25:00</div>
+        <div class="time-status" id="time-status">スタートを押すと始まります</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn ctrl-btn-primary" id="start-btn" onclick="toggleTimer()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span id="start-label">スタート</span>
+      </button>
+      <button class="ctrl-btn" onclick="skipPhase()" title="次のフェーズへスキップ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+        スキップ
+      </button>
+      <button class="ctrl-btn" onclick="resetTimer()" title="現在のフェーズをリセット">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        リセット
+      </button>
+    </div>
+  </div>
+
+  <div class="settings" id="settings">
+    <div class="settings-title" onclick="document.getElementById('settings').classList.toggle('open')">
+      <span class="settings-title-text">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        設定
+      </span>
+      <svg class="settings-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="settings-body">
+      <div class="settings-row">
+        <label class="settings-label" for="focus-min">集中の長さ</label>
+        <input type="number" id="focus-min" min="1" max="180" value="25">
+        <span class="unit-suffix">分</span>
+      </div>
+      <div class="settings-row">
+        <label class="settings-label" for="break-min">休憩の長さ</label>
+        <input type="number" id="break-min" min="1" max="60" value="5">
+        <span class="unit-suffix">分</span>
+      </div>
+      <div class="settings-row">
+        <label class="settings-label" for="long-break-min">長休憩の長さ</label>
+        <input type="number" id="long-break-min" min="1" max="120" value="15">
+        <span class="unit-suffix">分</span>
+      </div>
+      <div class="settings-row">
+        <label class="settings-label" for="rounds-per-set">長休憩までのラウンド数</label>
+        <input type="number" id="rounds-per-set" min="2" max="10" value="4">
+        <span class="unit-suffix">回</span>
+      </div>
+      <div class="settings-row">
+        <label class="settings-label" for="auto-next">フェーズ自動移行</label>
+        <input type="checkbox" id="auto-next" checked>
+        <span class="unit-suffix">ON</span>
+      </div>
+      <div class="settings-row">
+        <label class="settings-label" for="sound-on">完了音</label>
+        <input type="checkbox" id="sound-on" checked>
+        <span class="unit-suffix">ON</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="history">
+    <div class="history-title">今日のセッション</div>
+    <div class="history-stats">
+      <div class="stat">
+        <div class="stat-value" id="stat-focus">0</div>
+        <div class="stat-label">完了した集中ラウンド</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="stat-time">0</div>
+        <div class="stat-label">合計集中時間（分）</div>
+      </div>
+    </div>
+    <button class="reset-link" onclick="resetStats()">統計をリセット</button>
+  </div>
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<script>
+const STORE = {
+  settings: 'piyo-pomodoro-settings',
+  stats:    'piyo-pomodoro-stats'
+};
+const DEFAULT_SETTINGS = {
+  focusMin: 25, breakMin: 5, longBreakMin: 15,
+  roundsPerSet: 4, autoNext: true, sound: true
+};
+const PHASE_NAMES = {
+  focus: { jp: '集中', label: 'FOCUS', emoji: '🍅' },
+  break: { jp: '休憩', label: 'BREAK', emoji: '☕' },
+  'long-break': { jp: '長休憩', label: 'LONG BREAK', emoji: '🌿' }
+};
+
+const state = {
+  phase: 'focus',
+  remaining: 0,
+  total: 0,
+  running: false,
+  intervalId: null,
+  round: 1,
+  endTimeMs: null   // 経過時間ベース計算用
+};
+
+// 設定ロード
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE.settings) || '{}');
+    return { ...DEFAULT_SETTINGS, ...s };
+  } catch { return { ...DEFAULT_SETTINGS }; }
+}
+function saveSettings(s) {
+  try { localStorage.setItem(STORE.settings, JSON.stringify(s)); } catch {}
+}
+
+function getStats() {
+  // 日付が変わったらリセット
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE.stats) || '{}');
+    if (s.date !== today) return { date: today, focusRounds: 0, focusMinutes: 0 };
+    return s;
+  } catch { return { date: today, focusRounds: 0, focusMinutes: 0 }; }
+}
+function saveStats(s) { try { localStorage.setItem(STORE.stats, JSON.stringify(s)); } catch {} }
+
+function renderStats() {
+  const s = getStats();
+  document.getElementById('stat-focus').textContent = s.focusRounds;
+  document.getElementById('stat-time').textContent  = s.focusMinutes;
+}
+
+function resetStats() {
+  if (!confirm('今日のセッション統計をリセットします。よろしいですか？')) return;
+  saveStats({ date: new Date().toISOString().slice(0, 10), focusRounds: 0, focusMinutes: 0 });
+  renderStats();
+}
+
+let settings = loadSettings();
+
+// 設定UIに反映
+function applySettingsToUI() {
+  document.getElementById('focus-min').value      = settings.focusMin;
+  document.getElementById('break-min').value      = settings.breakMin;
+  document.getElementById('long-break-min').value = settings.longBreakMin;
+  document.getElementById('rounds-per-set').value = settings.roundsPerSet;
+  document.getElementById('auto-next').checked    = settings.autoNext;
+  document.getElementById('sound-on').checked     = settings.sound;
+}
+
+function getDuration(phase) {
+  return ({ focus: settings.focusMin, break: settings.breakMin, 'long-break': settings.longBreakMin }[phase] || 25) * 60;
+}
+
+function fmt(seconds) {
+  const s = Math.max(0, Math.ceil(seconds));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+}
+
+function renderPhase() {
+  const card = document.getElementById('timer-card');
+  card.dataset.phase = state.phase;
+  document.getElementById('phase-label').textContent = PHASE_NAMES[state.phase].label;
+  document.querySelectorAll('.phase-tab').forEach(t => t.classList.toggle('active', t.dataset.phase === state.phase));
+  document.getElementById('round-counter').textContent =
+    state.phase === 'focus'
+      ? `ラウンド ${state.round} / ${settings.roundsPerSet}`
+      : (state.phase === 'long-break' ? 'お疲れさまでした' : `ラウンド ${state.round - 1} / ${settings.roundsPerSet} 後の休憩`);
+}
+
+function renderTime() {
+  document.getElementById('time-num').textContent = fmt(state.remaining);
+  const ring = document.querySelector('.progress-ring circle.fg');
+  const C = 2 * Math.PI * 124;
+  ring.setAttribute('stroke-dasharray', C);
+  const ratio = state.total > 0 ? state.remaining / state.total : 1;
+  ring.setAttribute('stroke-dashoffset', C * (1 - ratio));
+  // タブタイトル
+  document.title = `${PHASE_NAMES[state.phase].emoji} ${fmt(state.remaining)} — ポモドーロ`;
+  document.getElementById('time-status').textContent =
+    state.running ? '進行中…' :
+    state.remaining < state.total ? '一時停止中' : 'スタートを押すと始まります';
+}
+
+function loadPhase(phase, opts = {}) {
+  state.phase = phase;
+  state.total = getDuration(phase);
+  state.remaining = state.total;
+  state.endTimeMs = null;
+  pauseTimer();
+  renderPhase();
+  renderTime();
+  if (opts.autoStart && settings.autoNext) startTimer();
+}
+
+function startTimer() {
+  if (state.running) return;
+  state.running = true;
+  state.endTimeMs = Date.now() + state.remaining * 1000;
+  document.getElementById('start-label').textContent = '一時停止';
+  document.querySelector('#start-btn svg').innerHTML = '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>';
+  state.intervalId = setInterval(tick, 250);
+  renderTime();
+}
+
+function pauseTimer() {
+  if (!state.running) return;
+  state.running = false;
+  clearInterval(state.intervalId);
+  state.intervalId = null;
+  // 残り時間を保持（endTimeMsから再計算）
+  state.remaining = Math.max(0, (state.endTimeMs - Date.now()) / 1000);
+  state.endTimeMs = null;
+  document.getElementById('start-label').textContent = '再開';
+  document.querySelector('#start-btn svg').innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+  renderTime();
+}
+
+function toggleTimer() {
+  if (state.running) pauseTimer(); else startTimer();
+}
+
+function resetTimer() {
+  pauseTimer();
+  state.remaining = state.total;
+  state.endTimeMs = null;
+  document.getElementById('start-label').textContent = 'スタート';
+  document.querySelector('#start-btn svg').innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+  renderTime();
+}
+
+function tick() {
+  state.remaining = (state.endTimeMs - Date.now()) / 1000;
+  if (state.remaining <= 0) {
+    state.remaining = 0;
+    onPhaseEnd();
+    return;
+  }
+  renderTime();
+}
+
+function onPhaseEnd() {
+  clearInterval(state.intervalId);
+  state.intervalId = null;
+  state.running = false;
+
+  // 集中フェーズ完了時は統計を加算
+  if (state.phase === 'focus') {
+    const s = getStats();
+    s.focusRounds += 1;
+    s.focusMinutes += settings.focusMin;
+    saveStats(s);
+    renderStats();
+  }
+
+  playAlarm();
+  notifyBrowser(PHASE_NAMES[state.phase].jp + ' 終了！');
+
+  // 次のフェーズへ
+  const nextPhase = decideNextPhase();
+  if (state.phase === 'focus') state.round += 1;
+  if (state.round > settings.roundsPerSet) state.round = 1;
+  loadPhase(nextPhase, { autoStart: true });
+}
+
+function decideNextPhase() {
+  if (state.phase === 'focus') {
+    return (state.round % settings.roundsPerSet === 0) ? 'long-break' : 'break';
+  }
+  return 'focus';
+}
+
+function skipPhase() {
+  if (state.phase === 'focus') {
+    // 集中をスキップした場合も統計に加算しない（実際に終えていないので）
+  }
+  const nextPhase = decideNextPhase();
+  if (state.phase === 'focus') state.round += 1;
+  if (state.round > settings.roundsPerSet) state.round = 1;
+  loadPhase(nextPhase, { autoStart: false });
+}
+
+function switchPhase(phase) {
+  // 手動切替（ラウンドはそのまま）
+  loadPhase(phase, { autoStart: false });
+}
+
+// ── 完了音（Web Audio API）──
+let audioCtx = null;
+function playAlarm() {
+  if (!settings.sound) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = audioCtx.currentTime;
+    // 3つのトーンで完了感を出す
+    [880, 1108, 1318].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0, t + i * 0.2);
+      gain.gain.linearRampToValueAtTime(0.25, t + i * 0.2 + 0.04);
+      gain.gain.linearRampToValueAtTime(0, t + i * 0.2 + 0.5);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t + i * 0.2);
+      osc.stop(t + i * 0.2 + 0.55);
+    });
+  } catch (e) { console.warn('音再生失敗', e); }
+}
+
+function notifyBrowser(text) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    new Notification('ぴよツールズ ポモドーロ', { body: text, icon: 'piyo-favicon.svg' });
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission();
+  }
+}
+
+// ── 設定変更ハンドラ ──
+['focus-min','break-min','long-break-min','rounds-per-set'].forEach(id => {
+  document.getElementById(id).addEventListener('change', e => {
+    const key = ({
+      'focus-min':'focusMin','break-min':'breakMin',
+      'long-break-min':'longBreakMin','rounds-per-set':'roundsPerSet'
+    })[id];
+    settings[key] = parseInt(e.target.value, 10) || DEFAULT_SETTINGS[key];
+    saveSettings(settings);
+    // タイマー停止中なら表示も更新
+    if (!state.running && state.remaining === state.total) loadPhase(state.phase);
+  });
+});
+document.getElementById('auto-next').addEventListener('change', e => {
+  settings.autoNext = e.target.checked; saveSettings(settings);
+});
+document.getElementById('sound-on').addEventListener('change', e => {
+  settings.sound = e.target.checked; saveSettings(settings);
+});
+
+// ── キーボードショートカット ──
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === ' ') { e.preventDefault(); toggleTimer(); }
+  if (e.key === 'r' || e.key === 'R') resetTimer();
+  if (e.key === 'n' || e.key === 'N') skipPhase();
+});
+
+// ── 初期化 ──
+applySettingsToUI();
+loadPhase('focus');
+renderStats();
+
+// 通知許可は最初のスタート時に求める
+let permissionAsked = false;
+document.getElementById('start-btn').addEventListener('click', () => {
+  if (!permissionAsked && 'Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+    permissionAsked = true;
+  }
+});
+</script>
+</body>
+</html>

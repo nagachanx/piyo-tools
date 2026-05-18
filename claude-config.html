@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude 設定アシスタント — ぴよツールズ</title>
+  <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="piyo-theme.css">
+  <script src="piyo-theme.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F5F5F4; --surface:#FFFFFF; --border:#E7E5E4; --border-strong:#D6D3D1;
+      --text-1:#1C1917; --text-2:#44403C; --text-3:#78716C; --text-4:#A8A29E;
+      --icon-bg:#F3F4F6;
+      --primary:#43A86A; --primary-dk:#2D8D57; --primary-lt:#C5E5D1; --primary-bg:#EEF7F1;
+      --danger:#EF4444; --danger-bg:#FEF2F2;
+      --code-bg:#1c1917; --code-text:#e7e5e4;
+      --radius-card:14px; --radius:8px;
+      --ring:0 0 0 3px rgba(61,167,107,0.20);
+      --transition:150ms ease-out;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter','Noto Sans JP',-apple-system,sans-serif; background: var(--bg); min-height: 100vh; color: var(--text-1); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1300px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); }
+    .topbar-sep { color: var(--text-4); margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+
+    .page-header { max-width: 1300px; margin: 0 auto; padding: 28px 24px 4px; }
+    .page-header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-3); }
+
+    main { max-width: 1300px; margin: 0 auto; padding: 16px 24px 80px; }
+
+    /* ── タブ ── */
+    .tabs { display: flex; gap: 4px; padding: 6px; background: var(--icon-bg); border-radius: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+    .tab {
+      flex: 1; min-width: 150px;
+      padding: 10px 16px; min-height: 40px;
+      border: none; background: transparent;
+      border-radius: 8px;
+      font-size: 13px; font-weight: 600; font-family: inherit; color: var(--text-3);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .tab:hover { color: var(--text-1); background: rgba(255,255,255,0.5); }
+    .tab.active { background: var(--surface); color: var(--text-1); box-shadow: 0 1px 3px rgba(15,23,42,0.06); }
+
+    /* ── レイアウト：左フォーム + 右プレビュー ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 22px; }
+    .panel h2 { font-size: 16px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .panel h2 svg { width: 16px; height: 16px; color: var(--text-3); }
+    .panel-sub { font-size: 12.5px; color: var(--text-3); margin-bottom: 16px; line-height: 1.7; }
+
+    .section { padding: 16px 0; border-bottom: 1px dashed var(--border); }
+    .section:first-child { padding-top: 0; }
+    .section:last-child { border-bottom: none; padding-bottom: 0; }
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .section-title { font-size: 13px; font-weight: 700; color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; }
+    .section-hint { font-size: 11.5px; color: var(--text-4); margin-bottom: 8px; }
+
+    /* フォーム要素 */
+    .field { margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-3); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .field input[type="text"], .field textarea, .field select {
+      width: 100%; padding: 9px 11px;
+      border: 1px solid var(--border-strong); border-radius: var(--radius);
+      font-size: 13px; font-family: inherit; color: var(--text-1); background: var(--surface);
+      transition: all var(--transition);
+    }
+    .field textarea { min-height: 80px; font-family: 'SF Mono','Menlo',monospace; font-size: 12.5px; line-height: 1.6; resize: vertical; }
+    .field input:focus-visible, .field textarea:focus-visible, .field select:focus-visible {
+      outline: none; border-color: var(--primary); box-shadow: var(--ring);
+    }
+    .field-hint { margin-top: 4px; font-size: 11px; color: var(--text-4); }
+    .field-hint code { background: var(--icon-bg); padding: 1px 4px; border-radius: 3px; font-size: 10.5px; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+    /* チップ風 toggle ボタン */
+    .chip-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      padding: 5px 11px; min-height: 28px;
+      border: 1px solid var(--border-strong); background: var(--surface);
+      border-radius: 999px;
+      font-size: 11.5px; font-family: 'SF Mono','Menlo',monospace; color: var(--text-2);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .chip:hover { border-color: var(--primary); color: var(--primary); }
+    .chip.active { background: var(--primary); border-color: var(--primary); color: white; }
+    .chip.deny.active { background: var(--danger); border-color: var(--danger); }
+
+    /* ボタン */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 7px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all var(--transition); border: 1px solid transparent; }
+    .btn svg { width: 13px; height: 13px; }
+    .btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dk); }
+    .btn-secondary { background: var(--surface); border-color: var(--border-strong); color: var(--text-2); }
+    .btn-secondary:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+    .btn-ghost { background: transparent; color: var(--text-3); }
+    .btn-ghost:hover { color: var(--text-1); background: var(--icon-bg); }
+    .btn-danger { background: var(--surface); border-color: var(--border-strong); color: var(--danger); }
+    .btn-danger:hover { background: var(--danger-bg); border-color: var(--danger); }
+    .btn.copied { background: #10B981 !important; border-color: #10B981 !important; color: white !important; }
+    .btn-sm { padding: 5px 10px; min-height: 28px; font-size: 11.5px; }
+
+    /* hook / env行カード */
+    .item-card {
+      padding: 12px 14px;
+      background: var(--icon-bg);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+    }
+    .item-card-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .item-card-title { font-size: 12px; font-weight: 600; color: var(--text-2); }
+    .item-card .field { margin-bottom: 8px; }
+    .item-card .field:last-child { margin-bottom: 0; }
+    .add-row-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 7px 13px; min-height: 32px;
+      border: 1px dashed var(--border-strong); background: var(--surface);
+      border-radius: 8px;
+      font-size: 12px; font-family: inherit; color: var(--text-3);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .add-row-btn:hover { border-color: var(--primary); color: var(--primary); border-style: solid; background: var(--primary-bg); }
+
+    /* セクション切り替え（CLAUDE.md） */
+    .md-section { padding: 14px; background: var(--icon-bg); border-radius: 8px; margin-bottom: 8px; transition: opacity var(--transition); }
+    .md-section.disabled { opacity: 0.4; }
+    .md-section.disabled textarea { display: none; }
+    .md-section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .md-section-toggle { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+    .md-section-title { font-size: 13px; font-weight: 600; color: var(--text-1); flex: 1; cursor: pointer; }
+    .md-section-body {
+      width: 100%; box-sizing: border-box;
+      padding: 9px 11px;
+      border: 1px solid var(--border-strong); border-radius: var(--radius);
+      font-size: 12.5px; line-height: 1.6;
+      font-family: 'SF Mono','Menlo',monospace;
+      color: var(--text-1); background: var(--surface);
+      resize: vertical; min-height: 80px;
+      transition: all var(--transition);
+    }
+    .md-section-body:focus-visible {
+      outline: none; border-color: var(--primary); box-shadow: var(--ring);
+    }
+
+    /* プレビュー */
+    .preview {
+      background: var(--code-bg); color: var(--code-text);
+      padding: 16px 18px; border-radius: var(--radius-card);
+      font-family: 'SF Mono','Menlo','Courier New',monospace;
+      font-size: 12.5px; line-height: 1.65;
+      overflow: auto;
+      max-height: 80vh; min-height: 240px;
+      white-space: pre; word-break: normal;
+    }
+    .preview-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+    .preview-title { font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; }
+    .preview-actions { display: flex; gap: 6px; }
+
+    /* 入門ガイド */
+    .guide {
+      background: var(--primary-bg); border: 1px solid var(--primary-lt);
+      border-radius: var(--radius-card); padding: 16px 18px;
+      margin-bottom: 16px;
+      font-size: 13px; color: var(--primary-dk);
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .guide svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; }
+    .guide strong { color: var(--primary-dk); }
+    .guide code { background: rgba(255,255,255,0.4); padding: 1px 5px; border-radius: 3px; font-family: 'SF Mono','Menlo',monospace; font-size: 11.5px; }
+    .guide a { color: inherit; text-decoration: underline; }
+
+    /* タブパネル切り替え */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* 削除アイコンボタン */
+    .icon-remove {
+      width: 26px; height: 26px;
+      border: 1px solid var(--border); background: var(--surface);
+      border-radius: 6px;
+      color: var(--text-3); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition);
+      flex-shrink: 0;
+    }
+    .icon-remove:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+    .icon-remove svg { width: 13px; height: 13px; }
+
+    footer { max-width: 1300px; margin: 0 auto; padding: 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 10px 16px; }
+      .page-header { padding: 18px 16px 4px; }
+      main { padding: 12px 16px 60px; }
+      .panel { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6 C18 2 21 0.5 22 1 C23 3 22.5 6 22 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <path d="M26 6 C30 1 31 3 30 4.5 C28.5 7 27 8 26.5 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="15" width="48" height="22" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M20 19.5 Q19 19.8 18 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <path d="M28 19.5 Q29 19.8 30 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <circle cx="15.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <circle cx="32.5" cy="27" r="1.5" fill="#3D2F1F"/>
+          <path d="M24 27 Q18.5 29 19.5 32.5 Q24 33.5 28.5 32.5 Q29.5 29 24 27 Z" fill="#FCD34D"/>
+          <path d="M19.5 32.5 Q24 33.5 28.5 32.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-current">Claude 設定アシスタント</span>
+    <button type="button" class="theme-toggle" aria-label="テーマ切替"></button>
+  </div>
+</header>
+
+<div class="page-header">
+  <h1>Claude 設定アシスタント</h1>
+  <p>Claude / Claude Code の設定をフォームから組み立て。生成されたものをコピーして該当ファイルに貼るだけで使えます</p>
+</div>
+
+<main>
+  <div class="guide">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div>
+      <strong>使い方</strong>: 下のタブで作りたいものを選び、左で項目を埋めると右に内容が生成されます。「コピー」もしくは「ダウンロード」ボタンで取得 → 該当ファイルに貼り付けて完成。<br>
+      ファイルの場所：<code>~/.claude/settings.json</code>（全体設定） / <code>CLAUDE.md</code>（プロジェクト直下） / <code>~/.claude/commands/&lt;name&gt;.md</code>（スラッシュコマンド） / <code>~/.claude/agents/&lt;name&gt;.md</code>（サブエージェント）
+    </div>
+  </div>
+
+  <!-- タブ -->
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="settings" role="tab">⚙️ settings.json</button>
+    <button class="tab" data-tab="claudemd" role="tab">📋 CLAUDE.md</button>
+    <button class="tab" data-tab="command" role="tab">⚡ スラッシュコマンド</button>
+    <button class="tab" data-tab="agent" role="tab">🤖 サブエージェント</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- TAB 1: settings.json -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="tab-panel active" id="panel-settings">
+    <div class="two-col">
+      <div class="panel">
+        <h2>⚙️ settings.json を組み立て</h2>
+        <p class="panel-sub">Claude Code 全体の挙動を決める設定ファイル。<code>~/.claude/settings.json</code> に保存します。</p>
+
+        <!-- 権限 allow -->
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">🟢 許可するアクション</span>
+          </div>
+          <div class="section-hint">クリックでON/OFF。チェックしたものは確認なしで実行できます。</div>
+          <div class="chip-list" id="allow-presets"></div>
+          <div class="field" style="margin-top:10px">
+            <label>追加の許可（1行に1件、独自パターン可）</label>
+            <textarea id="allow-custom" placeholder="例: Bash(docker:*)&#10;Bash(yarn:*)" rows="3"></textarea>
+            <div class="field-hint">書式例: <code>Bash(npm:*)</code> / <code>Read</code> / <code>WebFetch(domain:example.com)</code></div>
+          </div>
+        </div>
+
+        <!-- 権限 deny -->
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">🔴 禁止するアクション</span>
+          </div>
+          <div class="section-hint">許可よりも優先されます。危険なコマンドはここで止めます。</div>
+          <div class="chip-list" id="deny-presets"></div>
+          <div class="field" style="margin-top:10px">
+            <label>追加の禁止</label>
+            <textarea id="deny-custom" placeholder="例: Bash(rm -rf:*)&#10;Bash(sudo:*)" rows="2"></textarea>
+          </div>
+        </div>
+
+        <!-- フック -->
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">🪝 フック（イベントで自動実行）</span>
+            <button type="button" class="add-row-btn btn-sm" id="add-hook">+ 追加</button>
+          </div>
+          <div class="section-hint">例: <code>Edit/Write</code> 後に <code>npx prettier --write</code> を自動実行 など。</div>
+          <div id="hooks-list"></div>
+        </div>
+
+        <!-- 環境変数 -->
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">🌍 環境変数</span>
+            <button type="button" class="add-row-btn btn-sm" id="add-env">+ 追加</button>
+          </div>
+          <div id="env-list"></div>
+        </div>
+
+        <!-- その他 -->
+        <div class="section">
+          <div class="section-head"><span class="section-title">🎨 その他</span></div>
+          <div class="row">
+            <div class="field">
+              <label>テーマ</label>
+              <select id="theme-pref">
+                <option value="">未設定（OS依存）</option>
+                <option value="light">light</option>
+                <option value="dark">dark</option>
+                <option value="dark-daltonized">dark-daltonized</option>
+                <option value="light-daltonized">light-daltonized</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>デフォルトモデル</label>
+              <select id="model-pref">
+                <option value="">未設定</option>
+                <option value="claude-opus-4-7">opus（最強）</option>
+                <option value="claude-sonnet-4-6">sonnet（標準）</option>
+                <option value="claude-haiku-4-5-20251001">haiku（高速）</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label style="display:inline-flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0">
+              <input type="checkbox" id="co-author" style="accent-color:var(--primary)">
+              <span>Co-Authored-By: Claude を git コミットに付ける</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="preview-head">
+          <span class="preview-title">生成された settings.json</span>
+          <div class="preview-actions">
+            <button type="button" class="btn btn-secondary" id="copy-settings">📋 コピー</button>
+            <button type="button" class="btn btn-secondary" id="dl-settings">⬇ ダウンロード</button>
+          </div>
+        </div>
+        <pre class="preview" id="preview-settings"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- TAB 2: CLAUDE.md -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="tab-panel" id="panel-claudemd">
+    <div class="two-col">
+      <div class="panel">
+        <h2>📋 CLAUDE.md を組み立て</h2>
+        <p class="panel-sub">プロジェクト固有の指示書。リポジトリ直下に置くと Claude Code が自動で読み込みます。</p>
+
+        <div class="field">
+          <label>プロジェクト名（表題）</label>
+          <input type="text" id="md-title" placeholder="例: ぴよツールズ">
+        </div>
+
+        <div class="section">
+          <div class="section-hint">含めたいセクションだけONにして、本文を埋めてください。</div>
+          <div id="md-sections"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="preview-head">
+          <span class="preview-title">生成された CLAUDE.md</span>
+          <div class="preview-actions">
+            <button type="button" class="btn btn-secondary" id="copy-md">📋 コピー</button>
+            <button type="button" class="btn btn-secondary" id="dl-md">⬇ ダウンロード</button>
+          </div>
+        </div>
+        <pre class="preview" id="preview-md"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- TAB 3: スラッシュコマンド -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="tab-panel" id="panel-command">
+    <div class="two-col">
+      <div class="panel">
+        <h2>⚡ スラッシュコマンド を作成</h2>
+        <p class="panel-sub"><code>~/.claude/commands/&lt;name&gt;.md</code> に置くと <code>/&lt;name&gt;</code> で呼べます。</p>
+
+        <div class="field">
+          <label>コマンド名 <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="cmd-name" placeholder="例: review-pr" pattern="[a-z0-9-]+">
+          <div class="field-hint">英小文字・数字・ハイフンのみ。<code>/review-pr</code> として呼べるようになります</div>
+        </div>
+        <div class="field">
+          <label>説明</label>
+          <input type="text" id="cmd-desc" placeholder="例: PRをレビューしてフィードバックする">
+        </div>
+        <div class="field">
+          <label>引数のヒント</label>
+          <input type="text" id="cmd-arghint" placeholder="例: <PR番号>">
+          <div class="field-hint"><code>$ARGUMENTS</code> や <code>$1</code> で本文中に挿入できます</div>
+        </div>
+        <div class="field">
+          <label>許可ツール（カンマ区切り、空ならデフォルト）</label>
+          <input type="text" id="cmd-tools" placeholder="例: Bash, Read, Grep">
+        </div>
+        <div class="field">
+          <label>モデル</label>
+          <select id="cmd-model">
+            <option value="">継承（呼び出し元と同じ）</option>
+            <option value="opus">opus</option>
+            <option value="sonnet">sonnet</option>
+            <option value="haiku">haiku</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>プロンプト本文 <span style="color:var(--danger)">*</span></label>
+          <textarea id="cmd-body" rows="10" placeholder="このコマンドが実行された時にClaudeに渡したい指示を書く&#10;&#10;例:&#10;以下のPRをレビューしてください: $ARGUMENTS&#10;- 設計上の問題&#10;- セキュリティリスク&#10;- テスト不足"></textarea>
+        </div>
+      </div>
+
+      <div>
+        <div class="preview-head">
+          <span class="preview-title">生成されたコマンドファイル</span>
+          <div class="preview-actions">
+            <button type="button" class="btn btn-secondary" id="copy-cmd">📋 コピー</button>
+            <button type="button" class="btn btn-secondary" id="dl-cmd">⬇ ダウンロード</button>
+          </div>
+        </div>
+        <pre class="preview" id="preview-cmd"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- TAB 4: サブエージェント -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="tab-panel" id="panel-agent">
+    <div class="two-col">
+      <div class="panel">
+        <h2>🤖 サブエージェント を作成</h2>
+        <p class="panel-sub"><code>~/.claude/agents/&lt;name&gt;.md</code> に置くと、Agent ツールで特化エージェントを呼び出せます。</p>
+
+        <div class="field">
+          <label>エージェント名 <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="agent-name" placeholder="例: code-reviewer">
+          <div class="field-hint">英小文字・数字・ハイフン</div>
+        </div>
+        <div class="field">
+          <label>説明（いつ使うエージェントか）<span style="color:var(--danger)">*</span></label>
+          <textarea id="agent-desc" rows="3" placeholder="例: コードレビューを依頼するときに使う。設計・セキュリティ・テスト観点で独立した第二意見をくれる。"></textarea>
+          <div class="field-hint">この説明を Claude が読んで「呼び出すべきか」を判断します</div>
+        </div>
+        <div class="field">
+          <label>許可ツール（カンマ区切り、空または `*` で全部）</label>
+          <input type="text" id="agent-tools" placeholder="例: Read, Grep, Glob">
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>モデル</label>
+            <select id="agent-model">
+              <option value="">継承</option>
+              <option value="opus">opus</option>
+              <option value="sonnet">sonnet</option>
+              <option value="haiku">haiku</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>分離モード</label>
+            <select id="agent-isolation">
+              <option value="">共有（標準）</option>
+              <option value="worktree">worktree（一時ブランチで隔離）</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>システムプロンプト <span style="color:var(--danger)">*</span></label>
+          <textarea id="agent-body" rows="10" placeholder="このエージェントの役割や手順、出力形式などを書く&#10;&#10;例:&#10;あなたはコードレビュー専門のエージェントです。&#10;以下の観点で短く厳しくレビューしてください:&#10;- 設計の妥当性&#10;- セキュリティリスク&#10;- テストの不足"></textarea>
+        </div>
+      </div>
+
+      <div>
+        <div class="preview-head">
+          <span class="preview-title">生成されたエージェントファイル</span>
+          <div class="preview-actions">
+            <button type="button" class="btn btn-secondary" id="copy-agent">📋 コピー</button>
+            <button type="button" class="btn btn-secondary" id="dl-agent">⬇ ダウンロード</button>
+          </div>
+        </div>
+        <pre class="preview" id="preview-agent"></pre>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>ぴよツールズ — 社内専用</footer>
+
+<script>
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ 共通ユーティリティ                                                  ║
+// ╚════════════════════════════════════════════════════════════════════╝
+function copyTextTo(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.classList.add('copied');
+    btn.textContent = '✓ コピー済';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = orig; }, 1500);
+  }).catch(() => alert('コピーに失敗しました'));
+}
+function downloadText(text, filename, mime = 'text/plain') {
+  const blob = new Blob([text], { type: mime + ';charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// タブ切替
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+  });
+});
+
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ TAB 1: settings.json                                                ║
+// ╚════════════════════════════════════════════════════════════════════╝
+const ALLOW_PRESETS = [
+  'Read', 'Edit', 'Write', 'Glob', 'Grep',
+  'Bash(npm:*)', 'Bash(yarn:*)', 'Bash(pnpm:*)',
+  'Bash(git:*)', 'Bash(gh:*)',
+  'Bash(python:*)', 'Bash(pip:*)', 'Bash(uv:*)',
+  'Bash(ls:*)', 'Bash(cat:*)', 'Bash(grep:*)', 'Bash(find:*)',
+  'Bash(make:*)',
+  'WebFetch', 'WebSearch'
+];
+const DENY_PRESETS = [
+  'Bash(rm -rf:*)', 'Bash(sudo:*)', 'Bash(curl:*)', 'Bash(wget:*)',
+  'Bash(chmod:*)', 'Bash(chown:*)',
+  'Write(.env)', 'Read(.env)'
+];
+
+function renderChips(boxId, presets, denyStyle = false) {
+  const box = document.getElementById(boxId);
+  box.innerHTML = presets.map(p =>
+    `<button type="button" class="chip${denyStyle ? ' deny' : ''}" data-value="${p.replace(/"/g, '&quot;')}">${p.replace(/</g,'&lt;')}</button>`
+  ).join('');
+  box.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => { c.classList.toggle('active'); renderSettings(); });
+  });
+}
+renderChips('allow-presets', ALLOW_PRESETS, false);
+renderChips('deny-presets', DENY_PRESETS, true);
+
+// hooks
+const HOOK_EVENTS = ['PreToolUse', 'PostToolUse', 'UserPromptSubmit', 'Stop', 'SubagentStop', 'Notification', 'SessionStart'];
+const hooksList = document.getElementById('hooks-list');
+function addHookRow(data = {}) {
+  const id = 'h' + Math.random().toString(36).slice(2, 8);
+  const div = document.createElement('div');
+  div.className = 'item-card';
+  div.dataset.id = id;
+  div.innerHTML = `
+    <div class="item-card-head">
+      <span class="item-card-title">🪝 フック</span>
+      <button type="button" class="icon-remove" aria-label="削除">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>イベント</label>
+        <select class="hk-event">
+          ${HOOK_EVENTS.map(e => `<option value="${e}"${data.event===e?' selected':''}>${e}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>マッチャー（任意）</label>
+        <input type="text" class="hk-matcher" value="${data.matcher||''}" placeholder="例: Edit|Write">
+      </div>
+    </div>
+    <div class="field">
+      <label>コマンド</label>
+      <textarea class="hk-command" rows="2" placeholder="例: npx prettier --write &quot;$CLAUDE_FILE_PATHS&quot;">${data.command||''}</textarea>
+    </div>
+  `;
+  div.querySelector('.icon-remove').onclick = () => { div.remove(); renderSettings(); };
+  div.querySelectorAll('input, textarea, select').forEach(el => el.addEventListener('input', renderSettings));
+  hooksList.appendChild(div);
+  renderSettings();
+}
+document.getElementById('add-hook').onclick = () => addHookRow();
+
+// env
+const envList = document.getElementById('env-list');
+function addEnvRow(k = '', v = '') {
+  const div = document.createElement('div');
+  div.className = 'item-card';
+  div.innerHTML = `
+    <div class="row">
+      <div class="field"><label>KEY</label><input type="text" class="env-k" value="${k}" placeholder="MY_VAR"></div>
+      <div class="field" style="display:flex;gap:6px">
+        <div style="flex:1"><label>VALUE</label><input type="text" class="env-v" value="${v}" placeholder="value"></div>
+        <button type="button" class="icon-remove" style="align-self:flex-end;margin-bottom:0" aria-label="削除">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  `;
+  div.querySelector('.icon-remove').onclick = () => { div.remove(); renderSettings(); };
+  div.querySelectorAll('input').forEach(el => el.addEventListener('input', renderSettings));
+  envList.appendChild(div);
+  renderSettings();
+}
+document.getElementById('add-env').onclick = () => addEnvRow();
+
+// settings.json 生成
+function buildSettingsObject() {
+  const allow = [];
+  document.querySelectorAll('#allow-presets .chip.active').forEach(c => allow.push(c.dataset.value));
+  document.getElementById('allow-custom').value.split('\n').map(s=>s.trim()).filter(Boolean).forEach(s => allow.push(s));
+  const deny = [];
+  document.querySelectorAll('#deny-presets .chip.active').forEach(c => deny.push(c.dataset.value));
+  document.getElementById('deny-custom').value.split('\n').map(s=>s.trim()).filter(Boolean).forEach(s => deny.push(s));
+
+  const obj = {};
+  if (allow.length || deny.length) {
+    obj.permissions = {};
+    if (allow.length) obj.permissions.allow = allow;
+    if (deny.length)  obj.permissions.deny  = deny;
+  }
+
+  // フック: イベントごとにグルーピング
+  const hooksGroups = {};
+  document.querySelectorAll('#hooks-list .item-card').forEach(row => {
+    const event = row.querySelector('.hk-event').value;
+    const matcher = row.querySelector('.hk-matcher').value.trim();
+    const command = row.querySelector('.hk-command').value.trim();
+    if (!command) return;
+    hooksGroups[event] = hooksGroups[event] || [];
+    hooksGroups[event].push({ matcher, command });
+  });
+  const hooksOut = {};
+  Object.entries(hooksGroups).forEach(([event, items]) => {
+    // 同じmatcher同士でまとめる
+    const byMatcher = {};
+    items.forEach(it => { byMatcher[it.matcher] = byMatcher[it.matcher] || []; byMatcher[it.matcher].push(it.command); });
+    hooksOut[event] = Object.entries(byMatcher).map(([m, cmds]) => {
+      const group = { hooks: cmds.map(c => ({ type: 'command', command: c })) };
+      if (m) group.matcher = m;
+      return group;
+    });
+  });
+  if (Object.keys(hooksOut).length) obj.hooks = hooksOut;
+
+  // env
+  const env = {};
+  document.querySelectorAll('#env-list .item-card').forEach(row => {
+    const k = row.querySelector('.env-k').value.trim();
+    const v = row.querySelector('.env-v').value;
+    if (k) env[k] = v;
+  });
+  if (Object.keys(env).length) obj.env = env;
+
+  // その他
+  const theme = document.getElementById('theme-pref').value;
+  const model = document.getElementById('model-pref').value;
+  const co    = document.getElementById('co-author').checked;
+  if (theme) obj.theme = theme;
+  if (model) obj.model = model;
+  obj.includeCoAuthoredBy = co;
+  return obj;
+}
+function renderSettings() {
+  const obj = buildSettingsObject();
+  document.getElementById('preview-settings').textContent = JSON.stringify(obj, null, 2);
+}
+document.querySelectorAll('#allow-custom, #deny-custom, #theme-pref, #model-pref, #co-author').forEach(el => {
+  el.addEventListener('input', renderSettings);
+  el.addEventListener('change', renderSettings);
+});
+document.getElementById('copy-settings').onclick = (e) => copyTextTo(document.getElementById('preview-settings').textContent, e.currentTarget);
+document.getElementById('dl-settings').onclick = () => downloadText(document.getElementById('preview-settings').textContent, 'settings.json', 'application/json');
+renderSettings();
+
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ TAB 2: CLAUDE.md                                                   ║
+// ╚════════════════════════════════════════════════════════════════════╝
+const MD_SECTIONS = [
+  { id: 'purpose',   title: 'プロジェクトの目的・概要', placeholder: 'このプロジェクトが何のためにあるか、誰が使うか、どんな問題を解決するか…' },
+  { id: 'stack',     title: '技術スタック・依存関係',   placeholder: '言語・フレームワーク・主要ライブラリ・実行環境（Node 20など）' },
+  { id: 'setup',     title: 'セットアップ手順',         placeholder: '初回clone後の手順（pnpm install, .env 作成、初期化スクリプトなど）' },
+  { id: 'layout',    title: 'ディレクトリ構成',         placeholder: '例:\\nsrc/      … ソースコード\\ntests/    … テスト\\ndocs/     … ドキュメント' },
+  { id: 'convention',title: 'コーディング規約・命名規則', placeholder: '例: ファイル名はkebab-case、関数名はcamelCase、コンポーネントはPascalCase' },
+  { id: 'commands',  title: '使うコマンド・ビルド・テスト', placeholder: '例:\\npnpm dev    … 開発サーバー起動\\npnpm test   … テスト実行\\npnpm build  … プロダクションビルド' },
+  { id: 'avoid',     title: '避けたいこと・既知の落とし穴', placeholder: '例: APIキーを直接書かない、masterブランチへ直push禁止、xxxは廃止予定' },
+  { id: 'deploy',    title: 'デプロイ・リリース手順',   placeholder: '例: mainへmerge → GitHub Actionsで自動デプロイ' },
+  { id: 'links',     title: '参考リンク',               placeholder: '- 仕様書: https://...\\n- Figma: https://...\\n- Slackチャンネル: #project-xxx' }
+];
+const mdSectionsBox = document.getElementById('md-sections');
+mdSectionsBox.innerHTML = MD_SECTIONS.map(s => `
+  <div class="md-section" data-id="${s.id}">
+    <div class="md-section-head">
+      <input type="checkbox" class="md-section-toggle" id="md-toggle-${s.id}" checked>
+      <label class="md-section-title" for="md-toggle-${s.id}">${s.title}</label>
+    </div>
+    <textarea class="md-section-body" id="md-body-${s.id}" placeholder="${s.placeholder.replace(/"/g,'&quot;').replace(/\\n/g,'&#10;')}" rows="3"></textarea>
+  </div>
+`).join('');
+
+document.querySelectorAll('.md-section').forEach(div => {
+  const tg = div.querySelector('.md-section-toggle');
+  tg.addEventListener('change', () => {
+    div.classList.toggle('disabled', !tg.checked);
+    renderClaudeMd();
+  });
+});
+document.querySelectorAll('#md-sections textarea, #md-title').forEach(el => el.addEventListener('input', renderClaudeMd));
+
+function renderClaudeMd() {
+  const title = document.getElementById('md-title').value.trim();
+  const lines = [];
+  if (title) {
+    lines.push(`# ${title}`);
+    lines.push('');
+  }
+  MD_SECTIONS.forEach(s => {
+    const toggle = document.getElementById('md-toggle-' + s.id);
+    const body = document.getElementById('md-body-' + s.id);
+    if (!toggle.checked) return;
+    lines.push(`## ${s.title}`);
+    lines.push('');
+    if (body.value.trim()) lines.push(body.value.trim());
+    else lines.push(`<!-- ${s.placeholder.split('\\n')[0]} -->`);
+    lines.push('');
+  });
+  document.getElementById('preview-md').textContent = lines.join('\n').trim() + '\n';
+}
+document.getElementById('copy-md').onclick = (e) => copyTextTo(document.getElementById('preview-md').textContent, e.currentTarget);
+document.getElementById('dl-md').onclick = () => downloadText(document.getElementById('preview-md').textContent, 'CLAUDE.md', 'text/markdown');
+renderClaudeMd();
+
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ TAB 3: スラッシュコマンド                                            ║
+// ╚════════════════════════════════════════════════════════════════════╝
+const CMD_FIELDS = ['cmd-name','cmd-desc','cmd-arghint','cmd-tools','cmd-model','cmd-body'];
+CMD_FIELDS.forEach(id => document.getElementById(id).addEventListener('input', renderCmd));
+document.getElementById('cmd-model').addEventListener('change', renderCmd);
+
+function renderCmd() {
+  const name    = document.getElementById('cmd-name').value.trim() || '<コマンド名>';
+  const desc    = document.getElementById('cmd-desc').value.trim();
+  const arghint = document.getElementById('cmd-arghint').value.trim();
+  const tools   = document.getElementById('cmd-tools').value.trim();
+  const model   = document.getElementById('cmd-model').value;
+  const body    = document.getElementById('cmd-body').value;
+
+  const fm = [];
+  if (desc)    fm.push(`description: ${desc}`);
+  if (arghint) fm.push(`argument-hint: ${arghint}`);
+  if (tools)   fm.push(`allowed-tools: [${tools.split(',').map(s=>s.trim()).filter(Boolean).join(', ')}]`);
+  if (model)   fm.push(`model: ${model}`);
+
+  let out = '';
+  if (fm.length) {
+    out += '---\n' + fm.join('\n') + '\n---\n\n';
+  }
+  out += body || `# ${name}\n\nここにプロンプト本文を書く。\n引数は \`$ARGUMENTS\` または \`$1\` で参照できます。\n`;
+  document.getElementById('preview-cmd').textContent = out;
+}
+document.getElementById('copy-cmd').onclick = (e) => copyTextTo(document.getElementById('preview-cmd').textContent, e.currentTarget);
+document.getElementById('dl-cmd').onclick = () => {
+  const name = document.getElementById('cmd-name').value.trim() || 'command';
+  downloadText(document.getElementById('preview-cmd').textContent, `${name}.md`, 'text/markdown');
+};
+renderCmd();
+
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ TAB 4: サブエージェント                                              ║
+// ╚════════════════════════════════════════════════════════════════════╝
+const AGENT_FIELDS = ['agent-name','agent-desc','agent-tools','agent-model','agent-isolation','agent-body'];
+AGENT_FIELDS.forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', renderAgent);
+  if (el.tagName === 'SELECT') el.addEventListener('change', renderAgent);
+});
+
+function renderAgent() {
+  const name    = document.getElementById('agent-name').value.trim() || '<エージェント名>';
+  const desc    = document.getElementById('agent-desc').value.trim();
+  const tools   = document.getElementById('agent-tools').value.trim();
+  const model   = document.getElementById('agent-model').value;
+  const iso     = document.getElementById('agent-isolation').value;
+  const body    = document.getElementById('agent-body').value;
+
+  const fm = [`name: ${name}`];
+  if (desc)  fm.push(`description: ${desc.replace(/\n/g, ' ').trim()}`);
+  if (tools) {
+    if (tools === '*') fm.push('tools: "*"');
+    else fm.push(`tools: ${tools.split(',').map(s=>s.trim()).filter(Boolean).join(', ')}`);
+  }
+  if (model) fm.push(`model: ${model}`);
+  if (iso)   fm.push(`isolation: ${iso}`);
+
+  let out = '---\n' + fm.join('\n') + '\n---\n\n';
+  out += body || 'このエージェントの役割やシステムプロンプトをここに書きます。';
+  document.getElementById('preview-agent').textContent = out;
+}
+document.getElementById('copy-agent').onclick = (e) => copyTextTo(document.getElementById('preview-agent').textContent, e.currentTarget);
+document.getElementById('dl-agent').onclick = () => {
+  const name = document.getElementById('agent-name').value.trim() || 'agent';
+  downloadText(document.getElementById('preview-agent').textContent, `${name}.md`, 'text/markdown');
+};
+renderAgent();
+</script>
+</body>
+</html>
