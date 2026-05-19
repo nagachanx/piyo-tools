@@ -406,7 +406,7 @@
       <button class="btn fn" onclick="toggleSign()" aria-label="符号反転">±</button>
       <button class="btn num" onclick="inputDigit('0')">0</button>
       <button class="btn num" onclick="inputDecimal()">.</button>
-      <button class="btn eq" onclick="evaluate()" aria-label="計算実行">=</button>
+      <button class="btn eq" id="btn-eq" aria-label="計算実行">=</button>
     </div>
 
     <p class="calc-hint">
@@ -695,6 +695,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ────────── INIT
+document.getElementById('btn-eq').addEventListener('click', evaluate);
 loadState();
 renderHistory();
 updateDisplay();
