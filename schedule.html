@@ -337,10 +337,11 @@
     table.matrix .row-total-last td { border-bottom: 2px solid var(--border-strong); }
     table.matrix .col-best { background: color-mix(in srgb, var(--primary) 14%, white); }
     table.matrix .col-best.count-cell { color: var(--primary-dk); }
-    .status-mark { display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 22px; line-height: 1; }
+    .status-mark { display: inline-block; width: 22px; height: 22px; vertical-align: middle; }
     .status-yes { color: var(--yes); }
     .status-maybe { color: var(--maybe); }
     .status-no { color: var(--no); }
+    .status-dash { color: var(--text-4); }
     .delete-row-btn { padding: 4px 8px; border: 1px solid var(--border); background: var(--surface); border-radius: 6px; cursor: pointer; color: var(--text-3); font-size: 11px; }
     .delete-row-btn:hover { color: var(--danger); border-color: var(--danger); }
 
@@ -1276,10 +1277,10 @@ function renderMatrix(data, opts = {}) {
       html += `<tr><td class="col-name">${esc(p.name)}</td>`;
       candidates.forEach((c, i) => {
         const s = availMap.get(`${p.id}:${c.id}`) || '';
-        let mark = '<span class="status-mark status-no">―</span>';
-        if (s === 'yes') mark = '<span class="status-mark status-yes">◯</span>';
-        else if (s === 'maybe') mark = '<span class="status-mark status-maybe">△</span>';
-        else if (s === 'no') mark = '<span class="status-mark status-no">×</span>';
+        let mark = '<svg class="status-mark status-dash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="6" y1="12" x2="18" y2="12"/></svg>';
+        if (s === 'yes') mark = '<svg class="status-mark status-yes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="7.5"/></svg>';
+        else if (s === 'maybe') mark = '<svg class="status-mark status-maybe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M12 4.5 L20.5 19.5 L3.5 19.5 Z"/></svg>';
+        else if (s === 'no') mark = '<svg class="status-mark status-no" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>';
         html += `<td class="${bestSet.has(i) ? 'col-best' : ''}">${mark}</td>`;
       });
       html += `<td class="col-comment">${esc(p.comment || '')}</td>`;
