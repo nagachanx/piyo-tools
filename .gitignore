@@ -1,0 +1,6 @@
+# ローカル専用（公開サイトには含めない）
+lottery-setup.sql
+schedule-setup.sql
+
+# macOS
+.DS_Store
