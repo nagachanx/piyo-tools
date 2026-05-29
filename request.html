@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>改善リクエスト — ぴよツールズ</title>
+  <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="piyo-theme.css">
+  <script src="piyo-theme.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', 'Noto Sans JP', system-ui, sans-serif; background: var(--bg, #F5F5F4); color: var(--text-1, #1C1917); margin: 0; }
+    .container { max-width: 920px; margin: 0 auto; padding: 24px 16px 80px; }
+    .page-title { font-size: 28px; font-weight: 800; margin: 8px 0 6px; letter-spacing: -0.02em; }
+    .page-desc { color: var(--text-3, #78716C); margin: 0 0 24px; font-size: 14px; line-height: 1.6; }
+    .card { background: var(--surface, #fff); border: 1px solid var(--border, #E7E5E4); border-radius: 14px; padding: 22px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
+    .section-h { font-size: 16px; font-weight: 700; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; color: var(--text-1, #1C1917); }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .field label { font-size: 13px; font-weight: 600; color: var(--text-2, #44403C); }
+    .field input[type="text"], .field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border-strong, #D6D3D1); border-radius: 8px; font-size: 14px; font-family: inherit; box-sizing: border-box; background: #fff; color: inherit; }
+    .field textarea { min-height: 110px; resize: vertical; line-height: 1.55; }
+    .field input:focus, .field textarea:focus { outline: none; border-color: #43A86A; box-shadow: 0 0 0 3px rgba(67,168,106,0.18); }
+    .char-counter { font-size: 12px; color: var(--text-4, #A8A29E); text-align: right; }
+    .btn-primary { background: linear-gradient(135deg, #5BB585 0%, #43A86A 50%, #2D8D57 100%); color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(67,168,106,0.25); transition: filter 0.15s; }
+    .btn-primary:hover { filter: brightness(1.06); }
+    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+    .section { margin-top: 28px; }
+    .filter-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .filter-chip { display: inline-block; padding: 5px 14px; font-size: 12px; font-weight: 600; border-radius: 999px; border: 1px solid var(--border-strong, #D6D3D1); background: #fff; color: var(--text-2, #44403C); cursor: pointer; user-select: none; transition: all 0.12s; }
+    .filter-chip:hover { background: #F5F5F4; }
+    .filter-chip.on { background: #1C1917; color: #fff; border-color: #1C1917; }
+    .request-list { display: flex; flex-direction: column; gap: 10px; }
+    .req-row { display: grid; grid-template-columns: 140px 1fr 140px; gap: 14px; align-items: start; padding: 14px 16px; background: var(--surface, #fff); border: 1px solid var(--border, #E7E5E4); border-radius: 12px; transition: border-color 0.15s; }
+    .req-row:hover { border-color: var(--border-strong, #D6D3D1); }
+    @media (max-width: 640px) { .req-row { grid-template-columns: 1fr; gap: 8px; } }
+    .req-meta { font-size: 12px; color: var(--text-3, #78716C); line-height: 1.5; }
+    .req-meta .name { font-weight: 700; color: var(--text-1, #1C1917); display: block; margin-bottom: 2px; font-size: 13px; }
+    .req-content { font-size: 14px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; color: var(--text-1, #1C1917); }
+    .req-status-select { width: 100%; padding: 8px 10px; border: 1px solid var(--border-strong, #D6D3D1); border-radius: 8px; font-size: 13px; font-weight: 700; background: #fff; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%2378716C' d='M5 6L0 0h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+    .req-row[data-status="受付"]   .req-status-select { background-color: #EFF6FF; border-color: #BFDBFE; color: #1E40AF; }
+    .req-row[data-status="対応中"] .req-status-select { background-color: #FFFBEB; border-color: #FDE68A; color: #78350F; }
+    .req-row[data-status="完了"]   .req-status-select { background-color: #ECFDF5; border-color: #BBF7D0; color: #065F46; }
+    .req-row[data-status="見送り"] .req-status-select { background-color: #F5F5F4; border-color: #D6D3D1; color: #57534E; }
+    .empty { text-align: center; color: var(--text-3, #78716C); padding: 28px 16px; background: var(--surface, #fff); border: 1px dashed var(--border-strong, #D6D3D1); border-radius: 12px; font-size: 14px; }
+    .alert { padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; line-height: 1.5; }
+    .alert.success { background: #ECFDF5; color: #065F46; border: 1px solid #BBF7D0; }
+    .alert.error { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+    .list-count { font-size: 12px; color: var(--text-3, #78716C); margin-left: auto; }
+  </style>
+</head>
+<body>
+
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 9 C19 5 18 1 21 1 C22.5 1 23 4 24 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <path d="M24 9 C29 5 30 1 27 1 C25.5 1 25 4 24 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="15" width="48" height="22" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M20 19.5 Q19 19.8 18 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <path d="M28 19.5 Q29 19.8 30 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <circle cx="15.5" cy="28" r="1.5" fill="#3D2F1F"/>
+          <circle cx="32.5" cy="28" r="1.5" fill="#3D2F1F"/>
+          <path d="M24 25 Q18 28 19.5 32 Q24 34.2 28.5 32 Q30 28 24 25 Z" fill="#FCD34D"/>
+          <path d="M19.5 32 Q24 34.2 28.5 32" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep" aria-hidden="true">/</span>
+    <span class="topbar-current">改善リクエスト</span>
+    <div class="topbar-spacer"></div>
+    <button type="button" class="theme-toggle" aria-label="テーマ切替"></button>
+  </div>
+</header>
+
+<main class="container">
+  <h1 class="page-title">改善リクエスト</h1>
+  <p class="page-desc">ぴよツールズに追加してほしい機能や、改善要望があればこちらから送ってください。一覧で進捗もチェックできます。</p>
+
+  <section class="card">
+    <h2 class="section-h">📨 新しいリクエストを送る</h2>
+    <div id="alert-area"></div>
+    <form id="req-form" autocomplete="off" novalidate>
+      <div class="field">
+        <label for="name-input">お名前</label>
+        <input type="text" id="name-input" maxlength="30" placeholder="例：田中" required>
+      </div>
+      <div class="field">
+        <label for="content-input">内容</label>
+        <textarea id="content-input" maxlength="1000" placeholder="ご要望や改善案を自由にお書きください。" required></textarea>
+        <div class="char-counter" id="content-counter">0 / 1000</div>
+      </div>
+      <button type="submit" class="btn-primary" id="submit-btn">送信する</button>
+    </form>
+  </section>
+
+  <section class="section">
+    <h2 class="section-h">📋 リクエスト一覧 <span class="list-count" id="list-count"></span></h2>
+    <div class="filter-bar" id="filter-bar">
+      <span class="filter-chip on" data-filter="all">すべて</span>
+      <span class="filter-chip" data-filter="受付">受付</span>
+      <span class="filter-chip" data-filter="対応中">対応中</span>
+      <span class="filter-chip" data-filter="完了">完了</span>
+      <span class="filter-chip" data-filter="見送り">見送り</span>
+    </div>
+    <div id="request-list" class="request-list">
+      <div class="empty">読み込み中...</div>
+    </div>
+  </section>
+</main>
+
+<footer>ぴよツールズ — 社内専用 ・ <a href="request.html" style="color:inherit;text-decoration:underline;opacity:0.85;">リクエスト</a></footer>
+
+<script src="piyo-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function() {
+  const supa = window.supabase.createClient(window.PIYO_CONFIG.SUPABASE_URL, window.PIYO_CONFIG.SUPABASE_ANON_KEY);
+  const STATUSES = ['受付', '対応中', '完了', '見送り'];
+
+  function nanoid(len) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const bytes = crypto.getRandomValues(new Uint8Array(len));
+    let id = '';
+    for (let i = 0; i < len; i++) id += alphabet[bytes[i] % alphabet.length];
+    return id;
+  }
+  function fmtDate(s) {
+    if (!s) return '';
+    const d = new Date(s);
+    const y = d.getFullYear(), m = d.getMonth()+1, day = d.getDate();
+    const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
+    return `${y}/${m}/${day} ${hh}:${mm}`;
+  }
+  function escapeHtml(s) {
+    return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  const listEl = document.getElementById('request-list');
+  const countEl = document.getElementById('list-count');
+  const formEl = document.getElementById('req-form');
+  const nameEl = document.getElementById('name-input');
+  const contentEl = document.getElementById('content-input');
+  const counterEl = document.getElementById('content-counter');
+  const submitBtn = document.getElementById('submit-btn');
+  const alertArea = document.getElementById('alert-area');
+  const filterBar = document.getElementById('filter-bar');
+  let currentFilter = 'all';
+  let requests = [];
+
+  contentEl.addEventListener('input', () => {
+    counterEl.textContent = `${contentEl.value.length} / 1000`;
+  });
+
+  function showAlert(msg, type) {
+    alertArea.innerHTML = `<div class="alert ${type||'success'}">${escapeHtml(msg)}</div>`;
+    setTimeout(()=>{ if (alertArea.firstChild) alertArea.innerHTML=''; }, 4500);
+  }
+
+  function render() {
+    const filtered = currentFilter === 'all' ? requests : requests.filter(r => r.status === currentFilter);
+    countEl.textContent = requests.length ? `（全${requests.length}件）` : '';
+    if (!filtered.length) {
+      listEl.innerHTML = `<div class="empty">${currentFilter==='all' ? 'まだリクエストはありません。最初の1件を送ってみてください。' : 'このステータスのリクエストはありません。'}</div>`;
+      return;
+    }
+    listEl.innerHTML = filtered.map(r => `
+      <div class="req-row" data-id="${r.id}" data-status="${escapeHtml(r.status)}">
+        <div class="req-meta">
+          <span class="name">${escapeHtml(r.name)}</span>
+          <span>${fmtDate(r.created_at)}</span>
+        </div>
+        <div class="req-content">${escapeHtml(r.content)}</div>
+        <select class="req-status-select" aria-label="ステータス">
+          ${STATUSES.map(s => `<option value="${s}" ${s===r.status?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+    `).join('');
+    listEl.querySelectorAll('.req-status-select').forEach(sel => {
+      sel.addEventListener('change', async (e) => {
+        const row = e.target.closest('.req-row');
+        const id = row.dataset.id;
+        const newStatus = e.target.value;
+        const prevStatus = row.dataset.status;
+        row.dataset.status = newStatus;
+        const { error } = await supa.from('tool_requests').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', id);
+        if (error) {
+          row.dataset.status = prevStatus;
+          e.target.value = prevStatus;
+          showAlert('ステータス更新に失敗しました：' + error.message, 'error');
+          return;
+        }
+        const idx = requests.findIndex(r => r.id === id);
+        if (idx>=0) requests[idx].status = newStatus;
+      });
+    });
+  }
+
+  filterBar.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      filterBar.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('on'));
+      chip.classList.add('on');
+      currentFilter = chip.dataset.filter;
+      render();
+    });
+  });
+
+  async function load() {
+    const { data, error } = await supa.from('tool_requests').select('*').order('created_at', { ascending: false });
+    if (error) {
+      listEl.innerHTML = `<div class="empty" style="color:#991B1B">読み込みに失敗しました：${escapeHtml(error.message)}<br><small>（Supabaseで request-setup.sql を実行する必要があるかもしれません）</small></div>`;
+      return;
+    }
+    requests = data || [];
+    render();
+  }
+
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = nameEl.value.trim();
+    const content = contentEl.value.trim();
+    if (!name) { showAlert('お名前を入力してください。', 'error'); nameEl.focus(); return; }
+    if (!content) { showAlert('内容を入力してください。', 'error'); contentEl.focus(); return; }
+    submitBtn.disabled = true;
+    const row = { id: nanoid(14), name, content, status: '受付' };
+    const { error } = await supa.from('tool_requests').insert(row);
+    submitBtn.disabled = false;
+    if (error) {
+      showAlert('送信に失敗しました：' + error.message, 'error');
+      return;
+    }
+    nameEl.value = '';
+    contentEl.value = '';
+    counterEl.textContent = '0 / 1000';
+    showAlert('送信しました。ご協力ありがとうございます！', 'success');
+    await load();
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
