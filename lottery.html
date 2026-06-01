@@ -734,7 +734,8 @@
     @keyframes spot1 { from{transform:translate(-40vw,-30vh)} to{transform:translate(30vw,20vh)} }
     @keyframes spot2 { from{transform:translate(40vw,20vh)} to{transform:translate(-30vw,-30vh)} }
 
-    #ts-ticker { position: absolute; bottom: 0; left: 0; right: 0; height: 48px; background: #FFD700; overflow: hidden; display: flex; align-items: center; z-index: 25; }
+    #ts-ticker,
+    #shared-ticker { position: absolute; bottom: 0; left: 0; right: 0; height: 48px; background: #FFD700; overflow: hidden; display: flex; align-items: center; z-index: 25; }
     .ts-ticker-scroll { white-space: nowrap; font-size: 17px; font-weight: bold; color: #000; padding-left: 100vw; animation: tickerScroll 14s linear infinite; }
     @keyframes tickerScroll { from{transform:translateX(0)} to{transform:translateX(-100%)} }
 
@@ -1133,8 +1134,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="8" y="13" width="8" height="8" rx="1.5"/></svg>
         </span>
         <span class="anim-info">
-          <span class="anim-title">カタカナサイコロ</span>
-          <span class="anim-desc">文字数分のサイコロが揃って当選者へ</span>
+          <span class="anim-title">サイコロ</span>
+          <span class="anim-desc">サイコロが揃って当選者へ</span>
         </span>
       </button>
     </div>
@@ -1205,6 +1206,11 @@
 
   <!-- 全演出で共通の花吹雪（当選発表後にふわふわ舞う） -->
   <canvas id="shared-confetti" style="display:none"></canvas>
+
+  <!-- 全演出で共通の下スクロールティッカー -->
+  <div id="shared-ticker" style="display:none">
+    <div class="ts-ticker-scroll" id="shared-ticker-text"></div>
+  </div>
 
   <div id="ov-ts" style="display:none" onclick="onTsClick()">
     <canvas id="ts-canvas"></canvas>
@@ -1524,9 +1530,8 @@ async function playTimesSquare(winners) {
     launchUnifiedConfetti();
 
     await delay(400);
-    const wl = winners.length===1 ? winners[0] : winners.join(' / ');
-    document.getElementById('ts-ticker-text').textContent = `🎉 当選者: ${wl} 🎉 おめでとうございます！　`.repeat(6);
-    ticker.style.display = 'flex';
+    // 旧 ts-ticker は廃止、共通ティッカー shared-ticker を使用
+    showSharedTicker(winners);
 
     await delay(1200);
     closeHint.style.display = 'block';
@@ -1539,6 +1544,7 @@ async function playTimesSquare(winners) {
       tsEl.style.display = billboard.style.display = closeHint.style.display = ticker.style.display = 'none';
       tsCanClose = false;
       stopUnifiedConfetti();
+      hideSharedTicker();
       resolve();
     };
   });
@@ -1657,6 +1663,7 @@ function playAmida(allItems, winners) {
       if (closeHint) closeHint.style.display = 'none';
       amidaCanClose = false;
       stopUnifiedConfetti();
+      hideSharedTicker();
       resolve();
     };
     window._amidaCleanup = cleanup;
@@ -1682,7 +1689,7 @@ function playAmida(allItems, winners) {
     if (n < 2) {
       statusEl.textContent = '🎉 当選！';
       winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
-      winnerEl.classList.add('show'); launchUnifiedConfetti();
+      winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
       setTimeout(() => {
         closeHint.style.display = 'block';
         amidaCanClose = true;
@@ -1703,7 +1710,7 @@ function playAmida(allItems, winners) {
       console.error('[Amida] cannot get 2d context');
       statusEl.textContent = '🎉 当選！';
       winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
-      winnerEl.classList.add('show'); launchUnifiedConfetti();
+      winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
       closeHint.style.display = 'block';
       amidaCanClose = true;
       return;
@@ -1862,7 +1869,7 @@ function playAmida(allItems, winners) {
             setTimeout(() => {
               // 巨大なゴールド billboard で当選者発表
               winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
-              winnerEl.classList.add('show'); launchUnifiedConfetti();
+              winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
 
               // 紙吹雪を下から噴射（噴水のように）
               try {
@@ -1887,7 +1894,7 @@ function playAmida(allItems, winners) {
           try { drawStatic(fullPath, true); } catch (_) {}
           statusEl.textContent = '🎉 到着！';
           winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
-          winnerEl.classList.add('show'); launchUnifiedConfetti();
+          winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
           closeHint.style.display = 'block';
           amidaCanClose = true;
         }
@@ -1927,6 +1934,7 @@ function playBowling(allItems, winners) {
       if (closeHint) closeHint.style.display = 'none';
       bowlingCanClose = false;
       stopUnifiedConfetti();
+      hideSharedTicker();
       resolve();
     };
     window._bowlingCleanup = cleanup;
@@ -2027,7 +2035,7 @@ function playBowling(allItems, winners) {
       } else {
         winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)}`).join('<br>');
       }
-      winnerEl.classList.add('show'); launchUnifiedConfetti();
+      winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
       setTimeout(() => {
         closeHint.style.display = 'block';
         bowlingCanClose = true;
@@ -2262,6 +2270,7 @@ function playParticles(allItems, winners) {
       if (closeHint) closeHint.style.display = 'none';
       particlesCanClose = false;
       stopUnifiedConfetti();
+      hideSharedTicker();
       resolve();
     };
     window._particlesCleanup = cleanup;
@@ -2363,7 +2372,7 @@ function playParticles(allItems, winners) {
       } else {
         winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)}`).join('<br>');
       }
-      winnerEl.classList.add('show'); launchUnifiedConfetti();
+      winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
       setTimeout(() => {
         closeHint.style.display = 'block';
         particlesCanClose = true;
@@ -2452,6 +2461,7 @@ function playDice(allItems, winners) {
       if (closeHint) closeHint.style.display = 'none';
       diceCanClose = false;
       stopUnifiedConfetti();
+      hideSharedTicker();
       resolve();
     };
     window._diceCleanup = cleanup;
@@ -2492,11 +2502,28 @@ function playDice(allItems, winners) {
     KATAKANA.forEach(c => poolSet.add(c));
     const POOL = Array.from(poolSet);
 
-    // ★ 予測対策：常に最低8個のサイコロを表示し、名前を中央に置く。
-    //   両側の余ったサイコロはランダムなダミー文字で埋め、当選時は名前文字のサイコロだけが金色に光る
+    // ★ 予測対策：常に最低8個のサイコロを表示。名前の文字は左右に散らして配置（中央集中を回避）。
+    //   読み順は保ったまま、各文字の前後の隙間（ダミー数）をランダムに振り分ける
     const MIN_DICE = 8;
     const totalDice = Math.max(MIN_DICE, N);
-    const nameOffset = Math.floor((totalDice - N) / 2);   // 中央配置のためのオフセット
+
+    // 名前位置をランダムに散らす（左→右の順序は維持）
+    // ダミー数（gaps）を N+1 個のスロット（先頭・各名前文字の後）にランダム配分
+    const gaps = totalDice - N;
+    const slotSizes = new Array(N + 1).fill(0);
+    for (let k = 0; k < gaps; k++) {
+      slotSizes[Math.floor(Math.random() * (N + 1))]++;
+    }
+    const namePositions = [];
+    {
+      let pos = slotSizes[0];
+      for (let k = 0; k < N; k++) {
+        namePositions.push(pos);
+        pos += 1 + slotSizes[k + 1];
+      }
+    }
+    const positionToNameIdx = {};
+    namePositions.forEach((pos, idx) => { positionToNameIdx[pos] = idx; });
 
     // サイコロのサイズ・配置（totalDiceで計算）
     const maxDiceW = Math.min(110, Math.floor((cssW - 60) / totalDice) - 10);
@@ -2509,8 +2536,9 @@ function playDice(allItems, winners) {
 
     const dice = [];
     for (let i = 0; i < totalDice; i++) {
-      const isNameChar = (i >= nameOffset && i < nameOffset + N);
-      const targetChar = isNameChar ? nameChars[i - nameOffset] : randomDecoy();
+      const nameIdx = positionToNameIdx[i];
+      const isNameChar = nameIdx !== undefined;
+      const targetChar = isNameChar ? nameChars[nameIdx] : randomDecoy();
       dice.push({
         x: startX + i * (diceSize + 12),
         y: diceY,
@@ -2518,7 +2546,7 @@ function playDice(allItems, winners) {
         isNameChar,                                  // ← 当選時に光るかどうか
         currentChar: randomDecoy(),
         stopped: false,
-        stopAt: 3000 + i * 180,                      // 左から順に止まる（少し速めに）
+        stopAt: 3000 + i * 180,                      // 左から順に止まる
         bounceY: 0,
         bounceVy: 0,
         rotJitter: 0,
@@ -2556,7 +2584,7 @@ function playDice(allItems, winners) {
       } else {
         winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)}`).join('<br>');
       }
-      winnerEl.classList.add('show'); launchUnifiedConfetti();
+      winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
       setTimeout(() => {
         closeHint.style.display = 'block';
         diceCanClose = true;
@@ -2829,6 +2857,21 @@ function launchUnifiedConfetti() {
   }
 
   unifiedConfettiAnimFrame = requestAnimationFrame(render);
+}
+
+// 全演出共通の下スクロールティッカー（当選発表後に流れる）
+function showSharedTicker(winnerArr) {
+  const ticker = document.getElementById('shared-ticker');
+  const tickerText = document.getElementById('shared-ticker-text');
+  if (!ticker || !tickerText) return;
+  const wl = winnerArr.length === 1 ? winnerArr[0] : winnerArr.join(' / ');
+  tickerText.textContent = `🎉 当選者: ${wl} 🎉 おめでとうございます！　`.repeat(6);
+  ticker.style.display = 'flex';
+}
+
+function hideSharedTicker() {
+  const ticker = document.getElementById('shared-ticker');
+  if (ticker) ticker.style.display = 'none';
 }
 
 function stopUnifiedConfetti() {
