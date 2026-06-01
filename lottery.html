@@ -480,24 +480,27 @@
     .anim-desc { font-size: 11px; color: var(--text-3); line-height: 1.4; }
 
     /* ─ Preview (idle) ───────────────────── */
-    .preview-card {
+    .anim-selector-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-card);
-      padding: 56px 24px;
+      padding: 20px 18px;
+      margin-bottom: 16px;
+    }
+    .anim-selector-header {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 15px; font-weight: 700;
+      color: var(--text-1);
+      margin-bottom: 14px;
+    }
+    .anim-selector-header span:first-child { font-size: 18px; }
+    .anim-selector-title { letter-spacing: 0.01em; }
+    .anim-selector-hint {
+      font-size: 12px;
+      color: var(--text-3);
       text-align: center;
+      margin-top: 12px;
     }
-    .preview-icon {
-      width: 56px; height: 56px;
-      margin: 0 auto 14px;
-      border-radius: 12px;
-      background: var(--icon-bg);
-      color: var(--text-4);
-      display: flex; align-items: center; justify-content: center;
-    }
-    .preview-icon svg { width: 28px; height: 28px; }
-    .preview-title { font-size: 14px; font-weight: 600; color: var(--text-2); margin-bottom: 4px; }
-    .preview-sub { font-size: 12px; color: var(--text-4); line-height: 1.6; }
 
     /* ─ Result ───────────────────────────── */
     #result-card {
@@ -932,42 +935,38 @@
         </div>
       </div>
 
-      <div class="block-section">
-        <div class="block-section-title">演出の選択</div>
-        <div class="anim-tile-row" role="radiogroup" aria-label="演出の選択">
-          <button class="anim-opt active" data-anim="timessquare" onclick="selectAnim('timessquare')" role="radio" aria-checked="true">
-            <span class="anim-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="9" y1="13" x2="9.01" y2="13"/><line x1="9" y1="17" x2="9.01" y2="17"/></svg>
-            </span>
-            <span class="anim-info">
-              <span class="anim-title">ドラムロール</span>
-              <span class="anim-desc">迫力の大画面演出</span>
-            </span>
-          </button>
-          <button class="anim-opt" data-anim="amida" onclick="selectAnim('amida')" role="radio" aria-checked="false">
-            <span class="anim-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="21"/><line x1="18" y1="3" x2="18" y2="21"/><line x1="6" y1="9" x2="18" y2="9"/><line x1="6" y1="15" x2="18" y2="15"/></svg>
-            </span>
-            <span class="anim-info">
-              <span class="anim-title">あみだくじ</span>
-              <span class="anim-desc">線を辿って当選者へ</span>
-            </span>
-          </button>
-        </div>
-      </div>
-
     </div>
   </div>
 
 </div><!-- /.layout-left -->
 
 <aside class="layout-right" aria-label="プレビュー・結果">
-  <div id="preview-card" class="preview-card">
-    <div class="preview-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+  <div id="anim-selector" class="anim-selector-card">
+    <div class="anim-selector-header">
+      <span aria-hidden="true">🎉</span>
+      <span class="anim-selector-title">演出を選ぼう</span>
     </div>
-    <div class="preview-title">プレビュー</div>
-    <div class="preview-sub">候補を入力して「抽選スタート」を押してください</div>
+    <div class="anim-tile-row" role="radiogroup" aria-label="演出の選択">
+      <button class="anim-opt active" data-anim="timessquare" onclick="selectAnim('timessquare')" role="radio" aria-checked="true">
+        <span class="anim-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="9" y1="13" x2="9.01" y2="13"/><line x1="9" y1="17" x2="9.01" y2="17"/></svg>
+        </span>
+        <span class="anim-info">
+          <span class="anim-title">ドラムロール</span>
+          <span class="anim-desc">迫力の大画面演出</span>
+        </span>
+      </button>
+      <button class="anim-opt" data-anim="amida" onclick="selectAnim('amida')" role="radio" aria-checked="false">
+        <span class="anim-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="21"/><line x1="18" y1="3" x2="18" y2="21"/><line x1="6" y1="9" x2="18" y2="9"/><line x1="6" y1="15" x2="18" y2="15"/></svg>
+        </span>
+        <span class="anim-info">
+          <span class="anim-title">あみだくじ</span>
+          <span class="anim-desc">線を辿って当選者へ</span>
+        </span>
+      </button>
+    </div>
+    <div class="anim-selector-hint">どの演出で当選を発表する？</div>
   </div>
 
   <div id="result-card">
@@ -1121,16 +1120,16 @@ function showResult(winners) {
   } else {
     body.innerHTML = `<ul class="result-list">${winners.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
   }
-  const preview = document.getElementById('preview-card');
-  if (preview) preview.style.display = 'none';
+  const sel = document.getElementById('anim-selector');
+  if (sel) sel.style.display = 'none';
   document.getElementById('result-card').classList.add('show');
   document.getElementById('result-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function resetResult() {
   document.getElementById('result-card').classList.remove('show');
-  const preview = document.getElementById('preview-card');
-  if (preview) preview.style.display = '';
+  const sel = document.getElementById('anim-selector');
+  if (sel) sel.style.display = '';
 }
 function esc(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
