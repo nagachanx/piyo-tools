@@ -1841,7 +1841,7 @@ function playAmida(allItems, winners) {
 
     // 800ms 静止 → アニメ開始 → 完了 → クリックで閉じる
     setTimeout(() => {
-      const ANIM_DUR = 3800;
+      const ANIM_DUR = 5000;   // 線がじわじわ伸びていくように少しゆっくり
       const startTime = performance.now();
       const segCount = Math.max(1, fullPath.length - 1);
 
@@ -2359,7 +2359,7 @@ function playParticles(allItems, winners) {
 
     // タイミング
     const CHAOS_DUR    = 1700;
-    const CONVERGE_DUR = 3400;   // 集合フェーズ：ユーザー要望で倍に延長（ゆっくり集まる）
+    const CONVERGE_DUR = 4500;   // 集合フェーズ：終盤じわじわ感のためさらに延長
     const HOLD_DUR     = 700;
     const REVEAL_START = CHAOS_DUR + CONVERGE_DUR + HOLD_DUR;
     const startTime    = performance.now();
@@ -2403,7 +2403,7 @@ function playParticles(allItems, winners) {
           // 集合フェーズ開始時の位置を一度だけ記録
           if (p.cStartX === undefined) { p.cStartX = p.x; p.cStartY = p.y; }
           const t = Math.min(1, (elapsed - CHAOS_DUR) / CONVERGE_DUR);
-          const eased = 1 - Math.pow(1 - t, 3);   // ease-out cubic：最後ふんわり止まる
+          const eased = 1 - Math.pow(1 - t, 5);   // ease-out quint：終盤がぐっとゆっくり、じわじわ名前が現れる
           p.x = p.cStartX + (p.tx - p.cStartX) * eased;
           p.y = p.cStartY + (p.ty - p.cStartY) * eased;
           p.rot += p.rotVel * 0.5;
