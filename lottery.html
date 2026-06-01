@@ -1249,6 +1249,22 @@ let diceCanClose = false;
 let diceAnimFrame = null;
 let unifiedConfettiAnimFrame = null;
 
+// リッチでフラットなトロフィーアイコン（当選バナー左右で使用）
+const TROPHY_HTML = `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="width:0.92em;height:0.92em;vertical-align:-0.12em;display:inline-block;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35));">
+<path d="M16 16 Q5 18 6 28 Q8 35 18 33" stroke="#8C5E10" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M48 16 Q59 18 58 28 Q56 35 46 33" stroke="#8C5E10" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M14 10 L50 10 L48 32 Q44 41 32 43 Q20 41 16 32 Z" fill="#E6B800" stroke="#8C5E10" stroke-width="1.6" stroke-linejoin="round"/>
+<path d="M14 10 L50 10 L49 19 Q40 22 32 22 Q24 22 15 19 Z" fill="#FFE680"/>
+<ellipse cx="32" cy="11" rx="17.5" ry="2.2" fill="#FFEFA8" stroke="#8C5E10" stroke-width="1.2"/>
+<path d="M32 19 L34.5 25 L40.5 26 L36 30 L37.2 36 L32 33.2 L26.8 36 L28 30 L23.5 26 L29.5 25 Z" fill="#FFFFFF" stroke="#8C5E10" stroke-width="1" stroke-linejoin="round"/>
+<rect x="29" y="42.5" width="6" height="6" fill="#D4A400" stroke="#8C5E10" stroke-width="1.2"/>
+<rect x="22" y="48.5" width="20" height="4" rx="1" fill="#E6B800" stroke="#8C5E10" stroke-width="1.2"/>
+<rect x="17" y="52.5" width="30" height="8" rx="2" fill="#E6B800" stroke="#8C5E10" stroke-width="1.6"/>
+<rect x="17.8" y="53" width="28.4" height="2.6" rx="1.5" fill="#FFE680"/>
+<path d="M52 20 l1.2 2 l2 1.2 l-2 1.2 l-1.2 2 l-1.2 -2 l-2 -1.2 l2 -1.2 z" fill="#FFEFA8" stroke="#8C5E10" stroke-width="0.6"/>
+<path d="M10 36 l1 1.6 l1.6 1 l-1.6 1 l-1 1.6 l-1 -1.6 l-1.6 -1 l1.6 -1 z" fill="#FFEFA8" stroke="#8C5E10" stroke-width="0.6"/>
+</svg>`;
+
 function switchTab(tab) {
   inputMode = tab;
   document.querySelectorAll('.tab-btn').forEach(b => {
@@ -1665,7 +1681,7 @@ function playAmida(allItems, winners) {
     // n=1 はすぐ表示
     if (n < 2) {
       statusEl.textContent = '🎉 当選！';
-      winnerEl.textContent = `🏆 ${winners[0]} 🏆`;
+      winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
       winnerEl.classList.add('show'); launchUnifiedConfetti();
       setTimeout(() => {
         closeHint.style.display = 'block';
@@ -1686,7 +1702,7 @@ function playAmida(allItems, winners) {
     if (!ctx) {
       console.error('[Amida] cannot get 2d context');
       statusEl.textContent = '🎉 当選！';
-      winnerEl.textContent = `🏆 ${winners[0]} 🏆`;
+      winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
       winnerEl.classList.add('show'); launchUnifiedConfetti();
       closeHint.style.display = 'block';
       amidaCanClose = true;
@@ -1845,7 +1861,7 @@ function playAmida(allItems, winners) {
             drawStatic(fullPath, true);
             setTimeout(() => {
               // 巨大なゴールド billboard で当選者発表
-              winnerEl.textContent = `🏆 ${winners[0]} 🏆`;
+              winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
               winnerEl.classList.add('show'); launchUnifiedConfetti();
 
               // 紙吹雪を下から噴射（噴水のように）
@@ -1879,7 +1895,7 @@ function playAmida(allItems, winners) {
           // 例外発生時：パス全体を描いて完了状態に進める
           try { drawStatic(fullPath, true); } catch (_) {}
           statusEl.textContent = '🎉 到着！';
-          winnerEl.textContent = `🏆 ${winners[0]} 🏆`;
+          winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
           winnerEl.classList.add('show'); launchUnifiedConfetti();
           closeHint.style.display = 'block';
           amidaCanClose = true;
@@ -2016,9 +2032,9 @@ function playBowling(allItems, winners) {
       statusEl.textContent = '🎉 当選！';
       revealStarted = true;
       if (winners.length === 1) {
-        winnerEl.innerHTML = `🏆 ${esc(winners[0])} 🏆`;
+        winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
       } else {
-        winnerEl.innerHTML = winners.map(w => `🏆 ${esc(w)}`).join('<br>');
+        winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)}`).join('<br>');
       }
       winnerEl.classList.add('show'); launchUnifiedConfetti();
       setTimeout(() => {
@@ -2352,9 +2368,9 @@ function playParticles(allItems, winners) {
     setTimeout(() => { statusEl.textContent = '🎉 当選！'; }, CHAOS_DUR + CONVERGE_DUR);
     setTimeout(() => {
       if (winners.length === 1) {
-        winnerEl.innerHTML = `🏆 ${esc(winners[0])} 🏆`;
+        winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
       } else {
-        winnerEl.innerHTML = winners.map(w => `🏆 ${esc(w)}`).join('<br>');
+        winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)}`).join('<br>');
       }
       winnerEl.classList.add('show'); launchUnifiedConfetti();
       setTimeout(() => {
@@ -2474,9 +2490,9 @@ function playDice(allItems, winners) {
     // 当選者名から文字配列を作る（複数当選は「・」で連結、長すぎる名前は省略）
     const targetName = winners.length === 1 ? winners[0] : winners.join('・');
     const MAX_CHARS = 10;
-    const chars = Array.from(targetName).slice(0, MAX_CHARS);
+    const nameChars = Array.from(targetName).slice(0, MAX_CHARS);
     const truncated = Array.from(targetName).length > MAX_CHARS;
-    const N = chars.length;
+    const N = nameChars.length;
 
     // 揺らぎ用の文字プール（候補者全員の名前から抽出＋カタカナ）
     const KATAKANA = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン'.split('');
@@ -2485,29 +2501,43 @@ function playDice(allItems, winners) {
     KATAKANA.forEach(c => poolSet.add(c));
     const POOL = Array.from(poolSet);
 
-    // サイコロのサイズ・配置
-    const maxDiceW = Math.min(110, Math.floor((cssW - 60) / N) - 10);
-    const diceSize = Math.max(50, Math.min(maxDiceW, 110));
-    const totalW = N * diceSize + (N - 1) * 12;
+    // ★ 予測対策：常に最低8個のサイコロを表示し、名前を中央に置く。
+    //   両側の余ったサイコロはランダムなダミー文字で埋め、当選時は名前文字のサイコロだけが金色に光る
+    const MIN_DICE = 8;
+    const totalDice = Math.max(MIN_DICE, N);
+    const nameOffset = Math.floor((totalDice - N) / 2);   // 中央配置のためのオフセット
+
+    // サイコロのサイズ・配置（totalDiceで計算）
+    const maxDiceW = Math.min(110, Math.floor((cssW - 60) / totalDice) - 10);
+    const diceSize = Math.max(46, Math.min(maxDiceW, 110));
+    const totalW = totalDice * diceSize + (totalDice - 1) * 12;
     const startX = (cssW - totalW) / 2;
     const diceY = cssH / 2 - diceSize / 2;
 
-    const dice = chars.map((targetChar, i) => ({
-      x: startX + i * (diceSize + 12),
-      y: diceY,
-      targetChar,
-      currentChar: POOL[Math.floor(Math.random() * POOL.length)],
-      stopped: false,
-      stopAt: 3000 + i * 220,                  // 左から順に止まる
-      bounceY: 0,
-      bounceVy: 0,
-      rotJitter: 0,
-      lastTumbleStep: -1,
-    }));
+    function randomDecoy() { return POOL[Math.floor(Math.random() * POOL.length)]; }
+
+    const dice = [];
+    for (let i = 0; i < totalDice; i++) {
+      const isNameChar = (i >= nameOffset && i < nameOffset + N);
+      const targetChar = isNameChar ? nameChars[i - nameOffset] : randomDecoy();
+      dice.push({
+        x: startX + i * (diceSize + 12),
+        y: diceY,
+        targetChar,
+        isNameChar,                                  // ← 当選時に光るかどうか
+        currentChar: randomDecoy(),
+        stopped: false,
+        stopAt: 3000 + i * 180,                      // 左から順に止まる（少し速めに）
+        bounceY: 0,
+        bounceVy: 0,
+        rotJitter: 0,
+        lastTumbleStep: -1,
+      });
+    }
 
     const startTime = performance.now();
     const TUMBLE_END = 3000;
-    const ALL_STOPPED_AT = TUMBLE_END + (N - 1) * 220;
+    const ALL_STOPPED_AT = TUMBLE_END + (totalDice - 1) * 180;
     const REVEAL_START = ALL_STOPPED_AT + 600;     // 全停止後 0.6秒「読む間」
     let revealStarted = false;
 
@@ -2516,9 +2546,9 @@ function playDice(allItems, winners) {
       statusEl.textContent = '🎉 当選！';
       revealStarted = true;
       if (winners.length === 1) {
-        winnerEl.innerHTML = `🏆 ${esc(winners[0])} 🏆`;
+        winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
       } else {
-        winnerEl.innerHTML = winners.map(w => `🏆 ${esc(w)}`).join('<br>');
+        winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)}`).join('<br>');
       }
       winnerEl.classList.add('show'); launchUnifiedConfetti();
       setTimeout(() => {
@@ -2569,7 +2599,8 @@ function playDice(allItems, winners) {
       const cy = d.y + d.bounceY + diceSize / 2;
       ctx.translate(cx, cy);
       ctx.rotate(d.rotJitter);
-      const isHighlighted = revealStarted && d.stopped;
+      // ★ 名前位置のサイコロだけが金色に光る（ダミーは光らない）
+      const isHighlighted = revealStarted && d.stopped && d.isNameChar;
       const r = diceSize * 0.14;
 
       // 床の影
@@ -2703,25 +2734,27 @@ function launchUnifiedConfetti() {
   function spawnBurst(count, fromX) {
     for (let i = 0; i < count; i++) {
       particles.push({
-        x: fromX + (Math.random() - 0.5) * 80,
+        x: fromX + (Math.random() - 0.5) * 100,
         y: H + 8,
-        vx: (Math.random() - 0.5) * 2.2,          // 横方向：ほんのり
-        vy: -(2.2 + Math.random() * 3.0),         // 上方向：ゆっくり目
-        size: 6 + Math.random() * 8,
+        vx: (Math.random() - 0.5) * 2.8,          // 横方向：少し広めに
+        vy: -(3.0 + Math.random() * 4.5),         // 上方向：もう少し勢いよく
+        size: 12 + Math.random() * 16,            // ★ 粒のサイズを大きく（迫力UP）
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
         rot: Math.random() * Math.PI * 2,
-        rotVel: (Math.random() - 0.5) * 0.04,
-        wobAmp: 0.5 + Math.random() * 1.2,         // 横揺れの強さ
+        rotVel: (Math.random() - 0.5) * 0.05,
+        wobAmp: 0.6 + Math.random() * 1.3,         // 横揺れの強さ
         wobOff: Math.random() * Math.PI * 2,
         life: 0,
       });
     }
   }
 
-  // 画面下から3か所のバーストで一斉に舞い上がる
-  spawnBurst(40, W * 0.20);
-  spawnBurst(50, W * 0.50);
-  spawnBurst(40, W * 0.80);
+  // 画面下から5か所のバーストで一斉に舞い上がる（数も増やして迫力UP）
+  spawnBurst(60, W * 0.12);
+  spawnBurst(70, W * 0.32);
+  spawnBurst(85, W * 0.50);
+  spawnBurst(70, W * 0.68);
+  spawnBurst(60, W * 0.88);
 
   const startTime = performance.now();
   let lastReBurst = startTime;
@@ -2731,8 +2764,8 @@ function launchUnifiedConfetti() {
     ctx.clearRect(0, 0, W, H);
 
     // ちらつき継続のための再バースト（最大4.5秒まで）
-    if (elapsed < 4500 && now - lastReBurst > 700) {
-      spawnBurst(14, W * (0.15 + Math.random() * 0.7));
+    if (elapsed < 4500 && now - lastReBurst > 600) {
+      spawnBurst(22, W * (0.12 + Math.random() * 0.76));
       lastReBurst = now;
     }
 
