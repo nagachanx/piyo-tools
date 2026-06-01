@@ -426,7 +426,7 @@
     /* ─ Animation tiles (icon + text inline) ─ */
     .anim-tile-row {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 10px;
     }
     .anim-opt {
@@ -803,6 +803,53 @@
           inset 0 0 60px rgba(255,165,0,0.18);
       }
     }
+    /* ─ Bowling Animation ────────────────── */
+    #ov-bowling {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, #2a1810 0%, #3D2F1F 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    }
+    #bowling-canvas { border-radius: 10px; max-width: calc(100vw - 32px); max-height: calc(100vh - 180px); position: relative; z-index: 1; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    #bowling-status { color: #FFC857; font-size: 18px; letter-spacing: 0.1em; text-shadow: 0 0 10px rgba(255,200,87,0.6); position: relative; z-index: 2; }
+    #bowling-winner {
+      display: none;
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #FFD700;
+      font-family: 'Inter', 'Noto Sans JP', 'Impact', 'Arial Black', sans-serif;
+      font-size: clamp(36px, 8vw, 88px);
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      text-shadow: 0 0 24px #FFD700, 0 0 60px rgba(255,215,0,0.7);
+      padding: 28px 48px;
+      border: 5px solid #FFD700;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.85);
+      box-shadow:
+        0 0 0 2px #FF8C00,
+        0 0 80px rgba(255,215,0,0.5),
+        0 0 200px rgba(255,215,0,0.25);
+      word-break: break-all;
+      line-height: 1.2;
+      max-width: 92vw;
+      z-index: 20;
+    }
+    #bowling-winner.show {
+      display: block;
+      animation: amidaBillboardIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, amidaGlow 1.8s ease-in-out infinite 0.7s;
+    }
+    #bowling-close-hint {
+      position: absolute;
+      bottom: 40px;
+      color: #FFC857;
+      font-size: 14px;
+      opacity: 0.85;
+      letter-spacing: 0.06em;
+      z-index: 21;
+    }
+
     #amida-close-hint {
       position: absolute;
       bottom: 30px;
@@ -965,6 +1012,15 @@
           <span class="anim-desc">線を辿って当選者へ</span>
         </span>
       </button>
+      <button class="anim-opt" data-anim="bowling" onclick="selectAnim('bowling')" role="radio" aria-checked="false">
+        <span class="anim-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="14" rx="3" ry="6"/><path d="M9 8 Q9 5 9 4"/><circle cx="18" cy="18" r="3"/></svg>
+        </span>
+        <span class="anim-info">
+          <span class="anim-title">ボウリング</span>
+          <span class="anim-desc">ピンを倒して当選者発表</span>
+        </span>
+      </button>
     </div>
     <div class="anim-selector-hint">どの演出で当選を発表する？</div>
   </div>
@@ -1010,6 +1066,13 @@
     <div id="amida-close-hint">タップして閉じる</div>
   </div>
 
+  <div id="ov-bowling" style="display:none" onclick="onBowlingClick()">
+    <div id="bowling-status">🎳 ピンを並べています…</div>
+    <canvas id="bowling-canvas"></canvas>
+    <div id="bowling-winner"></div>
+    <div id="bowling-close-hint">タップして閉じる</div>
+  </div>
+
   <div id="ov-ts" style="display:none" onclick="onTsClick()">
     <canvas id="ts-canvas"></canvas>
     <canvas id="confetti-canvas"></canvas>
@@ -1045,6 +1108,8 @@ let numWinners  = 1;
 let isRunning   = false;
 let tsCanClose  = false;
 let tsAnimFrame = null;
+let bowlingCanClose = false;
+let bowlingAnimFrame = null;
 
 function switchTab(tab) {
   inputMode = tab;
@@ -1106,13 +1171,14 @@ async function startLottery() {
   const items = getItems();
   if (!items) { alert('候補を入力してください！'); return; }
   const winners = pickWinners(items, numWinners);
-  const ANIMS = ['timessquare','amida'];
+  const ANIMS = ['timessquare','amida','bowling'];
   const anim = animMode === 'random' ? ANIMS[Math.floor(Math.random()*ANIMS.length)] : animMode;
   isRunning = true;
   document.getElementById('start-btn').disabled = true;
   document.getElementById('result-card').classList.remove('show');
   if      (anim === 'timessquare') { await playTimesSquare(winners); }
   else if (anim === 'amida')       { await playAmida(items, winners); }
+  else if (anim === 'bowling')     { await playBowling(items, winners); }
   showResult(winners);
   isRunning = false;
   document.getElementById('start-btn').disabled = false;
@@ -1682,6 +1748,296 @@ function playAmida(allItems, winners) {
   });
 }
 function onAmidaClick() { if (amidaCanClose && window._amidaCleanup) window._amidaCleanup(); }
+
+// ═══════════════════════════════════════════
+// Bowling Animation
+// ═══════════════════════════════════════════
+function playBowling(allItems, winners) {
+  return new Promise(resolve => {
+    bowlingCanClose = false;
+    const overlay   = document.getElementById('overlay');
+    const el        = document.getElementById('ov-bowling');
+    const canvas    = document.getElementById('bowling-canvas');
+    const statusEl  = document.getElementById('bowling-status');
+    const winnerEl  = document.getElementById('bowling-winner');
+    const closeHint = document.getElementById('bowling-close-hint');
+
+    if (!overlay || !el || !canvas) {
+      console.error('[Bowling] required DOM elements missing');
+      resolve();
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    const cleanup = () => {
+      if (bowlingAnimFrame) cancelAnimationFrame(bowlingAnimFrame);
+      bowlingAnimFrame = null;
+      overlay.classList.remove('on');
+      el.style.display = 'none';
+      if (winnerEl) { winnerEl.classList.remove('show'); winnerEl.style.display = ''; }
+      if (closeHint) closeHint.style.display = 'none';
+      bowlingCanClose = false;
+      resolve();
+    };
+    window._bowlingCleanup = cleanup;
+
+    // オーバーレイ表示・他オーバーレイは隠す
+    overlay.classList.add('on');
+    el.style.display = 'flex';
+    const tsEl = document.getElementById('ov-ts');
+    if (tsEl) tsEl.style.display = 'none';
+    const amidaEl = document.getElementById('ov-amida');
+    if (amidaEl) amidaEl.style.display = 'none';
+    winnerEl.classList.remove('show');
+    winnerEl.style.display = '';
+    closeHint.style.display = 'none';
+    statusEl.textContent = '🎳 ピンを並べています…';
+
+    // Canvas サイズ設定（DPI対応）
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.min(window.innerWidth - 32, 800);
+    const cssH = Math.min(window.innerHeight - 180, 600);
+    canvas.style.width  = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    canvas.width  = cssW * dpr;
+    canvas.height = cssH * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+
+    // データ準備
+    const items = [...allItems];
+    if (!items.includes(winners[0])) items[0] = winners[0];
+    const winnerSet = new Set(winners);
+    const n = items.length;
+
+    // 自動レイアウト：候補数に応じて列数を決める
+    const cols = Math.min(8, Math.max(2, Math.ceil(Math.sqrt(n * 1.3))));
+    const rows = Math.ceil(n / cols);
+    const pinAreaTop = 50;
+    const pinAreaH = cssH * 0.6;
+    const pinW = Math.min(64, Math.max(34, (cssW - 60) / cols - 10));
+    const pinH = pinW * 1.4;
+    const totalPinW = cols * pinW;
+    const gapX = (cssW - totalPinW) / (cols + 1);
+    const gapY = rows > 1 ? Math.max(8, (pinAreaH - rows * pinH) / (rows + 1)) : 0;
+
+    const pins = items.map((name, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = gapX + col * (pinW + gapX) + pinW / 2;
+      const y = pinAreaTop + gapY + row * (pinH + gapY) + pinH / 2;
+      return {
+        name, x, y,
+        rot: 0,
+        fallProgress: 0,
+        fallDir: Math.random() > 0.5 ? 1 : -1,
+        fallStartTime: 0,
+        appearAt: i * 25,
+        isWinner: winnerSet.has(name),
+      };
+    });
+
+    // 非当選ピンに「倒れる時間」をランダム配分
+    const fallables = pins.filter(p => !p.isWinner);
+    for (let i = fallables.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [fallables[i], fallables[j]] = [fallables[j], fallables[i]];
+    }
+    const FALL_PHASE_DUR = 1700;
+    fallables.forEach((p, i) => {
+      p.fallStartTime = (FALL_PHASE_DUR / Math.max(1, fallables.length)) * i + Math.random() * 80;
+    });
+
+    // ボール
+    const ball = {
+      x: cssW / 2,
+      yStart: cssH + 30,
+      yEnd: pinAreaTop + pinAreaH - 30,
+      y: cssH + 30,
+      r: Math.min(22, pinW * 0.45),
+      rot: 0,
+    };
+
+    // タイミング
+    const SETUP_DUR = 600;
+    const ROLL_DUR  = 1400;
+    const ROLL_START = SETUP_DUR;
+    const FALL_START = ROLL_START + ROLL_DUR;
+    const REVEAL_START = FALL_START + FALL_PHASE_DUR + 200;
+    const startTime = performance.now();
+
+    setTimeout(() => { statusEl.textContent = '🎳 ボールが転がる！'; }, ROLL_START);
+    setTimeout(() => { statusEl.textContent = '💥 ストライク！'; }, FALL_START);
+    setTimeout(() => {
+      statusEl.textContent = '🎉 当選！';
+      if (winners.length === 1) {
+        winnerEl.innerHTML = `🏆 ${esc(winners[0])} 🏆`;
+      } else {
+        winnerEl.innerHTML = winners.map(w => `🏆 ${esc(w)}`).join('<br>');
+      }
+      winnerEl.classList.add('show');
+      setTimeout(() => {
+        closeHint.style.display = 'block';
+        bowlingCanClose = true;
+      }, 700);
+    }, REVEAL_START);
+
+    function drawLane() {
+      const g = ctx.createLinearGradient(0, 0, 0, cssH);
+      g.addColorStop(0, '#8B5A2B');
+      g.addColorStop(0.5, '#B07840');
+      g.addColorStop(1, '#D4A87C');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, cssW, cssH);
+      ctx.fillStyle = '#3D2F1F';
+      ctx.fillRect(0, 0, 14, cssH);
+      ctx.fillRect(cssW - 14, 0, 14, cssH);
+      // 縦の木目（軽く）
+      ctx.strokeStyle = 'rgba(60,40,20,0.12)';
+      ctx.lineWidth = 1;
+      for (let x = 30; x < cssW - 30; x += 30) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, cssH);
+        ctx.stroke();
+      }
+      // ファウルライン
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(20, cssH - 70);
+      ctx.lineTo(cssW - 20, cssH - 70);
+      ctx.stroke();
+    }
+
+    function fitName(name, maxW, fontSize) {
+      ctx.font = `bold ${fontSize}px 'Noto Sans JP', sans-serif`;
+      let s = name;
+      while (s.length > 1 && ctx.measureText(s).width > maxW) {
+        s = s.slice(0, -1);
+      }
+      return s !== name ? s.slice(0, Math.max(1, s.length - 1)) + '…' : s;
+    }
+
+    function drawPin(p, appeared) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      if (!appeared) { ctx.restore(); return; }
+      if (!p.isWinner && p.fallProgress > 0) {
+        const t = p.fallProgress;
+        const angle = (Math.PI / 2.2) * t * p.fallDir;
+        const yOff = pinH * 0.35 * t;
+        ctx.translate(0, yOff);
+        ctx.rotate(angle);
+      }
+      const w = pinW * 0.4;
+      const h = pinH * 0.42;
+      const alpha = p.isWinner ? 1 : (1 - p.fallProgress * 0.45);
+      ctx.globalAlpha = alpha;
+      // 本体
+      ctx.fillStyle = p.isWinner ? '#FFE066' : '#FAFAFA';
+      ctx.strokeStyle = p.isWinner ? '#FF8C00' : '#3D2F1F';
+      ctx.lineWidth = p.isWinner ? 2.5 : 1.5;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      // 赤い帯
+      ctx.fillStyle = p.isWinner ? '#FF8C00' : '#E11D48';
+      ctx.fillRect(-w, -h * 0.55, w * 2, h * 0.18);
+      // 当選ピンは発光
+      if (p.isWinner) {
+        ctx.shadowColor = '#FFD700';
+        ctx.shadowBlur = 18;
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+      // 名前
+      const fs = Math.max(9, Math.floor(pinW * 0.22));
+      ctx.fillStyle = '#1C1917';
+      ctx.font = `bold ${fs}px 'Noto Sans JP', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const displayName = fitName(p.name, w * 1.7, fs);
+      ctx.fillText(displayName, 0, h * 0.2);
+      ctx.restore();
+    }
+
+    function drawBall() {
+      ctx.save();
+      // 影
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(ball.x, ball.y + ball.r * 0.85, ball.r * 0.95, ball.r * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // 本体
+      const g = ctx.createRadialGradient(ball.x - ball.r * 0.35, ball.y - ball.r * 0.35, 2, ball.x, ball.y, ball.r);
+      g.addColorStop(0, '#555');
+      g.addColorStop(1, '#0a0a0a');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      ctx.fill();
+      // 指穴
+      ctx.fillStyle = '#000';
+      const fh = ball.r * 0.13;
+      ctx.beginPath();
+      ctx.arc(ball.x - ball.r * 0.28, ball.y - ball.r * 0.18, fh, 0, Math.PI * 2);
+      ctx.arc(ball.x + ball.r * 0.28, ball.y - ball.r * 0.18, fh, 0, Math.PI * 2);
+      ctx.arc(ball.x, ball.y + ball.r * 0.22, fh, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function render(now) {
+      const elapsed = now - startTime;
+      ctx.clearRect(0, 0, cssW, cssH);
+      drawLane();
+
+      // ボール位置
+      if (elapsed < ROLL_START) {
+        ball.y = ball.yStart;
+      } else if (elapsed < FALL_START) {
+        const t = (elapsed - ROLL_START) / ROLL_DUR;
+        const eased = 1 - Math.pow(1 - t, 2);
+        ball.y = ball.yStart + (ball.yEnd - ball.yStart) * eased;
+      } else {
+        ball.y = ball.yEnd;
+      }
+
+      // ピン倒れ進行
+      if (elapsed > FALL_START) {
+        const ft = elapsed - FALL_START;
+        fallables.forEach(p => {
+          if (ft > p.fallStartTime) {
+            p.fallProgress = Math.min(1, (ft - p.fallStartTime) / 380);
+          }
+        });
+      }
+
+      // ピン描画（非当選→当選で重ね順）
+      pins.forEach(p => {
+        if (!p.isWinner) drawPin(p, elapsed > p.appearAt);
+      });
+      pins.forEach(p => {
+        if (p.isWinner) drawPin(p, elapsed > p.appearAt);
+      });
+
+      // ボール描画（セットアップ後）
+      if (elapsed > SETUP_DUR - 100) drawBall();
+
+      bowlingAnimFrame = requestAnimationFrame(render);
+    }
+
+    bowlingAnimFrame = requestAnimationFrame(render);
+  });
+}
+
+function onBowlingClick() { if (bowlingCanClose && window._bowlingCleanup) window._bowlingCleanup(); }
 </script>
 </body>
 </html>
