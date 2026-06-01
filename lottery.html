@@ -894,6 +894,60 @@
       z-index: 21;
     }
 
+    /* ─ Shared Confetti (全演出共通) ─────── */
+    #shared-confetti {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    /* ─ Dice Animation ──────────────────── */
+    #ov-dice {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, #2D6A4F 0%, #1B4332 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    }
+    #dice-canvas { border-radius: 10px; max-width: calc(100vw - 32px); max-height: calc(100vh - 180px); position: relative; z-index: 1; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+    #dice-status { color: #FFE4A3; font-size: 18px; letter-spacing: 0.1em; text-shadow: 0 0 10px rgba(255,228,163,0.6); position: relative; z-index: 2; }
+    #dice-winner {
+      display: none;
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #FFD700;
+      font-family: 'Inter', 'Noto Sans JP', 'Impact', 'Arial Black', sans-serif;
+      font-size: clamp(36px, 8vw, 88px);
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      text-shadow: 0 0 24px #FFD700, 0 0 60px rgba(255,215,0,0.7);
+      padding: 28px 48px;
+      border: 5px solid #FFD700;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.85);
+      box-shadow: 0 0 0 2px #FF8C00, 0 0 80px rgba(255,215,0,0.5), 0 0 200px rgba(255,215,0,0.25);
+      word-break: break-all;
+      line-height: 1.2;
+      max-width: 92vw;
+      z-index: 20;
+    }
+    #dice-winner.show {
+      display: block;
+      animation: amidaBillboardIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, amidaGlow 1.8s ease-in-out infinite 0.7s;
+    }
+    #dice-close-hint {
+      position: absolute;
+      bottom: 40px;
+      color: #FFE4A3;
+      font-size: 14px;
+      opacity: 0.85;
+      letter-spacing: 0.06em;
+      z-index: 21;
+    }
+
     #amida-close-hint {
       position: absolute;
       bottom: 30px;
@@ -1074,6 +1128,15 @@
           <span class="anim-desc">光の粒子が名前を形成</span>
         </span>
       </button>
+      <button class="anim-opt" data-anim="dice" onclick="selectAnim('dice')" role="radio" aria-checked="false">
+        <span class="anim-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="8" y="13" width="8" height="8" rx="1.5"/></svg>
+        </span>
+        <span class="anim-info">
+          <span class="anim-title">カタカナサイコロ</span>
+          <span class="anim-desc">文字数分のサイコロが揃って当選者へ</span>
+        </span>
+      </button>
     </div>
     <div class="anim-selector-hint">どの演出で当選を発表する？</div>
   </div>
@@ -1101,7 +1164,7 @@
   <div class="start-btn-bar-inner">
     <button class="start-btn" id="start-btn" onclick="startLottery()" aria-label="抽選を開始" disabled>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-      <span id="start-btn-label">まずは演出を選ぼう</span>
+      <span id="start-btn-label">メンバーと演出を選ぼう</span>
     </button>
   </div>
 </div>
@@ -1132,6 +1195,16 @@
     <div id="particles-winner"></div>
     <div id="particles-close-hint">タップして閉じる</div>
   </div>
+
+  <div id="ov-dice" style="display:none" onclick="onDiceClick()">
+    <div id="dice-status">🎲 サイコロが転がる！</div>
+    <canvas id="dice-canvas"></canvas>
+    <div id="dice-winner"></div>
+    <div id="dice-close-hint">タップして閉じる</div>
+  </div>
+
+  <!-- 全演出で共通の花吹雪（当選発表後にふわふわ舞う） -->
+  <canvas id="shared-confetti" style="display:none"></canvas>
 
   <div id="ov-ts" style="display:none" onclick="onTsClick()">
     <canvas id="ts-canvas"></canvas>
@@ -1172,6 +1245,9 @@ let bowlingCanClose = false;
 let bowlingAnimFrame = null;
 let particlesCanClose = false;
 let particlesAnimFrame = null;
+let diceCanClose = false;
+let diceAnimFrame = null;
+let unifiedConfettiAnimFrame = null;
 
 function switchTab(tab) {
   inputMode = tab;
@@ -1233,7 +1309,7 @@ async function startLottery() {
   const items = getItems();
   if (!items) { alert('候補を入力してください！'); return; }
   const winners = pickWinners(items, numWinners);
-  const ANIMS = ['timessquare','amida','bowling','particles'];
+  const ANIMS = ['timessquare','amida','bowling','particles','dice'];
   const anim = animMode === 'random' ? ANIMS[Math.floor(Math.random()*ANIMS.length)] : animMode;
   isRunning = true;
   document.getElementById('start-btn').disabled = true;
@@ -1242,6 +1318,7 @@ async function startLottery() {
   else if (anim === 'amida')       { await playAmida(items, winners); }
   else if (anim === 'bowling')     { await playBowling(items, winners); }
   else if (anim === 'particles')   { await playParticles(items, winners); }
+  else if (anim === 'dice')        { await playDice(items, winners); }
   showResult(winners);
   isRunning = false;
   document.getElementById('start-btn').disabled = false;
@@ -1445,6 +1522,7 @@ async function playTimesSquare(winners) {
       overlay.classList.remove('on');
       tsEl.style.display = billboard.style.display = closeHint.style.display = ticker.style.display = 'none';
       tsCanClose = false;
+      stopUnifiedConfetti();
       resolve();
     };
   });
@@ -1562,6 +1640,7 @@ function playAmida(allItems, winners) {
       }
       if (closeHint) closeHint.style.display = 'none';
       amidaCanClose = false;
+      stopUnifiedConfetti();
       resolve();
     };
     window._amidaCleanup = cleanup;
@@ -1587,7 +1666,7 @@ function playAmida(allItems, winners) {
     if (n < 2) {
       statusEl.textContent = '🎉 当選！';
       winnerEl.textContent = `🏆 ${winners[0]} 🏆`;
-      winnerEl.classList.add('show');
+      winnerEl.classList.add('show'); launchUnifiedConfetti();
       setTimeout(() => {
         closeHint.style.display = 'block';
         amidaCanClose = true;
@@ -1608,7 +1687,7 @@ function playAmida(allItems, winners) {
       console.error('[Amida] cannot get 2d context');
       statusEl.textContent = '🎉 当選！';
       winnerEl.textContent = `🏆 ${winners[0]} 🏆`;
-      winnerEl.classList.add('show');
+      winnerEl.classList.add('show'); launchUnifiedConfetti();
       closeHint.style.display = 'block';
       amidaCanClose = true;
       return;
@@ -1767,7 +1846,7 @@ function playAmida(allItems, winners) {
             setTimeout(() => {
               // 巨大なゴールド billboard で当選者発表
               winnerEl.textContent = `🏆 ${winners[0]} 🏆`;
-              winnerEl.classList.add('show');
+              winnerEl.classList.add('show'); launchUnifiedConfetti();
 
               // 紙吹雪を下から噴射（噴水のように）
               try {
@@ -1801,7 +1880,7 @@ function playAmida(allItems, winners) {
           try { drawStatic(fullPath, true); } catch (_) {}
           statusEl.textContent = '🎉 到着！';
           winnerEl.textContent = `🏆 ${winners[0]} 🏆`;
-          winnerEl.classList.add('show');
+          winnerEl.classList.add('show'); launchUnifiedConfetti();
           closeHint.style.display = 'block';
           amidaCanClose = true;
         }
@@ -1840,6 +1919,7 @@ function playBowling(allItems, winners) {
       if (winnerEl) { winnerEl.classList.remove('show'); winnerEl.style.display = ''; }
       if (closeHint) closeHint.style.display = 'none';
       bowlingCanClose = false;
+      stopUnifiedConfetti();
       resolve();
     };
     window._bowlingCleanup = cleanup;
@@ -1922,7 +2002,7 @@ function playBowling(allItems, winners) {
     };
 
     // タイミング
-    const SETUP_DUR = 600;
+    const SETUP_DUR = 1400;   // ピンが並んでからボールが転がるまでの「見る間」
     const ROLL_DUR  = 1400;
     const ROLL_START = SETUP_DUR;
     const FALL_START = ROLL_START + ROLL_DUR;
@@ -1940,7 +2020,7 @@ function playBowling(allItems, winners) {
       } else {
         winnerEl.innerHTML = winners.map(w => `🏆 ${esc(w)}`).join('<br>');
       }
-      winnerEl.classList.add('show');
+      winnerEl.classList.add('show'); launchUnifiedConfetti();
       setTimeout(() => {
         closeHint.style.display = 'block';
         bowlingCanClose = true;
@@ -2174,6 +2254,7 @@ function playParticles(allItems, winners) {
       if (winnerEl) { winnerEl.classList.remove('show'); winnerEl.style.display = ''; }
       if (closeHint) closeHint.style.display = 'none';
       particlesCanClose = false;
+      stopUnifiedConfetti();
       resolve();
     };
     window._particlesCleanup = cleanup;
@@ -2275,7 +2356,7 @@ function playParticles(allItems, winners) {
       } else {
         winnerEl.innerHTML = winners.map(w => `🏆 ${esc(w)}`).join('<br>');
       }
-      winnerEl.classList.add('show');
+      winnerEl.classList.add('show'); launchUnifiedConfetti();
       setTimeout(() => {
         closeHint.style.display = 'block';
         particlesCanClose = true;
@@ -2334,6 +2415,375 @@ function playParticles(allItems, winners) {
 }
 
 function onParticlesClick() { if (particlesCanClose && window._particlesCleanup) window._particlesCleanup(); }
+
+// ═══════════════════════════════════════════
+// Katakana Dice Animation
+// ═══════════════════════════════════════════
+function playDice(allItems, winners) {
+  return new Promise(resolve => {
+    diceCanClose = false;
+    const overlay   = document.getElementById('overlay');
+    const el        = document.getElementById('ov-dice');
+    const canvas    = document.getElementById('dice-canvas');
+    const statusEl  = document.getElementById('dice-status');
+    const winnerEl  = document.getElementById('dice-winner');
+    const closeHint = document.getElementById('dice-close-hint');
+
+    if (!overlay || !el || !canvas) {
+      console.error('[Dice] required DOM elements missing');
+      resolve();
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    const cleanup = () => {
+      if (diceAnimFrame) cancelAnimationFrame(diceAnimFrame);
+      diceAnimFrame = null;
+      overlay.classList.remove('on');
+      el.style.display = 'none';
+      if (winnerEl) { winnerEl.classList.remove('show'); winnerEl.style.display = ''; }
+      if (closeHint) closeHint.style.display = 'none';
+      diceCanClose = false;
+      stopUnifiedConfetti();
+      resolve();
+    };
+    window._diceCleanup = cleanup;
+
+    overlay.classList.add('on');
+    el.style.display = 'flex';
+    ['ov-ts','ov-amida','ov-bowling','ov-particles'].forEach(id => {
+      const e = document.getElementById(id);
+      if (e) e.style.display = 'none';
+    });
+    winnerEl.classList.remove('show');
+    winnerEl.style.display = '';
+    closeHint.style.display = 'none';
+    statusEl.textContent = '🎲 サイコロが転がる！';
+
+    // Canvas
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.min(window.innerWidth - 32, 800);
+    const cssH = Math.min(window.innerHeight - 180, 500);
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    canvas.width = cssW * dpr;
+    canvas.height = cssH * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+
+    // 当選者名から文字配列を作る（複数当選は「・」で連結、長すぎる名前は省略）
+    const targetName = winners.length === 1 ? winners[0] : winners.join('・');
+    const MAX_CHARS = 10;
+    const chars = Array.from(targetName).slice(0, MAX_CHARS);
+    const truncated = Array.from(targetName).length > MAX_CHARS;
+    const N = chars.length;
+
+    // 揺らぎ用の文字プール（候補者全員の名前から抽出＋カタカナ）
+    const KATAKANA = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン'.split('');
+    const poolSet = new Set();
+    allItems.forEach(name => { Array.from(name).forEach(c => poolSet.add(c)); });
+    KATAKANA.forEach(c => poolSet.add(c));
+    const POOL = Array.from(poolSet);
+
+    // サイコロのサイズ・配置
+    const maxDiceW = Math.min(110, Math.floor((cssW - 60) / N) - 10);
+    const diceSize = Math.max(50, Math.min(maxDiceW, 110));
+    const totalW = N * diceSize + (N - 1) * 12;
+    const startX = (cssW - totalW) / 2;
+    const diceY = cssH / 2 - diceSize / 2;
+
+    const dice = chars.map((targetChar, i) => ({
+      x: startX + i * (diceSize + 12),
+      y: diceY,
+      targetChar,
+      currentChar: POOL[Math.floor(Math.random() * POOL.length)],
+      stopped: false,
+      stopAt: 3000 + i * 220,                  // 左から順に止まる
+      bounceY: 0,
+      bounceVy: 0,
+      rotJitter: 0,
+      lastTumbleStep: -1,
+    }));
+
+    const startTime = performance.now();
+    const TUMBLE_END = 3000;
+    const ALL_STOPPED_AT = TUMBLE_END + (N - 1) * 220;
+    const REVEAL_START = ALL_STOPPED_AT + 600;     // 全停止後 0.6秒「読む間」
+    let revealStarted = false;
+
+    setTimeout(() => { statusEl.textContent = '🎯 止まっていきます…'; }, TUMBLE_END);
+    setTimeout(() => {
+      statusEl.textContent = '🎉 当選！';
+      revealStarted = true;
+      if (winners.length === 1) {
+        winnerEl.innerHTML = `🏆 ${esc(winners[0])} 🏆`;
+      } else {
+        winnerEl.innerHTML = winners.map(w => `🏆 ${esc(w)}`).join('<br>');
+      }
+      winnerEl.classList.add('show'); launchUnifiedConfetti();
+      setTimeout(() => {
+        closeHint.style.display = 'block';
+        diceCanClose = true;
+      }, 700);
+    }, REVEAL_START);
+
+    function roundRectPath(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawBackground() {
+      const g = ctx.createRadialGradient(cssW / 2, cssH / 2, 40, cssW / 2, cssH / 2, Math.max(cssW, cssH) * 0.7);
+      g.addColorStop(0, '#3a7a5e');
+      g.addColorStop(1, '#1a3a2a');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, cssW, cssH);
+      // フェルト調の細かなテクスチャ（軽く）
+      ctx.fillStyle = 'rgba(0,0,0,0.04)';
+      for (let i = 0; i < 60; i++) {
+        const x = (i * 137) % cssW;
+        const y = ((i * 211) + 30) % cssH;
+        ctx.fillRect(x, y, 2, 2);
+      }
+      // 省略マーク（長い名前のとき）
+      if (truncated) {
+        ctx.fillStyle = 'rgba(255,228,163,0.7)';
+        ctx.font = `bold 14px 'Noto Sans JP', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`※名前が長いため${MAX_CHARS}文字までに省略`, cssW / 2, cssH - 30);
+      }
+    }
+
+    function drawDie(d) {
+      ctx.save();
+      const cx = d.x + diceSize / 2;
+      const cy = d.y + d.bounceY + diceSize / 2;
+      ctx.translate(cx, cy);
+      ctx.rotate(d.rotJitter);
+      const isHighlighted = revealStarted && d.stopped;
+      const r = diceSize * 0.14;
+
+      // 床の影
+      ctx.fillStyle = 'rgba(0,0,0,0.32)';
+      ctx.beginPath();
+      ctx.ellipse(0, diceSize / 2 + 8 - d.bounceY * 0.4, diceSize * 0.46, diceSize * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 本体（角丸の白いサイコロ）
+      roundRectPath(-diceSize / 2, -diceSize / 2, diceSize, diceSize, r);
+      ctx.fillStyle = isHighlighted ? '#FFE066' : '#FAFAFA';
+      ctx.fill();
+
+      // ハイライト（上部）
+      ctx.save();
+      roundRectPath(-diceSize / 2, -diceSize / 2, diceSize, diceSize, r);
+      ctx.clip();
+      const hg = ctx.createLinearGradient(0, -diceSize / 2, 0, diceSize / 2);
+      hg.addColorStop(0, 'rgba(255,255,255,0.55)');
+      hg.addColorStop(0.35, 'rgba(255,255,255,0)');
+      ctx.fillStyle = hg;
+      ctx.fillRect(-diceSize / 2, -diceSize / 2, diceSize, diceSize);
+      // 右下にうっすら陰
+      const sg = ctx.createLinearGradient(0, 0, diceSize / 2, diceSize / 2);
+      sg.addColorStop(0, 'rgba(0,0,0,0)');
+      sg.addColorStop(1, 'rgba(0,0,0,0.12)');
+      ctx.fillStyle = sg;
+      ctx.fillRect(0, 0, diceSize / 2, diceSize / 2);
+      ctx.restore();
+
+      // 輪郭
+      roundRectPath(-diceSize / 2, -diceSize / 2, diceSize, diceSize, r);
+      ctx.strokeStyle = isHighlighted ? '#FFD700' : '#3D2F1F';
+      ctx.lineWidth = isHighlighted ? 2.8 : 1.6;
+      ctx.stroke();
+
+      // 当選時の金グロー
+      if (isHighlighted) {
+        roundRectPath(-diceSize / 2, -diceSize / 2, diceSize, diceSize, r);
+        ctx.shadowColor = '#FFD700';
+        ctx.shadowBlur = 22;
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 2.2;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+
+      // 文字（メイン）
+      ctx.fillStyle = isHighlighted ? '#5B3500' : '#1C1917';
+      const fs = Math.floor(diceSize * 0.58);
+      ctx.font = `900 ${fs}px 'Noto Sans JP', 'Inter', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(d.currentChar, 0, 2);
+
+      ctx.restore();
+    }
+
+    function render(now) {
+      const elapsed = now - startTime;
+      ctx.clearRect(0, 0, cssW, cssH);
+      drawBackground();
+
+      dice.forEach((d, i) => {
+        if (!d.stopped) {
+          // タンブル中：文字を高速で切替（約 80ms ごと）
+          const step = Math.floor(elapsed / 75);
+          if (step !== d.lastTumbleStep) {
+            d.currentChar = POOL[Math.floor(Math.random() * POOL.length)];
+            d.lastTumbleStep = step;
+          }
+          // 上下に小さく弾みつつ、少し回転
+          d.bounceY = Math.sin((elapsed + i * 80) / 90) * (diceSize * 0.07);
+          d.rotJitter = Math.sin((elapsed + i * 40) / 110) * 0.12;
+
+          // 停止タイミング
+          if (elapsed > d.stopAt) {
+            d.stopped = true;
+            d.currentChar = d.targetChar;
+            d.bounceVy = -6;        // 着地でバウンド
+            d.bounceY  = -12;
+            d.rotJitter = (Math.random() - 0.5) * 0.18;
+          }
+        } else {
+          // 着地後の減衰バウンド
+          if (Math.abs(d.bounceY) > 0.5 || Math.abs(d.bounceVy) > 0.5) {
+            d.bounceY += d.bounceVy;
+            d.bounceVy += 1.2;       // 重力
+            if (d.bounceY > 0) { d.bounceY = 0; d.bounceVy *= -0.45; }  // 床で反発（減衰）
+          } else {
+            d.bounceY = 0; d.bounceVy = 0;
+          }
+          d.rotJitter *= 0.86;
+        }
+        drawDie(d);
+      });
+
+      diceAnimFrame = requestAnimationFrame(render);
+    }
+
+    diceAnimFrame = requestAnimationFrame(render);
+  });
+}
+
+function onDiceClick() { if (diceCanClose && window._diceCleanup) window._diceCleanup(); }
+
+// ═══════════════════════════════════════════
+// Unified Confetti (全演出共通：下から舞う紙吹雪)
+// ═══════════════════════════════════════════
+function launchUnifiedConfetti() {
+  const canvas = document.getElementById('shared-confetti');
+  if (!canvas) return;
+  // 既存のアニメーションがあれば停止
+  if (unifiedConfettiAnimFrame) cancelAnimationFrame(unifiedConfettiAnimFrame);
+
+  canvas.style.display = 'block';
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
+
+  const COLORS = ['#FF3B6B','#FF9534','#FFD93D','#6BCB77','#4D96FF','#A78BFA','#00D9C0','#FF6B9D','#FFFFFF','#FFB3D9'];
+  const particles = [];
+
+  function spawnBurst(count, fromX) {
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: fromX + (Math.random() - 0.5) * 80,
+        y: H + 8,
+        vx: (Math.random() - 0.5) * 2.2,          // 横方向：ほんのり
+        vy: -(2.2 + Math.random() * 3.0),         // 上方向：ゆっくり目
+        size: 6 + Math.random() * 8,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        rot: Math.random() * Math.PI * 2,
+        rotVel: (Math.random() - 0.5) * 0.04,
+        wobAmp: 0.5 + Math.random() * 1.2,         // 横揺れの強さ
+        wobOff: Math.random() * Math.PI * 2,
+        life: 0,
+      });
+    }
+  }
+
+  // 画面下から3か所のバーストで一斉に舞い上がる
+  spawnBurst(40, W * 0.20);
+  spawnBurst(50, W * 0.50);
+  spawnBurst(40, W * 0.80);
+
+  const startTime = performance.now();
+  let lastReBurst = startTime;
+
+  function render(now) {
+    const elapsed = now - startTime;
+    ctx.clearRect(0, 0, W, H);
+
+    // ちらつき継続のための再バースト（最大4.5秒まで）
+    if (elapsed < 4500 && now - lastReBurst > 700) {
+      spawnBurst(14, W * (0.15 + Math.random() * 0.7));
+      lastReBurst = now;
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life++;
+      // 弱い重力（紙のようにゆっくり落ちる）
+      p.vy += 0.035;
+      // 横揺れ（紙が空気で揺れる感じ）
+      p.vx += Math.sin(p.life / 22 + p.wobOff) * 0.05 * p.wobAmp;
+      // 空気抵抗
+      p.vx *= 0.985;
+      p.vy *= 0.992;
+
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.rotVel;
+
+      // 画面外に出たら削除（下方向）
+      if (p.y > H + 40 || p.x < -40 || p.x > W + 40) {
+        particles.splice(i, 1);
+        continue;
+      }
+
+      // 紙吹雪っぽく、ちらつき（軽い透明度オシレーション）
+      const flicker = 0.78 + Math.sin(p.life / 11 + p.wobOff) * 0.22;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = flicker;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size * 0.45);
+      ctx.restore();
+    }
+
+    unifiedConfettiAnimFrame = requestAnimationFrame(render);
+  }
+
+  unifiedConfettiAnimFrame = requestAnimationFrame(render);
+}
+
+function stopUnifiedConfetti() {
+  if (unifiedConfettiAnimFrame) cancelAnimationFrame(unifiedConfettiAnimFrame);
+  unifiedConfettiAnimFrame = null;
+  const canvas = document.getElementById('shared-confetti');
+  if (canvas) {
+    canvas.style.display = 'none';
+    const ctx = canvas.getContext('2d');
+    if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+}
 </script>
 </body>
 </html>
