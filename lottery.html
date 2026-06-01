@@ -2262,7 +2262,7 @@ function playParticles(allItems, winners) {
 
     // タイミング
     const CHAOS_DUR    = 1700;
-    const CONVERGE_DUR = 1700;
+    const CONVERGE_DUR = 3400;   // 集合フェーズ：ユーザー要望で倍に延長（ゆっくり集まる）
     const HOLD_DUR     = 700;
     const REVEAL_START = CHAOS_DUR + CONVERGE_DUR + HOLD_DUR;
     const startTime    = performance.now();
@@ -2303,11 +2303,13 @@ function playParticles(allItems, winners) {
           p.vy += 0.015;
           p.rot += p.rotVel;
         } else if (phase === 'converge') {
-          const dx = p.tx - p.x;
-          const dy = p.ty - p.y;
-          p.x += dx * 0.10;
-          p.y += dy * 0.10;
-          p.rot += p.rotVel * 0.7;
+          // 集合フェーズ開始時の位置を一度だけ記録
+          if (p.cStartX === undefined) { p.cStartX = p.x; p.cStartY = p.y; }
+          const t = Math.min(1, (elapsed - CHAOS_DUR) / CONVERGE_DUR);
+          const eased = 1 - Math.pow(1 - t, 3);   // ease-out cubic：最後ふんわり止まる
+          p.x = p.cStartX + (p.tx - p.cStartX) * eased;
+          p.y = p.cStartY + (p.ty - p.cStartY) * eased;
+          p.rot += p.rotVel * 0.5;
         } else {
           const wob = Math.sin(elapsed / 220 + p.wobOff) * 0.7;
           const wob2 = Math.cos(elapsed / 220 + p.wobOff) * 0.7;
