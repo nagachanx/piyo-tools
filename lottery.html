@@ -1513,15 +1513,15 @@ async function playTimesSquare(winners) {
 
     const boardInner = document.getElementById('ts-board-inner');
     boardInner.innerHTML = winners.length === 1
-      ? `<div class="ts-board-name">${esc(winners[0])}</div>`
-      : `<ul class="ts-board-names-list">${winners.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
+      ? `<div class="ts-board-name">${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}</div>`
+      : `<ul class="ts-board-names-list">${winners.map(w=>`<li>${TROPHY_HTML} ${esc(w)} ${TROPHY_HTML}</li>`).join('')}</ul>`;
     billboard.style.display = 'block';
     billboard.style.animation = 'none';
     void billboard.offsetWidth;
     billboard.style.animation = 'billboardIn 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards';
 
     cfRunning = true;
-    runConfetti(cfCanvas, launchConfetti(cfCanvas.width), ()=>cfRunning);
+    launchUnifiedConfetti();
 
     await delay(400);
     const wl = winners.length===1 ? winners[0] : winners.join(' / ');
@@ -1871,16 +1871,7 @@ function playAmida(allItems, winners) {
                   cfCanvas.width  = el.offsetWidth  || window.innerWidth;
                   cfCanvas.height = el.offsetHeight || window.innerHeight;
                   cfState.running = true;
-                  // 1つの粒子配列を使い、後で追加噴射する
-                  const parts = launchConfettiUp(cfCanvas.width, cfCanvas.height);
-                  runConfetti(cfCanvas, parts, () => cfState.running);
-                  // 2回目・3回目の追加噴射（連続発射感）
-                  setTimeout(() => {
-                    if (cfState.running) parts.push(...launchConfettiUp(cfCanvas.width, cfCanvas.height));
-                  }, 500);
-                  setTimeout(() => {
-                    if (cfState.running) parts.push(...launchConfettiUp(cfCanvas.width, cfCanvas.height));
-                  }, 1100);
+                  // ← 旧amida-confettiは無効化（統一花吹雪 launchUnifiedConfetti() に集約）
                 }
               } catch (e) { console.warn('[Amida] confetti failed:', e); }
 
@@ -2538,8 +2529,23 @@ function playDice(allItems, winners) {
     const startTime = performance.now();
     const TUMBLE_END = 3000;
     const ALL_STOPPED_AT = TUMBLE_END + (totalDice - 1) * 180;
-    const REVEAL_START = ALL_STOPPED_AT + 600;     // 全停止後 0.6秒「読む間」
+    // ★ 全停止後、名前位置のサイコロを順番に「ひょいっと」浮き上がらせる演出
+    const POP_DELAY    = 350;   // 全停止からポップ開始までの間
+    const POP_INTERVAL = 130;   // 各名前サイコロのポップ間隔
+    const POP_DUR      = 280;   // 1個のポップにかかる時間
+    const POP_START    = ALL_STOPPED_AT + POP_DELAY;
+    const POP_END      = POP_START + (N - 1) * POP_INTERVAL + POP_DUR;
+    const REVEAL_START = POP_END + 500;     // 全ポップ後 0.5秒の余韻で当選バナー
     let revealStarted = false;
+    let popStarted = false;
+
+    // 名前サイコロの順番付け（左から）
+    const nameDiceList = dice.filter(d => d.isNameChar);
+    nameDiceList.forEach((d, ord) => {
+      d.popStartAt = POP_START + ord * POP_INTERVAL;
+      d.popProgress = 0;
+    });
+    setTimeout(() => { popStarted = true; statusEl.textContent = '✨ 当選者は…'; }, POP_START);
 
     setTimeout(() => { statusEl.textContent = '🎯 止まっていきます…'; }, TUMBLE_END);
     setTimeout(() => {
@@ -2597,10 +2603,23 @@ function playDice(allItems, winners) {
       ctx.save();
       const cx = d.x + diceSize / 2;
       const cy = d.y + d.bounceY + diceSize / 2;
-      ctx.translate(cx, cy);
+
+      // ★ ポップ効果：名前位置のサイコロが浮き上がる
+      const popP = d.popProgress || 0;
+      const popEase = 1 - Math.pow(1 - popP, 2);     // ease-out quad
+      const popOffsetY = -diceSize * 0.55 * popEase;
+      const popScale = 1 + 0.20 * popEase;
+
+      ctx.translate(cx, cy + popOffsetY);
+      ctx.scale(popScale, popScale);
       ctx.rotate(d.rotJitter);
-      // ★ 名前位置のサイコロだけが金色に光る（ダミーは光らない）
-      const isHighlighted = revealStarted && d.stopped && d.isNameChar;
+
+      // ハイライト：ポップ進行中も金色 / 当選発表後も金色
+      const isHighlighted = (d.isNameChar && popP > 0) || (revealStarted && d.stopped && d.isNameChar);
+
+      // デコイ（非名前位置）はポップ開始後にdim
+      ctx.globalAlpha = (popStarted && !d.isNameChar) ? 0.45 : 1;
+
       const r = diceSize * 0.14;
 
       // 床の影
@@ -2694,6 +2713,11 @@ function playDice(allItems, winners) {
             d.bounceY = 0; d.bounceVy = 0;
           }
           d.rotJitter *= 0.86;
+
+          // ★ ポップ進行：名前位置のサイコロを浮き上がらせる
+          if (d.isNameChar && d.popStartAt && elapsed > d.popStartAt) {
+            d.popProgress = Math.min(1, (elapsed - d.popStartAt) / POP_DUR);
+          }
         }
         drawDie(d);
       });
@@ -2734,15 +2758,15 @@ function launchUnifiedConfetti() {
   function spawnBurst(count, fromX) {
     for (let i = 0; i < count; i++) {
       particles.push({
-        x: fromX + (Math.random() - 0.5) * 100,
+        x: fromX + (Math.random() - 0.5) * 120,
         y: H + 8,
-        vx: (Math.random() - 0.5) * 2.8,          // 横方向：少し広めに
-        vy: -(3.0 + Math.random() * 4.5),         // 上方向：もう少し勢いよく
-        size: 12 + Math.random() * 16,            // ★ 粒のサイズを大きく（迫力UP）
+        vx: (Math.random() - 0.5) * 3.5,            // 横方向：広く
+        vy: -(8 + Math.random() * 9),               // ★ 上方向：強めにして画面上部まで届かせる
+        size: 12 + Math.random() * 16,              // 粒のサイズ（迫力UP）
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
         rot: Math.random() * Math.PI * 2,
-        rotVel: (Math.random() - 0.5) * 0.05,
-        wobAmp: 0.6 + Math.random() * 1.3,         // 横揺れの強さ
+        rotVel: (Math.random() - 0.5) * 0.08,
+        wobAmp: 0.8 + Math.random() * 1.6,          // 横揺れ強め（ひらひら感）
         wobOff: Math.random() * Math.PI * 2,
         life: 0,
       });
@@ -2750,11 +2774,11 @@ function launchUnifiedConfetti() {
   }
 
   // 画面下から5か所のバーストで一斉に舞い上がる（数も増やして迫力UP）
-  spawnBurst(60, W * 0.12);
-  spawnBurst(70, W * 0.32);
-  spawnBurst(85, W * 0.50);
-  spawnBurst(70, W * 0.68);
-  spawnBurst(60, W * 0.88);
+  spawnBurst(80, W * 0.10);
+  spawnBurst(95, W * 0.30);
+  spawnBurst(110, W * 0.50);
+  spawnBurst(95, W * 0.70);
+  spawnBurst(80, W * 0.90);
 
   const startTime = performance.now();
   let lastReBurst = startTime;
@@ -2763,22 +2787,22 @@ function launchUnifiedConfetti() {
     const elapsed = now - startTime;
     ctx.clearRect(0, 0, W, H);
 
-    // ちらつき継続のための再バースト（最大4.5秒まで）
-    if (elapsed < 4500 && now - lastReBurst > 600) {
-      spawnBurst(22, W * (0.12 + Math.random() * 0.76));
+    // 継続バースト：画面が空にならないよう頻繁に追加（5秒まで）
+    if (elapsed < 5000 && now - lastReBurst > 400) {
+      spawnBurst(30, W * (0.08 + Math.random() * 0.84));
       lastReBurst = now;
     }
 
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.life++;
-      // 弱い重力（紙のようにゆっくり落ちる）
-      p.vy += 0.035;
-      // 横揺れ（紙が空気で揺れる感じ）
-      p.vx += Math.sin(p.life / 22 + p.wobOff) * 0.05 * p.wobAmp;
-      // 空気抵抗
-      p.vx *= 0.985;
-      p.vy *= 0.992;
+      // 重力をかなり弱めに（画面全体に長く滞空してひらひら舞う）
+      p.vy += 0.022;
+      // 横揺れ強め（紙がふわふわ漂う感じ）
+      p.vx += Math.sin(p.life / 24 + p.wobOff) * 0.08 * p.wobAmp;
+      // 空気抵抗（弱めにして滞空時間を延ばす）
+      p.vx *= 0.99;
+      p.vy *= 0.996;
 
       p.x += p.vx;
       p.y += p.vy;
