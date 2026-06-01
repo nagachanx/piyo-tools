@@ -949,6 +949,50 @@
       z-index: 21;
     }
 
+    /* ─ Slot Animation ──────────────────── */
+    #ov-slot {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, #2A0E1E 0%, #0F0610 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    }
+    #slot-canvas { border-radius: 10px; max-width: calc(100vw - 32px); max-height: calc(100vh - 180px); position: relative; z-index: 1; box-shadow: 0 12px 50px rgba(0,0,0,0.7); }
+    #slot-status { color: #FFD700; font-size: 18px; letter-spacing: 0.14em; text-shadow: 0 0 12px rgba(255,215,0,0.65); position: relative; z-index: 2; font-weight: 700; }
+    #slot-winner {
+      display: none;
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #FFD700;
+      font-family: 'Inter', 'Noto Sans JP', 'Impact', 'Arial Black', sans-serif;
+      font-size: clamp(36px, 8vw, 88px);
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      text-shadow: 0 0 24px #FFD700, 0 0 60px rgba(255,215,0,0.7);
+      padding: 28px 48px;
+      border: 5px solid #FFD700;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.88);
+      box-shadow: 0 0 0 2px #FF8C00, 0 0 80px rgba(255,215,0,0.5), 0 0 200px rgba(255,215,0,0.25);
+      word-break: break-all;
+      line-height: 1.2;
+      max-width: 92vw;
+      z-index: 20;
+    }
+    #slot-winner.show {
+      display: block;
+      animation: amidaBillboardIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, amidaGlow 1.8s ease-in-out infinite 0.7s;
+    }
+    #slot-close-hint {
+      position: absolute;
+      bottom: 40px;
+      color: #FFD700;
+      font-size: 14px;
+      opacity: 0.85;
+      letter-spacing: 0.06em;
+      z-index: 21;
+    }
+
     #amida-close-hint {
       position: absolute;
       bottom: 30px;
@@ -1089,7 +1133,9 @@
 <aside class="layout-right" aria-label="プレビュー・結果">
   <div id="anim-selector" class="anim-selector-card">
     <div class="anim-selector-header">
-      <span aria-hidden="true">🎉</span>
+      <span aria-hidden="true" style="display:inline-flex;align-items:center;color:#43A86A;">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;"><path d="M12 3 L13.5 10.5 L21 12 L13.5 13.5 L12 21 L10.5 13.5 L3 12 L10.5 10.5 Z"/></svg>
+      </span>
       <span class="anim-selector-title">演出を選ぼう</span>
     </div>
     <div class="anim-tile-row" role="radiogroup" aria-label="演出の選択">
@@ -1098,8 +1144,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="9" y1="13" x2="9.01" y2="13"/><line x1="9" y1="17" x2="9.01" y2="17"/></svg>
         </span>
         <span class="anim-info">
-          <span class="anim-title">ドラムロール</span>
-          <span class="anim-desc">迫力の大画面演出</span>
+          <span class="anim-title">カウントダウン</span>
+          <span class="anim-desc">3・2・1で迫力の大発表</span>
         </span>
       </button>
       <button class="anim-opt" data-anim="amida" onclick="selectAnim('amida')" role="radio" aria-checked="false">
@@ -1136,6 +1182,15 @@
         <span class="anim-info">
           <span class="anim-title">サイコロ</span>
           <span class="anim-desc">サイコロが揃って当選者へ</span>
+        </span>
+      </button>
+      <button class="anim-opt" data-anim="slot" onclick="selectAnim('slot')" role="radio" aria-checked="false">
+        <span class="anim-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="1.5"/><line x1="9" y1="6" x2="9" y2="20"/><line x1="15" y1="6" x2="15" y2="20"/><circle cx="6" cy="13" r="1.2"/><circle cx="12" cy="13" r="1.2"/><circle cx="18" cy="13" r="1.2"/></svg>
+        </span>
+        <span class="anim-info">
+          <span class="anim-title">スロット</span>
+          <span class="anim-desc">3つの絵柄が揃って当選者発表</span>
         </span>
       </button>
     </div>
@@ -1204,6 +1259,13 @@
     <div id="dice-close-hint">タップして閉じる</div>
   </div>
 
+  <div id="ov-slot" style="display:none" onclick="onSlotClick()">
+    <div id="slot-status">🎰 JACKPOT を狙え！</div>
+    <canvas id="slot-canvas"></canvas>
+    <div id="slot-winner"></div>
+    <div id="slot-close-hint">タップして閉じる</div>
+  </div>
+
   <!-- 全演出で共通の花吹雪（当選発表後にふわふわ舞う） -->
   <canvas id="shared-confetti" style="display:none"></canvas>
 
@@ -1218,7 +1280,7 @@
     <div class="ts-spot ts-spot-1"></div>
     <div class="ts-spot ts-spot-2"></div>
     <div id="ts-content">
-      <div id="ts-drumroll-text">🥁 ドラムロール！</div>
+      <div id="ts-drumroll-text">🥁 まもなくカウントダウン！</div>
       <div id="ts-countdown-num"></div>
       <div id="ts-billboard">
         <p class="ts-board-label">Winner</p>
@@ -1253,6 +1315,8 @@ let particlesCanClose = false;
 let particlesAnimFrame = null;
 let diceCanClose = false;
 let diceAnimFrame = null;
+let slotCanClose = false;
+let slotAnimFrame = null;
 let unifiedConfettiAnimFrame = null;
 
 // リッチでフラットなトロフィーアイコン（当選バナー左右で使用）
@@ -1331,7 +1395,7 @@ async function startLottery() {
   const items = getItems();
   if (!items) { alert('候補を入力してください！'); return; }
   const winners = pickWinners(items, numWinners);
-  const ANIMS = ['timessquare','amida','bowling','particles','dice'];
+  const ANIMS = ['timessquare','amida','bowling','particles','dice','slot'];
   const anim = animMode === 'random' ? ANIMS[Math.floor(Math.random()*ANIMS.length)] : animMode;
   isRunning = true;
   document.getElementById('start-btn').disabled = true;
@@ -1341,6 +1405,7 @@ async function startLottery() {
   else if (anim === 'bowling')     { await playBowling(items, winners); }
   else if (anim === 'particles')   { await playParticles(items, winners); }
   else if (anim === 'dice')        { await playDice(items, winners); }
+  else if (anim === 'slot')        { await playSlot(items, winners); }
   showResult(winners);
   isRunning = false;
   document.getElementById('start-btn').disabled = false;
@@ -2758,6 +2823,307 @@ function playDice(allItems, winners) {
 }
 
 function onDiceClick() { if (diceCanClose && window._diceCleanup) window._diceCleanup(); }
+
+// ═══════════════════════════════════════════
+// Slot Machine Animation (カジノ風スロット)
+// ═══════════════════════════════════════════
+function playSlot(allItems, winners) {
+  return new Promise(resolve => {
+    slotCanClose = false;
+    const overlay   = document.getElementById('overlay');
+    const el        = document.getElementById('ov-slot');
+    const canvas    = document.getElementById('slot-canvas');
+    const statusEl  = document.getElementById('slot-status');
+    const winnerEl  = document.getElementById('slot-winner');
+    const closeHint = document.getElementById('slot-close-hint');
+
+    if (!overlay || !el || !canvas) {
+      console.error('[Slot] required DOM elements missing');
+      resolve();
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    const cleanup = () => {
+      if (slotAnimFrame) cancelAnimationFrame(slotAnimFrame);
+      slotAnimFrame = null;
+      overlay.classList.remove('on');
+      el.style.display = 'none';
+      if (winnerEl) { winnerEl.classList.remove('show'); winnerEl.style.display = ''; }
+      if (closeHint) closeHint.style.display = 'none';
+      slotCanClose = false;
+      stopUnifiedConfetti();
+      hideSharedTicker();
+      resolve();
+    };
+    window._slotCleanup = cleanup;
+
+    overlay.classList.add('on');
+    el.style.display = 'flex';
+    ['ov-ts','ov-amida','ov-bowling','ov-particles','ov-dice'].forEach(id => {
+      const e = document.getElementById(id);
+      if (e) e.style.display = 'none';
+    });
+    winnerEl.classList.remove('show');
+    winnerEl.style.display = '';
+    closeHint.style.display = 'none';
+    statusEl.textContent = '🎰 JACKPOT を狙え！';
+
+    // Canvas
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.min(window.innerWidth - 32, 800);
+    const cssH = Math.min(window.innerHeight - 180, 520);
+    canvas.style.width  = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    canvas.width  = cssW * dpr;
+    canvas.height = cssH * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+
+    // 当選者
+    const winnerName = winners[0];
+
+    // 各リールの名前リストを作成（候補からシャッフル＋当選者を仕込む）
+    const REEL_COUNT = 3;
+    const REEL_LEN = Math.max(8, allItems.length);
+    const reels = [];
+    for (let r = 0; r < REEL_COUNT; r++) {
+      const list = [];
+      const pool = allItems.length ? allItems : [winnerName];
+      while (list.length < REEL_LEN) list.push(pool[Math.floor(Math.random() * pool.length)]);
+      // 当選者をランダム位置に確実に1個配置
+      const wIdx = Math.floor(Math.random() * REEL_LEN);
+      list[wIdx] = winnerName;
+      reels.push({
+        list,
+        winnerIdx: wIdx,
+        position: Math.random() * REEL_LEN * 90,  // 初期スクロール位置
+        stopFrom: 0,
+        targetPos: 0,
+        stopFromSet: false,
+        stopStartAt: 0,
+        stopDur: 800,
+        stopped: false,
+      });
+    }
+
+    // 筐体・リールレイアウト
+    const cabPadding = 20;
+    const cabX = cabPadding;
+    const cabY = cabPadding;
+    const cabW = cssW - cabPadding * 2;
+    const cabH = cssH - cabPadding * 2;
+    const reelAreaPadTop = 76;       // 上部ヘッダー領域
+    const reelAreaPadBottom = 40;    // 下部
+    const reelAreaY = cabY + reelAreaPadTop;
+    const reelAreaH = cabH - reelAreaPadTop - reelAreaPadBottom;
+    const reelGap = 12;
+    const innerPad = 24;
+    const totalReelsW = cabW - innerPad * 2;
+    const reelW = (totalReelsW - reelGap * (REEL_COUNT - 1)) / REEL_COUNT;
+    const cellH = Math.floor(reelAreaH / 3);
+    const cycleLen = REEL_LEN * cellH;
+
+    // タイミング
+    const SPIN_DUR    = 2500;            // 全速で回る期間
+    const STOP_STEP   = 600;             // リール間の停止間隔
+    const STOP_DUR    = 800;             // 各リールの減速時間
+    reels[0].stopStartAt = SPIN_DUR;
+    reels[1].stopStartAt = SPIN_DUR + STOP_STEP;
+    reels[2].stopStartAt = SPIN_DUR + STOP_STEP * 2;
+    reels.forEach(r => r.stopDur = STOP_DUR);
+    const ALL_STOPPED  = SPIN_DUR + STOP_STEP * 2 + STOP_DUR;
+    const REVEAL_START = ALL_STOPPED + 500;     // JACKPOT余韻
+    let revealStarted = false;
+
+    const SPIN_SPEED = 2.0;             // px/ms
+    const startTime = performance.now();
+
+    function computeTarget(r) {
+      // 中央(縦)に winnerIdx を配置するためのposition
+      const requiredMod = ((r.winnerIdx * cellH) - cellH + cycleLen * 10) % cycleLen;
+      // r.position から先で「最も近い大きいp（pだけ進む）」を選ぶ
+      const cyclesPassed = Math.floor(r.position / cycleLen);
+      let target = (cyclesPassed + 2) * cycleLen + requiredMod;
+      while (target <= r.position + 0.5 * cycleLen) target += cycleLen;
+      return target;
+    }
+
+    setTimeout(() => { statusEl.textContent = '🎰 RICH BIG WIN!?'; }, SPIN_DUR);
+    setTimeout(() => {
+      statusEl.textContent = '🎉 当選！ 大当たり！';
+      revealStarted = true;
+      if (winners.length === 1) {
+        winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
+      } else {
+        winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)}`).join('<br>');
+      }
+      winnerEl.classList.add('show');
+      launchUnifiedConfetti();
+      showSharedTicker(winners);
+      setTimeout(() => {
+        closeHint.style.display = 'block';
+        slotCanClose = true;
+      }, 700);
+    }, REVEAL_START);
+
+    function roundRectPath(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawCabinet(elapsed) {
+      // 暗い背景
+      ctx.fillStyle = '#0F0610';
+      ctx.fillRect(0, 0, cssW, cssH);
+
+      // 金の外枠（グラデ風に重ね描き）
+      roundRectPath(cabX, cabY, cabW, cabH, 18);
+      ctx.fillStyle = '#8B5A00';
+      ctx.fill();
+      roundRectPath(cabX + 5, cabY + 5, cabW - 10, cabH - 10, 14);
+      ctx.fillStyle = '#FFD700';
+      ctx.fill();
+      roundRectPath(cabX + 10, cabY + 10, cabW - 20, cabH - 20, 12);
+      ctx.fillStyle = '#8B0000';
+      ctx.fill();
+
+      // 上部の電飾（点滅する小さい光）
+      const bulbY = cabY + 28;
+      const bulbCount = 11;
+      for (let i = 0; i < bulbCount; i++) {
+        const bx = cabX + 30 + (i * (cabW - 60) / (bulbCount - 1));
+        const lit = ((Math.floor(elapsed / 250) + i) % 2) === 0;
+        ctx.fillStyle = lit ? '#FFE680' : '#5A2A00';
+        ctx.shadowColor = lit ? '#FFD700' : 'transparent';
+        ctx.shadowBlur = lit ? 12 : 0;
+        ctx.beginPath();
+        ctx.arc(bx, bulbY, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      // タイトル "🎰 SLOT"
+      ctx.fillStyle = '#FFE066';
+      ctx.font = `bold 22px 'Inter', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★ SLOT MACHINE ★', cssW / 2, cabY + 58);
+    }
+
+    function drawReel(reel, idx) {
+      const rx = cabX + innerPad + idx * (reelW + reelGap);
+      const ry = reelAreaY;
+      const rh = reelAreaH;
+
+      // リール窓（黒）
+      ctx.fillStyle = '#0a0510';
+      ctx.fillRect(rx, ry, reelW, rh);
+
+      // クリップしてリール内に文字を描く
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(rx, ry, reelW, rh);
+      ctx.clip();
+
+      const p = ((reel.position % cycleLen) + cycleLen) % cycleLen;
+      const firstIdx = Math.floor(p / cellH) - 1;
+      const fontSize = Math.max(14, Math.floor(cellH * 0.42));
+      ctx.font = `bold ${fontSize}px 'Noto Sans JP', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let i = firstIdx; i < firstIdx + 5; i++) {
+        const nameIdx = ((i % reel.list.length) + reel.list.length) % reel.list.length;
+        const yTopOfCell = ry + (i * cellH - p);   // セルの top
+        const centerY = yTopOfCell + cellH / 2;
+        if (centerY < ry - cellH || centerY > ry + rh + cellH) continue;
+
+        // 中央セルか判定
+        const isCenter = (centerY > ry + rh * 0.4 && centerY < ry + rh * 0.6);
+        const isHighlighted = reel.stopped && revealStarted && isCenter && reel.list[nameIdx] === winnerName;
+
+        // 名前テキスト
+        let text = reel.list[nameIdx];
+        // テキスト幅で切詰め
+        const maxW = reelW - 16;
+        while (text.length > 2 && ctx.measureText(text).width > maxW) text = text.slice(0, -1);
+        if (text !== reel.list[nameIdx]) text = text.slice(0, -1) + '…';
+
+        if (isHighlighted) {
+          ctx.fillStyle = '#FFD700';
+          ctx.shadowColor = '#FFD700';
+          ctx.shadowBlur = 16;
+        } else if (isCenter) {
+          ctx.fillStyle = '#FFFFFF';
+        } else {
+          ctx.fillStyle = '#888';
+        }
+        ctx.fillText(text, rx + reelW / 2, centerY);
+        ctx.shadowBlur = 0;
+      }
+      ctx.restore();
+
+      // 中央ライン（強調枠）
+      const midY = ry + (rh - cellH) / 2;
+      ctx.strokeStyle = revealStarted ? '#FFD700' : '#FF8C00';
+      ctx.lineWidth = revealStarted ? 3 : 2;
+      ctx.shadowColor = revealStarted ? '#FFD700' : 'transparent';
+      ctx.shadowBlur = revealStarted ? 14 : 0;
+      ctx.strokeRect(rx + 1, midY, reelW - 2, cellH);
+      ctx.shadowBlur = 0;
+
+      // リール窓の内枠（金）
+      ctx.strokeStyle = '#FFD700';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(rx, ry, reelW, rh);
+    }
+
+    function render(now) {
+      const elapsed = now - startTime;
+
+      // リール状態更新
+      reels.forEach((r, idx) => {
+        if (!r.stopped) {
+          if (elapsed < r.stopStartAt) {
+            r.position += SPIN_SPEED * (now - (r.lastNow || now));
+          } else if (elapsed < r.stopStartAt + r.stopDur) {
+            if (!r.stopFromSet) {
+              r.stopFrom = r.position;
+              r.targetPos = computeTarget(r);
+              r.stopFromSet = true;
+            }
+            const t = (elapsed - r.stopStartAt) / r.stopDur;
+            const eased = 1 - Math.pow(1 - t, 3);
+            r.position = r.stopFrom + (r.targetPos - r.stopFrom) * eased;
+          } else {
+            r.position = r.targetPos;
+            r.stopped = true;
+          }
+        }
+        r.lastNow = now;
+      });
+
+      drawCabinet(elapsed);
+      reels.forEach((r, i) => drawReel(r, i));
+
+      slotAnimFrame = requestAnimationFrame(render);
+    }
+
+    slotAnimFrame = requestAnimationFrame(render);
+  });
+}
+
+function onSlotClick() { if (slotCanClose && window._slotCleanup) window._slotCleanup(); }
 
 // ═══════════════════════════════════════════
 // Unified Confetti (全演出共通：下から舞う紙吹雪)
