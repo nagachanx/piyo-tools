@@ -850,6 +850,50 @@
       z-index: 21;
     }
 
+    /* ─ Particles Animation ─────────────── */
+    #ov-particles {
+      position: absolute; inset: 0;
+      background: #0a0a1a;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    }
+    #particles-canvas { border-radius: 10px; max-width: calc(100vw - 32px); max-height: calc(100vh - 180px); position: relative; z-index: 1; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+    #particles-status { color: #88E0FF; font-size: 18px; letter-spacing: 0.1em; text-shadow: 0 0 10px rgba(136,224,255,0.6); position: relative; z-index: 2; }
+    #particles-winner {
+      display: none;
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #FFD700;
+      font-family: 'Inter', 'Noto Sans JP', 'Impact', 'Arial Black', sans-serif;
+      font-size: clamp(36px, 8vw, 88px);
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      text-shadow: 0 0 24px #FFD700, 0 0 60px rgba(255,215,0,0.7);
+      padding: 28px 48px;
+      border: 5px solid #FFD700;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.85);
+      box-shadow: 0 0 0 2px #FF8C00, 0 0 80px rgba(255,215,0,0.5), 0 0 200px rgba(255,215,0,0.25);
+      word-break: break-all;
+      line-height: 1.2;
+      max-width: 92vw;
+      z-index: 20;
+    }
+    #particles-winner.show {
+      display: block;
+      animation: amidaBillboardIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, amidaGlow 1.8s ease-in-out infinite 0.7s;
+    }
+    #particles-close-hint {
+      position: absolute;
+      bottom: 40px;
+      color: #88E0FF;
+      font-size: 14px;
+      opacity: 0.85;
+      letter-spacing: 0.06em;
+      z-index: 21;
+    }
+
     #amida-close-hint {
       position: absolute;
       bottom: 30px;
@@ -1021,6 +1065,15 @@
           <span class="anim-desc">ピンを倒して当選者発表</span>
         </span>
       </button>
+      <button class="anim-opt" data-anim="particles" onclick="selectAnim('particles')" role="radio" aria-checked="false">
+        <span class="anim-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="1.4"/><circle cx="18" cy="6" r="1.4"/><circle cx="6" cy="18" r="1.4"/><circle cx="18" cy="18" r="1.4"/><circle cx="12" cy="12" r="2.2"/></svg>
+        </span>
+        <span class="anim-info">
+          <span class="anim-title">デジタル粒子</span>
+          <span class="anim-desc">光の粒子が名前を形成</span>
+        </span>
+      </button>
     </div>
     <div class="anim-selector-hint">どの演出で当選を発表する？</div>
   </div>
@@ -1073,6 +1126,13 @@
     <div id="bowling-close-hint">タップして閉じる</div>
   </div>
 
+  <div id="ov-particles" style="display:none" onclick="onParticlesClick()">
+    <div id="particles-status">✨ 粒子が動いています…</div>
+    <canvas id="particles-canvas"></canvas>
+    <div id="particles-winner"></div>
+    <div id="particles-close-hint">タップして閉じる</div>
+  </div>
+
   <div id="ov-ts" style="display:none" onclick="onTsClick()">
     <canvas id="ts-canvas"></canvas>
     <canvas id="confetti-canvas"></canvas>
@@ -1110,6 +1170,8 @@ let tsCanClose  = false;
 let tsAnimFrame = null;
 let bowlingCanClose = false;
 let bowlingAnimFrame = null;
+let particlesCanClose = false;
+let particlesAnimFrame = null;
 
 function switchTab(tab) {
   inputMode = tab;
@@ -1171,7 +1233,7 @@ async function startLottery() {
   const items = getItems();
   if (!items) { alert('候補を入力してください！'); return; }
   const winners = pickWinners(items, numWinners);
-  const ANIMS = ['timessquare','amida','bowling'];
+  const ANIMS = ['timessquare','amida','bowling','particles'];
   const anim = animMode === 'random' ? ANIMS[Math.floor(Math.random()*ANIMS.length)] : animMode;
   isRunning = true;
   document.getElementById('start-btn').disabled = true;
@@ -1179,6 +1241,7 @@ async function startLottery() {
   if      (anim === 'timessquare') { await playTimesSquare(winners); }
   else if (anim === 'amida')       { await playAmida(items, winners); }
   else if (anim === 'bowling')     { await playBowling(items, winners); }
+  else if (anim === 'particles')   { await playParticles(items, winners); }
   showResult(winners);
   isRunning = false;
   document.getElementById('start-btn').disabled = false;
@@ -1863,7 +1926,7 @@ function playBowling(allItems, winners) {
     const ROLL_DUR  = 1400;
     const ROLL_START = SETUP_DUR;
     const FALL_START = ROLL_START + ROLL_DUR;
-    const REVEAL_START = FALL_START + FALL_PHASE_DUR + 200;
+    const REVEAL_START = FALL_START + FALL_PHASE_DUR + 1400;  // 全ピン倒れ完了後、約1秒の「最後の1本」余韻
     const startTime = performance.now();
     let revealStarted = false;
 
@@ -1922,22 +1985,26 @@ function playBowling(allItems, winners) {
     }
 
     // ボウリングピンのシルエット（中心(0,0)に配置、全体 w×h）
+    // - 短い首・フラットな底・チャンキーな胴体
     function drawPinShape(w, h) {
       const yT = -h * 0.5;
       ctx.beginPath();
       ctx.moveTo(0, yT);
       // 右半分（頭→首→胴体→底）
-      ctx.bezierCurveTo( w*0.30, yT,            w*0.32, yT + h*0.05,  w*0.28, yT + h*0.12);
-      ctx.bezierCurveTo( w*0.22, yT + h*0.18,   w*0.13, yT + h*0.22,  w*0.14, yT + h*0.28);
-      ctx.bezierCurveTo( w*0.16, yT + h*0.33,   w*0.18, yT + h*0.38,  w*0.30, yT + h*0.46);
-      ctx.bezierCurveTo( w*0.45, yT + h*0.58,   w*0.50, yT + h*0.75,  w*0.42, yT + h*0.90);
-      ctx.bezierCurveTo( w*0.40, yT + h*0.96,   w*0.25, yT + h*1.00,  0,      yT + h*1.00);
-      // 左半分（鏡像）
-      ctx.bezierCurveTo(-w*0.25, yT + h*1.00,  -w*0.40, yT + h*0.96, -w*0.42, yT + h*0.90);
-      ctx.bezierCurveTo(-w*0.50, yT + h*0.75,  -w*0.45, yT + h*0.58, -w*0.30, yT + h*0.46);
-      ctx.bezierCurveTo(-w*0.18, yT + h*0.38,  -w*0.16, yT + h*0.33, -w*0.14, yT + h*0.28);
-      ctx.bezierCurveTo(-w*0.13, yT + h*0.22,  -w*0.22, yT + h*0.18, -w*0.28, yT + h*0.12);
-      ctx.bezierCurveTo(-w*0.32, yT + h*0.05,  -w*0.30, yT,           0,      yT);
+      ctx.bezierCurveTo( w*0.28, yT,           w*0.32, yT + h*0.05,   w*0.30, yT + h*0.13);  // 頭の丸み
+      ctx.bezierCurveTo( w*0.27, yT + h*0.17,  w*0.22, yT + h*0.19,   w*0.20, yT + h*0.22);  // 頭下→首上
+      ctx.bezierCurveTo( w*0.20, yT + h*0.25,  w*0.22, yT + h*0.27,   w*0.27, yT + h*0.30);  // 首（短い）→胴体上
+      ctx.bezierCurveTo( w*0.40, yT + h*0.38,  w*0.50, yT + h*0.52,   w*0.50, yT + h*0.68);  // 胴体ふくらみ
+      ctx.bezierCurveTo( w*0.50, yT + h*0.82,  w*0.48, yT + h*0.92,   w*0.43, yT + h*0.97);  // 胴体下
+      ctx.bezierCurveTo( w*0.41, yT + h*0.99,  w*0.40, yT + h*1.00,   w*0.36, yT + h*1.00);  // 底のカーブ
+      ctx.lineTo(-w*0.36, yT + h*1.00);                                                       // フラットな底
+      // 左半分（鏡像で上がっていく）
+      ctx.bezierCurveTo(-w*0.40, yT + h*1.00, -w*0.41, yT + h*0.99,  -w*0.43, yT + h*0.97);
+      ctx.bezierCurveTo(-w*0.48, yT + h*0.92, -w*0.50, yT + h*0.82,  -w*0.50, yT + h*0.68);
+      ctx.bezierCurveTo(-w*0.50, yT + h*0.52, -w*0.40, yT + h*0.38,  -w*0.27, yT + h*0.30);
+      ctx.bezierCurveTo(-w*0.22, yT + h*0.27, -w*0.20, yT + h*0.25,  -w*0.20, yT + h*0.22);
+      ctx.bezierCurveTo(-w*0.22, yT + h*0.19, -w*0.27, yT + h*0.17,  -w*0.30, yT + h*0.13);
+      ctx.bezierCurveTo(-w*0.32, yT + h*0.05, -w*0.28, yT,            0,      yT);
       ctx.closePath();
     }
 
@@ -1970,14 +2037,13 @@ function playBowling(allItems, winners) {
       ctx.fillRect(0, -pinH * 0.5, pinW * 0.5, pinH);
       ctx.restore();
 
-      // 首元の赤い2本ライン（参考画像と同じ）
+      // 首元の赤い2本ライン（短い首の中に2本収まる）
       ctx.save();
       drawPinShape(pinW, pinH);
       ctx.clip();
       ctx.fillStyle = isHighlighted ? '#FF8C00' : '#E11D48';
-      const yStripe1 = -pinH * 0.5 + pinH * 0.245;
-      ctx.fillRect(-pinW * 0.5, yStripe1,                  pinW, pinH * 0.045);  // 太い帯
-      ctx.fillRect(-pinW * 0.5, yStripe1 + pinH * 0.075,   pinW, pinH * 0.018);  // 細い帯
+      ctx.fillRect(-pinW * 0.5, -pinH * 0.5 + pinH * 0.232, pinW, pinH * 0.038);  // 太い帯（上）
+      ctx.fillRect(-pinW * 0.5, -pinH * 0.5 + pinH * 0.285, pinW, pinH * 0.020);  // 細い帯（下）
       ctx.restore();
 
       // 黒い細い輪郭線
@@ -2079,6 +2145,193 @@ function playBowling(allItems, winners) {
 }
 
 function onBowlingClick() { if (bowlingCanClose && window._bowlingCleanup) window._bowlingCleanup(); }
+
+// ═══════════════════════════════════════════
+// Digital Particles Animation
+// ═══════════════════════════════════════════
+function playParticles(allItems, winners) {
+  return new Promise(resolve => {
+    particlesCanClose = false;
+    const overlay   = document.getElementById('overlay');
+    const el        = document.getElementById('ov-particles');
+    const canvas    = document.getElementById('particles-canvas');
+    const statusEl  = document.getElementById('particles-status');
+    const winnerEl  = document.getElementById('particles-winner');
+    const closeHint = document.getElementById('particles-close-hint');
+
+    if (!overlay || !el || !canvas) {
+      console.error('[Particles] required DOM elements missing');
+      resolve();
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    const cleanup = () => {
+      if (particlesAnimFrame) cancelAnimationFrame(particlesAnimFrame);
+      particlesAnimFrame = null;
+      overlay.classList.remove('on');
+      el.style.display = 'none';
+      if (winnerEl) { winnerEl.classList.remove('show'); winnerEl.style.display = ''; }
+      if (closeHint) closeHint.style.display = 'none';
+      particlesCanClose = false;
+      resolve();
+    };
+    window._particlesCleanup = cleanup;
+
+    // オーバーレイ表示・他は隠す
+    overlay.classList.add('on');
+    el.style.display = 'flex';
+    ['ov-ts','ov-amida','ov-bowling'].forEach(id => {
+      const e = document.getElementById(id);
+      if (e) e.style.display = 'none';
+    });
+    winnerEl.classList.remove('show');
+    winnerEl.style.display = '';
+    closeHint.style.display = 'none';
+    statusEl.textContent = '✨ 粒子が動いています…';
+
+    // Canvas サイズ
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.min(window.innerWidth - 32, 800);
+    const cssH = Math.min(window.innerHeight - 180, 500);
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    canvas.width = cssW * dpr;
+    canvas.height = cssH * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+
+    // 当選者名から「集合先ピクセル」を取得
+    const sampleCanvas = document.createElement('canvas');
+    sampleCanvas.width = cssW;
+    sampleCanvas.height = cssH;
+    const sctx = sampleCanvas.getContext('2d');
+    sctx.fillStyle = '#fff';
+    sctx.textAlign = 'center';
+    sctx.textBaseline = 'middle';
+
+    const lines = winners.length === 1 ? [winners[0]] : winners;
+    let lineH = Math.min(140, Math.floor(cssH / Math.max(1, lines.length) * 0.78));
+    let fontSize = Math.floor(lineH * 0.78);
+    sctx.font = `900 ${fontSize}px 'Inter', 'Noto Sans JP', 'Arial Black', sans-serif`;
+    while (fontSize > 24 && lines.some(line => sctx.measureText(line).width > cssW * 0.85)) {
+      fontSize -= 4;
+      sctx.font = `900 ${fontSize}px 'Inter', 'Noto Sans JP', 'Arial Black', sans-serif`;
+    }
+    lineH = Math.max(lineH, fontSize * 1.05);
+
+    const baseY = cssH / 2 - ((lines.length - 1) * lineH) / 2;
+    lines.forEach((line, i) => {
+      sctx.fillText(line, cssW / 2, baseY + i * lineH);
+    });
+
+    // 非透過ピクセルをサンプリング
+    const imgData = sctx.getImageData(0, 0, cssW, cssH);
+    const targets = [];
+    const step = 3;
+    for (let y = 0; y < cssH; y += step) {
+      for (let x = 0; x < cssW; x += step) {
+        const idx = (y * cssW + x) * 4;
+        if (imgData.data[idx + 3] > 128) targets.push({ x, y });
+      }
+    }
+    if (targets.length === 0) targets.push({ x: cssW / 2, y: cssH / 2 });
+
+    // パレット（鮮やかな8色）
+    const COLORS = ['#FF3B6B','#FF9534','#FFD93D','#6BCB77','#4D96FF','#A78BFA','#00D9C0','#FF6B9D'];
+    const N = Math.min(1600, Math.max(500, targets.length));
+    const particles = [];
+    for (let i = 0; i < N; i++) {
+      const t = targets[i % targets.length];
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1.2 + Math.random() * 3.5;
+      particles.push({
+        x: Math.random() * cssW,
+        y: Math.random() * cssH,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        tx: t.x,
+        ty: t.y,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        size: 2 + Math.random() * 2,
+        rot: Math.random() * Math.PI * 2,
+        rotVel: (Math.random() - 0.5) * 0.08,
+        wobOff: Math.random() * Math.PI * 2,
+      });
+    }
+
+    // タイミング
+    const CHAOS_DUR    = 1700;
+    const CONVERGE_DUR = 1700;
+    const HOLD_DUR     = 700;
+    const REVEAL_START = CHAOS_DUR + CONVERGE_DUR + HOLD_DUR;
+    const startTime    = performance.now();
+
+    setTimeout(() => { statusEl.textContent = '✨ 名前が現れます…'; }, CHAOS_DUR);
+    setTimeout(() => { statusEl.textContent = '🎉 当選！'; }, CHAOS_DUR + CONVERGE_DUR);
+    setTimeout(() => {
+      if (winners.length === 1) {
+        winnerEl.innerHTML = `🏆 ${esc(winners[0])} 🏆`;
+      } else {
+        winnerEl.innerHTML = winners.map(w => `🏆 ${esc(w)}`).join('<br>');
+      }
+      winnerEl.classList.add('show');
+      setTimeout(() => {
+        closeHint.style.display = 'block';
+        particlesCanClose = true;
+      }, 700);
+    }, REVEAL_START);
+
+    function render(now) {
+      const elapsed = now - startTime;
+
+      // 軌跡（薄く塗りつぶし）
+      ctx.fillStyle = 'rgba(10,10,26,0.20)';
+      ctx.fillRect(0, 0, cssW, cssH);
+
+      let phase = 'chaos';
+      if (elapsed > CHAOS_DUR) phase = 'converge';
+      if (elapsed > CHAOS_DUR + CONVERGE_DUR) phase = 'hold';
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        if (phase === 'chaos') {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < 4 || p.x > cssW - 4) { p.vx *= -1; p.x = Math.max(4, Math.min(cssW - 4, p.x)); }
+          if (p.y < 4 || p.y > cssH - 4) { p.vy *= -1; p.y = Math.max(4, Math.min(cssH - 4, p.y)); }
+          p.vy += 0.015;
+          p.rot += p.rotVel;
+        } else if (phase === 'converge') {
+          const dx = p.tx - p.x;
+          const dy = p.ty - p.y;
+          p.x += dx * 0.10;
+          p.y += dy * 0.10;
+          p.rot += p.rotVel * 0.7;
+        } else {
+          const wob = Math.sin(elapsed / 220 + p.wobOff) * 0.7;
+          const wob2 = Math.cos(elapsed / 220 + p.wobOff) * 0.7;
+          p.x = p.tx + wob;
+          p.y = p.ty + wob2;
+          p.rot += p.rotVel * 0.4;
+        }
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+      }
+
+      particlesAnimFrame = requestAnimationFrame(render);
+    }
+
+    particlesAnimFrame = requestAnimationFrame(render);
+  });
+}
+
+function onParticlesClick() { if (particlesCanClose && window._particlesCleanup) window._particlesCleanup(); }
 </script>
 </body>
 </html>
