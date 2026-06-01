@@ -1103,31 +1103,6 @@
     </div>
   </div>
 
-  <!-- 設定 -->
-  <div class="block">
-    <div class="block-header">
-      <span class="block-header-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </span>
-      <span class="block-header-title">設定</span>
-    </div>
-    <div class="block-body">
-
-      <div class="block-section">
-        <div class="block-section-title">当選人数</div>
-        <div class="winners-row">
-          <div class="counter-group">
-            <button class="counter-btn" onclick="changeWinners(-1)" aria-label="当選人数を減らす">−</button>
-            <span id="winners-display" aria-live="polite">1</span>
-            <button class="counter-btn" onclick="changeWinners(+1)" aria-label="当選人数を増やす">＋</button>
-          </div>
-          <span class="winners-label">名を当選</span>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
 </div><!-- /.layout-left -->
 
 <aside class="layout-right" aria-label="プレビュー・結果">
@@ -2924,10 +2899,10 @@ function playSlot(allItems, winners) {
     const cellH = Math.floor(reelAreaH / 3);
     const cycleLen = REEL_LEN * cellH;
 
-    // タイミング
-    const SPIN_DUR    = 2500;            // 全速で回る期間
-    const STOP_STEP   = 600;             // リール間の停止間隔
-    const STOP_DUR    = 800;             // 各リールの減速時間
+    // タイミング（ドキドキ感のためゆっくり減速）
+    const SPIN_DUR    = 2200;            // 全速で回る期間
+    const STOP_STEP   = 1100;            // リール間の停止間隔（次のリールが止まるまでをじっくり）
+    const STOP_DUR    = 1600;            // 各リールの減速時間（ゆっくり減速）
     reels[0].stopStartAt = SPIN_DUR;
     reels[1].stopStartAt = SPIN_DUR + STOP_STEP;
     reels[2].stopStartAt = SPIN_DUR + STOP_STEP * 2;
@@ -3103,7 +3078,7 @@ function playSlot(allItems, winners) {
               r.stopFromSet = true;
             }
             const t = (elapsed - r.stopStartAt) / r.stopDur;
-            const eased = 1 - Math.pow(1 - t, 3);
+            const eased = 1 - Math.pow(1 - t, 4);   // ease-out quart：終盤がぐっと遅くなり「どこで止まる…？」感
             r.position = r.stopFrom + (r.targetPos - r.stopFrom) * eased;
           } else {
             r.position = r.targetPos;
