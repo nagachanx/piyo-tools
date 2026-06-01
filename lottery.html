@@ -947,7 +947,7 @@
       <span class="anim-selector-title">演出を選ぼう</span>
     </div>
     <div class="anim-tile-row" role="radiogroup" aria-label="演出の選択">
-      <button class="anim-opt active" data-anim="timessquare" onclick="selectAnim('timessquare')" role="radio" aria-checked="true">
+      <button class="anim-opt" data-anim="timessquare" onclick="selectAnim('timessquare')" role="radio" aria-checked="false">
         <span class="anim-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="9" y1="13" x2="9.01" y2="13"/><line x1="9" y1="17" x2="9.01" y2="17"/></svg>
         </span>
@@ -990,9 +990,9 @@
 <!-- Sticky Start Button -->
 <div class="start-btn-bar">
   <div class="start-btn-bar-inner">
-    <button class="start-btn" id="start-btn" onclick="startLottery()" aria-label="抽選を開始">
+    <button class="start-btn" id="start-btn" onclick="startLottery()" aria-label="抽選を開始" disabled>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-      抽選スタート
+      <span id="start-btn-label">まずは演出を選ぼう</span>
     </button>
   </div>
 </div>
@@ -1040,7 +1040,7 @@
 // STATE
 // ═══════════════════════════════════════════
 let inputMode   = 'list';
-let animMode    = 'timessquare';
+let animMode    = null;
 let numWinners  = 1;
 let isRunning   = false;
 let tsCanClose  = false;
@@ -1064,6 +1064,10 @@ function selectAnim(anim) {
     b.classList.toggle('active', active);
     b.setAttribute('aria-checked', active);
   });
+  const btn = document.getElementById('start-btn');
+  if (btn) btn.disabled = false;
+  const lbl = document.getElementById('start-btn-label');
+  if (lbl) lbl.textContent = '抽選スタート';
 }
 
 function changeWinners(delta) {
@@ -1098,6 +1102,7 @@ function pickWinners(items, n) {
 
 async function startLottery() {
   if (isRunning) return;
+  if (!animMode) { alert('演出を選んでください'); return; }
   const items = getItems();
   if (!items) { alert('候補を入力してください！'); return; }
   const winners = pickWinners(items, numWinners);
