@@ -905,6 +905,39 @@
       z-index: 15;
     }
 
+    /* ─ Shared Close Button (全演出共通) ─── */
+    #shared-close-btn {
+      position: absolute;
+      bottom: 88px;          /* ティッカー(48px)の上 */
+      right: 24px;
+      padding: 12px 26px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      color: #1C1917;
+      background: #FFD700;
+      border: 2px solid #FFB300;
+      border-radius: 999px;
+      cursor: pointer;
+      z-index: 30;
+      letter-spacing: 0.04em;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.45), 0 0 0 3px rgba(255,215,0,0.25);
+      transition: background 0.15s, transform 0.1s;
+    }
+    #shared-close-btn:hover { background: #FFE680; transform: translateY(-1px); }
+    #shared-close-btn:active { transform: translateY(0); }
+    @media (max-width: 640px) {
+      #shared-close-btn { bottom: 70px; right: 16px; padding: 10px 20px; font-size: 14px; }
+    }
+
+    /* 旧 close-hint は共通ボタンに置き換えるため非表示 */
+    #ts-close-hint,
+    #amida-close-hint,
+    #bowling-close-hint,
+    #particles-close-hint,
+    #dice-close-hint,
+    #slot-close-hint { display: none !important; }
+
     /* ─ Dice Animation ──────────────────── */
     #ov-dice {
       position: absolute; inset: 0;
@@ -1249,6 +1282,9 @@
     <div class="ts-ticker-scroll" id="shared-ticker-text"></div>
   </div>
 
+  <!-- 全演出で共通の「戻る」ボタン（当選確定後に表示） -->
+  <button id="shared-close-btn" type="button" onclick="onSharedCloseClick(event)" style="display:none">タップして戻る</button>
+
   <div id="ov-ts" style="display:none" onclick="onTsClick()">
     <canvas id="ts-canvas"></canvas>
     <canvas id="confetti-canvas"></canvas>
@@ -1574,7 +1610,7 @@ async function playTimesSquare(winners) {
     showSharedTicker(winners);
 
     await delay(1200);
-    closeHint.style.display = 'block';
+    closeHint.style.display = 'block'; showCloseBtn();
     tsCanClose = true;
 
     window._tsCleanup = () => {
@@ -1585,6 +1621,7 @@ async function playTimesSquare(winners) {
       tsCanClose = false;
       stopUnifiedConfetti();
       hideSharedTicker();
+      hideCloseBtn();
       resolve();
     };
   });
@@ -1704,6 +1741,7 @@ function playAmida(allItems, winners) {
       amidaCanClose = false;
       stopUnifiedConfetti();
       hideSharedTicker();
+      hideCloseBtn();
       resolve();
     };
     window._amidaCleanup = cleanup;
@@ -1731,7 +1769,7 @@ function playAmida(allItems, winners) {
       winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
       winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
       setTimeout(() => {
-        closeHint.style.display = 'block';
+        closeHint.style.display = 'block'; showCloseBtn();
         amidaCanClose = true;
       }, 900);
       return;
@@ -1751,7 +1789,7 @@ function playAmida(allItems, winners) {
       statusEl.textContent = '🎉 当選！';
       winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
       winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
-      closeHint.style.display = 'block';
+      closeHint.style.display = 'block'; showCloseBtn();
       amidaCanClose = true;
       return;
     }
@@ -1923,7 +1961,7 @@ function playAmida(allItems, winners) {
               } catch (e) { console.warn('[Amida] confetti failed:', e); }
 
               setTimeout(() => {
-                closeHint.style.display = 'block';
+                closeHint.style.display = 'block'; showCloseBtn();
                 amidaCanClose = true;
               }, 900);
             }, 500);
@@ -1935,7 +1973,7 @@ function playAmida(allItems, winners) {
           statusEl.textContent = '🎉 到着！';
           winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
           winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
-          closeHint.style.display = 'block';
+          closeHint.style.display = 'block'; showCloseBtn();
           amidaCanClose = true;
         }
       }
@@ -1975,6 +2013,7 @@ function playBowling(allItems, winners) {
       bowlingCanClose = false;
       stopUnifiedConfetti();
       hideSharedTicker();
+      hideCloseBtn();
       resolve();
     };
     window._bowlingCleanup = cleanup;
@@ -2077,7 +2116,7 @@ function playBowling(allItems, winners) {
       }
       winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
       setTimeout(() => {
-        closeHint.style.display = 'block';
+        closeHint.style.display = 'block'; showCloseBtn();
         bowlingCanClose = true;
       }, 700);
     }, REVEAL_START);
@@ -2311,6 +2350,7 @@ function playParticles(allItems, winners) {
       particlesCanClose = false;
       stopUnifiedConfetti();
       hideSharedTicker();
+      hideCloseBtn();
       resolve();
     };
     window._particlesCleanup = cleanup;
@@ -2414,7 +2454,7 @@ function playParticles(allItems, winners) {
       }
       winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
       setTimeout(() => {
-        closeHint.style.display = 'block';
+        closeHint.style.display = 'block'; showCloseBtn();
         particlesCanClose = true;
       }, 700);
     }, REVEAL_START);
@@ -2502,6 +2542,7 @@ function playDice(allItems, winners) {
       diceCanClose = false;
       stopUnifiedConfetti();
       hideSharedTicker();
+      hideCloseBtn();
       resolve();
     };
     window._diceCleanup = cleanup;
@@ -2626,7 +2667,7 @@ function playDice(allItems, winners) {
       }
       winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
       setTimeout(() => {
-        closeHint.style.display = 'block';
+        closeHint.style.display = 'block'; showCloseBtn();
         diceCanClose = true;
       }, 700);
     }, REVEAL_START);
@@ -2829,6 +2870,7 @@ function playSlot(allItems, winners) {
       slotCanClose = false;
       stopUnifiedConfetti();
       hideSharedTicker();
+      hideCloseBtn();
       resolve();
     };
     window._slotCleanup = cleanup;
@@ -2984,7 +3026,7 @@ function playSlot(allItems, winners) {
       launchUnifiedConfetti();
       showSharedTicker(winners);
       setTimeout(() => {
-        closeHint.style.display = 'block';
+        closeHint.style.display = 'block'; showCloseBtn();
         slotCanClose = true;
       }, 700);
     }, REVEAL_START);
@@ -3276,6 +3318,31 @@ function launchUnifiedConfetti() {
   }
 
   unifiedConfettiAnimFrame = requestAnimationFrame(render);
+}
+
+// 全演出共通の「戻る」ボタン制御
+function onSharedCloseClick(e) {
+  if (e) e.stopPropagation();
+  const handlers = [
+    ['ov-ts',        () => typeof onTsClick        === 'function' && onTsClick()],
+    ['ov-amida',     () => typeof onAmidaClick     === 'function' && onAmidaClick()],
+    ['ov-bowling',   () => typeof onBowlingClick   === 'function' && onBowlingClick()],
+    ['ov-particles', () => typeof onParticlesClick === 'function' && onParticlesClick()],
+    ['ov-dice',      () => typeof onDiceClick      === 'function' && onDiceClick()],
+    ['ov-slot',      () => typeof onSlotClick      === 'function' && onSlotClick()],
+  ];
+  for (const [id, fn] of handlers) {
+    const el = document.getElementById(id);
+    if (el && el.style.display !== 'none') { fn(); return; }
+  }
+}
+function showCloseBtn() {
+  const btn = document.getElementById('shared-close-btn');
+  if (btn) btn.style.display = 'block';
+}
+function hideCloseBtn() {
+  const btn = document.getElementById('shared-close-btn');
+  if (btn) btn.style.display = 'none';
 }
 
 // 全演出共通の下スクロールティッカー（当選発表後に流れる）
