@@ -2908,22 +2908,33 @@ function playSlot(allItems, winners) {
     reels[2].stopStartAt = SPIN_DUR + STOP_STEP * 2;
     reels.forEach(r => r.stopDur = STOP_DUR);
 
-    // ★ フェイント演出：3つ目のリールが40%の確率で一旦外して再回転（ドキドキ感UP）
+    // ★ フェイント演出：40%の確率で「揃わず → 全リール再抽選」
     const MISS_CHANCE = 0.4;
-    reels[2].willMiss = Math.random() < MISS_CHANCE;
-    if (reels[2].willMiss) {
-      reels[2].fakeOffset    = Math.random() < 0.5 ? 1 : -1;  // 当選位置の隣に止まる
-      reels[2].firstStopDur  = 1100;   // フェイク停止までの減速
-      reels[2].pauseDur      = 600;    // 「あれ…？」の間
-      reels[2].respinDur     = 600;    // 再回転
-      reels[2].finalStopDur  = 1100;   // 本当の当選位置への減速
+    const willMiss = Math.random() < MISS_CHANCE;
+    reels[2].willMiss = willMiss;
+    if (willMiss) {
+      reels[2].fakeOffset = Math.random() < 0.5 ? 1 : -1;  // リール3が当選位置の隣に止まる
+      // 再抽選のタイミング（全リール共通）
+      const round1End    = reels[2].stopStartAt + reels[2].stopDur;
+      const PAUSE_DUR    = 700;        // 「揃わなかった」の余韻
+      const RESPIN_SPIN  = 600;        // 再回転の高速期間
+      const RESPIN_STEP  = 300;        // 再抽選の各リール停止間隔
+      const RESPIN_DECEL = 900;        // 再抽選の各リール減速時間
+      reels.forEach((r, i) => {
+        r.round2SpinStart  = round1End + PAUSE_DUR;
+        r.round2DecelStart = r.round2SpinStart + RESPIN_SPIN + i * RESPIN_STEP;
+        r.round2DecelDur   = RESPIN_DECEL;
+        r.round2End        = r.round2DecelStart + r.round2DecelDur;
+      });
     }
 
-    const lastReelEnd = reels[2].willMiss
-      ? reels[2].stopStartAt + reels[2].firstStopDur + reels[2].pauseDur + reels[2].respinDur + reels[2].finalStopDur
-      : SPIN_DUR + STOP_STEP * 2 + STOP_DUR;
+    const lastReelEnd = willMiss ? reels[2].round2End : SPIN_DUR + STOP_STEP * 2 + STOP_DUR;
     const ALL_STOPPED  = lastReelEnd;
     const REVEAL_START = ALL_STOPPED + 500;     // JACKPOT余韻
+
+    // ステータステキスト変更のフラグ
+    let missPauseShown = false;
+    let missRespinShown = false;
     let revealStarted = false;
 
     const SPIN_SPEED = 2.0;             // px/ms
@@ -3086,74 +3097,59 @@ function playSlot(allItems, winners) {
         if (!r.stopped) {
           const dt = (now - (r.lastNow || now));
 
-          if (r.willMiss) {
-            // ★ 多段階：フェイク停止→ポーズ→再回転→本当の停止
-            const t1 = r.stopStartAt + r.firstStopDur;
-            const t2 = t1 + r.pauseDur;
-            const t3 = t2 + r.respinDur;
-            const t4 = t3 + r.finalStopDur;
-
-            if (elapsed < r.stopStartAt) {
-              r.position += SPIN_SPEED * dt;
-            } else if (elapsed < t1) {
-              // フェイク停止までの減速
-              if (!r.stopFromSet) {
-                r.stopFrom = r.position;
+          if (elapsed < r.stopStartAt) {
+            // ─ Round 1 高速回転 ─
+            r.position += SPIN_SPEED * dt;
+          } else if (elapsed < r.stopStartAt + r.stopDur) {
+            // ─ Round 1 減速 ─（リール3 × フェイント時のみ「外れ」位置に止まる）
+            if (!r.stopFromSet) {
+              r.stopFrom = r.position;
+              if (idx === 2 && willMiss) {
                 const fakeIdx = ((r.winnerIdx + r.fakeOffset) % r.list.length + r.list.length) % r.list.length;
                 const requiredMod = ((fakeIdx * cellH) - cellH + cycleLen * 10) % cycleLen;
                 const cyclesPassed = Math.floor(r.position / cycleLen);
                 let target = (cyclesPassed + 2) * cycleLen + requiredMod;
                 while (target <= r.position + 0.5 * cycleLen) target += cycleLen;
                 r.targetPos = target;
-                r.stopFromSet = true;
-              }
-              const t = (elapsed - r.stopStartAt) / r.firstStopDur;
-              r.position = r.stopFrom + (r.targetPos - r.stopFrom) * (1 - Math.pow(1 - t, 4));
-            } else if (elapsed < t2) {
-              // フェイク位置で一時停止「あれ…惜しい！」
-              r.position = r.targetPos;
-              if (!r.missStatusShown) {
-                statusEl.textContent = '❌ あれっ…惜しい！';
-                r.missStatusShown = true;
-              }
-            } else if (elapsed < t3) {
-              // 再回転（少し遅めの速度で）
-              r.position += SPIN_SPEED * 0.85 * dt;
-              if (!r.respinStatusShown) {
-                statusEl.textContent = '✨ もう一度…！';
-                r.respinStatusShown = true;
-              }
-            } else if (elapsed < t4) {
-              // 本当の当選位置へ減速
-              if (!r.finalStopFromSet) {
-                r.finalStopFrom = r.position;
-                r.finalTargetPos = computeTarget(r);
-                r.finalStopFromSet = true;
-                statusEl.textContent = '🎯 当たれ…！';
-              }
-              const t = (elapsed - t3) / r.finalStopDur;
-              r.position = r.finalStopFrom + (r.finalTargetPos - r.finalStopFrom) * (1 - Math.pow(1 - t, 4));
-            } else {
-              r.position = r.finalTargetPos;
-              r.stopped = true;
-            }
-          } else {
-            // 通常フロー
-            if (elapsed < r.stopStartAt) {
-              r.position += SPIN_SPEED * dt;
-            } else if (elapsed < r.stopStartAt + r.stopDur) {
-              if (!r.stopFromSet) {
-                r.stopFrom = r.position;
+              } else {
                 r.targetPos = computeTarget(r);
-                r.stopFromSet = true;
               }
-              const t = (elapsed - r.stopStartAt) / r.stopDur;
-              const eased = 1 - Math.pow(1 - t, 4);   // ease-out quart：終盤がぐっと遅くなり「どこで止まる…？」感
-              r.position = r.stopFrom + (r.targetPos - r.stopFrom) * eased;
-            } else {
-              r.position = r.targetPos;
-              r.stopped = true;
+              r.stopFromSet = true;
             }
+            const t = (elapsed - r.stopStartAt) / r.stopDur;
+            const eased = 1 - Math.pow(1 - t, 4);   // ease-out quart
+            r.position = r.stopFrom + (r.targetPos - r.stopFrom) * eased;
+          } else if (!willMiss) {
+            // ─ 通常終了 ─
+            r.position = r.targetPos;
+            r.stopped = true;
+          } else if (elapsed < r.round2SpinStart) {
+            // ─ ポーズ：「揃わなかった」を見せる（全リール round1Target で固定） ─
+            r.position = r.targetPos;
+            if (idx === 2 && !missPauseShown) {
+              statusEl.textContent = '❌ あれっ…揃わなかった！';
+              missPauseShown = true;
+            }
+          } else if (elapsed < r.round2DecelStart) {
+            // ─ Round 2 再回転（全3リール）─
+            r.position += SPIN_SPEED * dt;
+            if (idx === 0 && !missRespinShown) {
+              statusEl.textContent = '✨ もう一度！再抽選！';
+              missRespinShown = true;
+            }
+          } else if (elapsed < r.round2End) {
+            // ─ Round 2 減速 → 本当の当選位置 ─
+            if (!r.round2FromSet) {
+              r.round2From = r.position;
+              r.round2Target = computeTarget(r);
+              r.round2FromSet = true;
+            }
+            const t = (elapsed - r.round2DecelStart) / r.round2DecelDur;
+            const eased = 1 - Math.pow(1 - t, 4);
+            r.position = r.round2From + (r.round2Target - r.round2From) * eased;
+          } else {
+            r.position = r.round2Target;
+            r.stopped = true;
           }
         }
         r.lastNow = now;
