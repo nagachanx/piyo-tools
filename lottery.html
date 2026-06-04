@@ -2939,7 +2939,7 @@ function playSlot(allItems, winners) {
     const SPIN_DUR_REPEAT = 600;
     const STOP_STEP       = 600;
     const STOP_DUR        = 1100;
-    const PAUSE_DUR       = 700;
+    const PAUSE_DUR       = 1400;   // ハズレ後の静止時間（じっくり「あれ…？」を見せる）
     function roundSpinDur(roundIdx) { return roundIdx === 0 ? SPIN_DUR_FIRST : SPIN_DUR_REPEAT; }
     function roundDuration(roundIdx) {
       return roundSpinDur(roundIdx) + (REEL_COUNT - 1) * STOP_STEP + STOP_DUR;
@@ -2962,12 +2962,11 @@ function playSlot(allItems, winners) {
     const startTime = performance.now();
 
     function computeTargetForIdx(r, targetIdx) {
-      // 中央(縦)に targetIdx を配置するためのposition
+      // 中央(縦)に targetIdx を配置するためのposition（位置は時間とともに減少する＝上から下へ流れる方向）
       const requiredMod = ((targetIdx * cellH) - cellH + cycleLen * 10) % cycleLen;
-      // r.position から先で「最も近い大きいp（pだけ進む）」を選ぶ
       const cyclesPassed = Math.floor(r.position / cycleLen);
-      let target = (cyclesPassed + 2) * cycleLen + requiredMod;
-      while (target <= r.position + 0.5 * cycleLen) target += cycleLen;
+      let target = (cyclesPassed - 2) * cycleLen + requiredMod;
+      while (target >= r.position - 0.5 * cycleLen) target -= cycleLen;
       return target;
     }
     function computeTarget(r) { return computeTargetForIdx(r, r.winnerIdx); }
@@ -3126,8 +3125,8 @@ function playSlot(allItems, winners) {
           const thisRoundEnd = roundStart + roundDuration(round);
 
           if (elapsed < reelStopStart) {
-            // ─ 高速回転 ─
-            r.position += SPIN_SPEED * dt;
+            // ─ 高速回転（上から下へ流れる：positionを減らす方向） ─
+            r.position -= SPIN_SPEED * dt;
           } else if (elapsed < reelStopEnd) {
             // ─ 減速 ─
             if (!r.stopFromSet) {
