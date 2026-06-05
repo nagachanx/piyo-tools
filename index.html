@@ -581,7 +581,6 @@
       overflow: hidden;
       position: relative;
       height: 100%;
-      cursor: grab;
       /* 走査線（横じま）のテクスチャ */
       background:
         repeating-linear-gradient(
@@ -592,7 +591,6 @@
           rgba(67, 168, 106, 0.08) 3px
         );
     }
-    .news-ticker-track.dragging { cursor: grabbing; }
     .news-ticker-content {
       display: inline-flex;
       /* スクロールはJS駆動（マウスホバー停止＋ドラッグ巻き戻しに対応） */
@@ -1444,6 +1442,10 @@
     let t = (s || '');
     // 残ったHTMLタグを除去
     t = t.replace(/<[^>]+>/g, '');
+    // Markdownリンク/画像 [text](url) → text、バッククォート周りも除去
+    t = t.replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1');
+    // 生のURLを除去
+    t = t.replace(/https?:\/\/\S+/gi, '');
     // 不可視文字を網羅除去
     t = t.replace(/[\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\u3164\uFEFF\uFFA0]/g, '');
     // 制御文字を除去
@@ -1625,13 +1627,10 @@
     return `<span class="news-set">${inner}</span><span class="news-set">${inner}</span>`;
   }
 
-  // ─── JS駆動スクロール（ドラッグで停止・巻き戻し可、通常時は常に流れる） ───
+  // ─── JS駆動スクロール（常に一定速度で流れる、ドラッグ機能なし） ───
   const PX_PER_SEC = 100;
   let scrollPos = 0;
   let setW = 0;
-  let isDragging = false;
-  let dragStartX = 0;
-  let dragStartPos = 0;
   let pendingSwap = null;
   let lastFrameTs = 0;
   let tickerLoopStarted = false;
@@ -1648,16 +1647,11 @@
       el.style.transform = '';
       return;
     }
-    const paused = isDragging;
+    scrollPos -= (PX_PER_SEC * dt) / 1000;
     let crossedBoundary = false;
-    if (!paused) {
-      scrollPos -= (PX_PER_SEC * dt) / 1000;
-    }
-    // 範囲外をラップ（負方向・正方向ともに）
     while (scrollPos <= -setW) { scrollPos += setW; crossedBoundary = true; }
-    while (scrollPos > 0)      { scrollPos -= setW; }
-    // 自動スクロール中のラップで保留中HTMLがあれば差し替え
-    if (crossedBoundary && pendingSwap && !isDragging) {
+    // ラップ時に保留中の更新があれば差し替え
+    if (crossedBoundary && pendingSwap) {
       el.innerHTML = pendingSwap;
       pendingSwap = null;
       const firstSet = el.querySelector('.news-set');
@@ -1705,50 +1699,6 @@
     }
     // smooth：次のラップ時に差し替え（tickerLoop内で処理）
     pendingSwap = html;
-  }
-
-  // ドラッグで巻き戻し（ホバー停止はしない＝マウス置いただけでは流れ続ける）
-  function wireUpInteraction() {
-    const track = document.querySelector('.news-ticker-track');
-    const content = document.getElementById('news-ticker-content');
-    if (!track || !content) return;
-    // マウスドラッグ
-    content.addEventListener('mousedown', (e) => {
-      if (e.target.closest('a')) return;   // リンククリックは通常通り
-      if (loadingActive) return;
-      isDragging = true;
-      dragStartX = e.clientX;
-      dragStartPos = scrollPos;
-      track.classList.add('dragging');
-      e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      scrollPos = dragStartPos + (e.clientX - dragStartX);
-    });
-    window.addEventListener('mouseup', () => {
-      if (!isDragging) return;
-      isDragging = false;
-      track.classList.remove('dragging');
-    });
-    // タッチドラッグ
-    let touchStartX = 0;
-    let touchStartPos = 0;
-    content.addEventListener('touchstart', (e) => {
-      if (e.target.closest('a')) return;
-      if (loadingActive) return;
-      if (e.touches.length !== 1) return;
-      isDragging = true;
-      touchStartX = e.touches[0].clientX;
-      touchStartPos = scrollPos;
-    }, { passive: true });
-    content.addEventListener('touchmove', (e) => {
-      if (!isDragging || e.touches.length !== 1) return;
-      scrollPos = touchStartPos + (e.touches[0].clientX - touchStartX);
-    }, { passive: true });
-    content.addEventListener('touchend', () => {
-      isDragging = false;
-    });
   }
 
   async function refresh(mode = 'smooth') {
@@ -1849,7 +1799,6 @@
   async function init() {
     buildMenu();
     wireUpMenu();
-    wireUpInteraction();
     startTickerLoop();
     // 保存していたジャンルでラベル＆メニュー状態を設定
     const labelEl = document.getElementById('news-genre-label');
