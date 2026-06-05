@@ -501,7 +501,7 @@
       display: flex;
       align-items: stretch;
       position: relative;
-      overflow: hidden;
+      /* overflow:hidden は .news-ticker-track にだけ持たせる（ドロップダウン用にここは visible） */
       box-shadow: 0 4px 14px rgba(255, 80, 0, 0.18) inset, 0 2px 6px rgba(0,0,0,0.25);
     }
     .news-ticker-label {
@@ -1445,7 +1445,17 @@
     const inner = items.map(formatItem).join(sep) + sep;
     const html = `<span class="news-set">${inner}</span><span class="news-set">${inner}</span>`;
     const el = document.getElementById('news-ticker-content');
-    if (el) el.innerHTML = html;
+    if (!el) return;
+    el.innerHTML = html;
+    // ★ コンテンツ幅から所要時間を計算して、常に一定速度（px/秒）にする
+    requestAnimationFrame(() => {
+      const firstSet = el.querySelector('.news-set');
+      if (!firstSet) return;
+      const setW = firstSet.offsetWidth;
+      const PX_PER_SEC = 100;
+      const duration = Math.max(20, setW / PX_PER_SEC);
+      el.style.animationDuration = duration + 's';
+    });
   }
 
   async function refresh() {
