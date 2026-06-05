@@ -1397,12 +1397,13 @@
       label: 'WORLD TECH (EN)', lang: 'en',
       sources: [
         'https://techcrunch.com/feed/',                          // TechCrunch
-        'https://www.theverge.com/rss/index.xml',                // The Verge
-        'https://hnrss.org/best',                                // Hacker News best
+        'https://www.wired.com/feed/rss',                        // WIRED
+        'https://news.ycombinator.com/rss',                      // Hacker News（公式）
+        'https://feeds.arstechnica.com/arstechnica/index',       // Ars Technica
       ],
       fallback: [
         'TechCrunch: New AI startup raises Series A funding',
-        'Apple unveils latest hardware lineup',
+        'WIRED: Apple unveils latest hardware lineup',
         'EU passes new tech regulation framework',
         'Major cloud provider announces price cuts',
       ],
@@ -1564,7 +1565,7 @@
 
   async function fetchJinaText(url, format) {
     const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 9000);
+    const tid = setTimeout(() => controller.abort(), 12000);   // 海外サイトでも待てるよう延長
     try {
       const headers = format === 'html' ? { 'X-Return-Format': 'html' } : {};
       const res = await fetch(JINA_BASE + url, { signal: controller.signal, headers });
