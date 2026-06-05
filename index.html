@@ -1354,43 +1354,17 @@
         'Webブラウザ各社、新機能でしのぎを削る',
       ],
     },
-    ent: {
-      label: 'ENTERTAINMENT', lang: 'ja',
+    edu: {
+      label: 'EDUCATION', lang: 'ja',
       sources: [
-        'https://nlab.itmedia.co.jp/rss/2.0/nlab.xml',           // ねとらぼ
-        'https://news.yahoo.co.jp/rss/topics/entertainment.xml', // Yahoo エンタメ
+        'https://www.kyoiku-press.com/feed',                     // 教育新聞
+        'https://hrnote.jp/feed/',                                // HR NOTE（人材育成・研修・L&D）
       ],
       fallback: [
-        '話題の新作映画、興行収入ランキング1位',
-        '人気アーティスト、新アルバム発売を発表',
-        'ストリーミング配信、新シリーズが大ヒット',
-        '注目のドラマ、最終回が話題に',
-      ],
-    },
-    life: {
-      label: 'LIFE & TIPS', lang: 'ja',
-      sources: [
-        'https://gigazine.net/news/rss_2.0/',                    // GIGAZINE
-        'https://nlab.itmedia.co.jp/rss/2.0/nlab.xml',           // ねとらぼ
-      ],
-      fallback: [
-        '在宅勤務の生産性アップ術まとめ',
-        '健康習慣、簡単に続けられる5つのコツ',
-        '料理初心者でも作れる時短レシピ集',
-        '家計を整える節約テク、最新版',
-      ],
-    },
-    knowledge: {
-      label: 'KNOWLEDGE', lang: 'ja',
-      sources: [
-        'https://nazology.kusuguru.co.jp/feed',                  // ナゾロジー
-        'https://gigazine.net/news/rss_2.0/',                    // GIGAZINE
-      ],
-      fallback: [
-        '宇宙の最新観測データ、新発見の可能性',
-        '心理学：効果的な学習法に関する研究',
-        '歴史の知られざるエピソード',
-        '科学者が解明する身近な現象の仕組み',
+        '社員研修にAIを活用する企業が増加',
+        '教育DX、自治体の導入事例が拡大',
+        'リスキリング助成金の活用ガイド',
+        'EdTech 市場、国内主要プレイヤーの動向',
       ],
     },
     world: {
@@ -1411,7 +1385,7 @@
   };
 
   // 日本語ジャンル → 英語ジャンルの順
-  const GENRE_ORDER = ['ai', 'biz', 'tech', 'ent', 'life', 'knowledge', 'world'];
+  const GENRE_ORDER = ['ai', 'biz', 'tech', 'edu', 'world'];
   const STORAGE_KEY = 'piyo-news-genre';
   // Jina Reader：URLを与えると本文を整形済みHTMLで返してくれるサービス（CORS対応）
   const JINA_BASE = 'https://r.jina.ai/';
