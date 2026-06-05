@@ -1419,11 +1419,8 @@
   // 日本語ジャンル → 英語ジャンルの順
   const GENRE_ORDER = ['ai', 'biz', 'tech', 'ent', 'life', 'knowledge', 'world'];
   const STORAGE_KEY = 'piyo-news-genre';
-  const CORS_PROXIES = [
-    'https://corsproxy.io/?',
-    'https://api.allorigins.win/raw?url=',
-    'https://api.codetabs.com/v1/proxy?quest=',
-  ];
+  // Jina Reader：URLを与えると本文を整形済みHTMLで返してくれるサービス（CORS対応）
+  const JINA_BASE = 'https://r.jina.ai/';
   const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
   let currentGenre = localStorage.getItem(STORAGE_KEY) || 'ai';
@@ -1500,23 +1497,33 @@
     return '';
   }
 
-  async function tryFetchRSS(url, proxy) {
-    const fullUrl = proxy + encodeURIComponent(url);
+  async function tryFetchRSS(url) {
+    // Jina Reader を経由：RSS XMLを整形HTML（h1〜h3 のリンクリスト）として返してくれる
     const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 6000);
+    const tid = setTimeout(() => controller.abort(), 9000);
     try {
-      const res = await fetch(fullUrl, { signal: controller.signal });
+      const res = await fetch(JINA_BASE + url, {
+        signal: controller.signal,
+        headers: { 'X-Return-Format': 'html' },
+      });
       clearTimeout(tid);
       if (!res.ok) return null;
-      const text = await res.text();
-      const doc = new DOMParser().parseFromString(text, 'text/xml');
-      // RSS は <item>, Atom は <entry>
-      const items = Array.from(doc.querySelectorAll('item, entry')).slice(0, 15);
-      if (items.length === 0) return null;
-      return items
-        .map(it => ({ title: getItemTitle(it), link: getItemLink(it) }))
-        // タイトルが空白以外を含み、リンクも取得できた記事だけ通す（クリックできない・空白だけの表示を防止）
-        .filter(it => /\S/.test(it.title) && it.link);
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const seen = new Set();
+      const items = [];
+      // 各記事は <h1〜h4><a href="...">タイトル</a></h?> 形式
+      doc.querySelectorAll('h1 > a, h2 > a, h3 > a, h4 > a').forEach(a => {
+        const title = cleanTitleText(a.textContent);
+        const link = (a.getAttribute('href') || '').trim();
+        if (!/\S/.test(title) || title.length < 5) return;
+        if (!/^https?:\/\//i.test(link)) return;
+        // 同じリンクの重複を除外
+        if (seen.has(link)) return;
+        seen.add(link);
+        items.push({ title, link });
+      });
+      return items.length > 0 ? items.slice(0, 15) : null;
     } catch (e) {
       clearTimeout(tid);
       return null;
@@ -1533,12 +1540,8 @@
   }
 
   async function fetchOneSource(url) {
-    // 各プロキシを順に試して最初に成功した結果を返す
-    for (const proxy of CORS_PROXIES) {
-      const news = await tryFetchRSS(url, proxy);
-      if (news && news.length > 0) return news;
-    }
-    return [];
+    const news = await tryFetchRSS(url);
+    return news || [];
   }
 
   async function fetchGenreNews(genre) {
