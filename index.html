@@ -1435,23 +1435,47 @@
     return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  function getDirectChildren(parent, localName) {
+    // 直接の子要素のみ取得（<source><title>...</source>のような入れ子を誤って拾わない）
+    const result = [];
+    const target = localName.toLowerCase();
+    for (const el of parent.children) {
+      const name = (el.localName || el.tagName || '').toLowerCase();
+      if (name === target) result.push(el);
+    }
+    return result;
+  }
   function getItemTitle(it) {
-    return (it.querySelector('title')?.textContent || '').trim();
+    const els = getDirectChildren(it, 'title');
+    for (const el of els) {
+      // 全空白（改行・タブ・全角空白も含む）を単一スペースに正規化＋trim
+      const t = (el.textContent || '').replace(/[\s　]+/g, ' ').trim();
+      if (t) return t;
+    }
+    return '';
   }
   function getItemLink(it) {
     // RSS: <link>URL</link>
-    // Atom: <link href="URL"/>
+    // Atom: <link href="URL"/>   (rel="self" はフィード自身なので避ける)
     // 代替: <guid>URL</guid>
-    const linkEls = it.querySelectorAll('link');
-    for (const el of linkEls) {
+    const links = getDirectChildren(it, 'link');
+    // rel="self" は後回し、rel="alternate" などを優先
+    links.sort((a, b) => {
+      const aRel = (a.getAttribute('rel') || '').toLowerCase();
+      const bRel = (b.getAttribute('rel') || '').toLowerCase();
+      const score = r => r === 'self' ? 2 : (r === '' || r === 'alternate' ? 0 : 1);
+      return score(aRel) - score(bRel);
+    });
+    for (const el of links) {
       const text = (el.textContent || '').trim();
       if (/^https?:\/\//i.test(text)) return text;
       const href = el.getAttribute('href');
       if (href && /^https?:\/\//i.test(href)) return href;
     }
-    const guid = it.querySelector('guid');
-    if (guid) {
-      const t = (guid.textContent || '').trim();
+    // guid フォールバック（直接の子のみ）
+    const guids = getDirectChildren(it, 'guid');
+    for (const g of guids) {
+      const t = (g.textContent || '').trim();
       if (/^https?:\/\//i.test(t)) return t;
     }
     return '';
