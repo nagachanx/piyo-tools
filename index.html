@@ -492,27 +492,27 @@
       main { padding: 8px 20px 60px; }
     }
 
-    /* ── AI News Ticker (アナログ電光掲示板風) ── */
+    /* ── News Ticker (サイトカラー緑系の電光掲示板風) ── */
     .news-ticker {
       background: #0A0A0A;
-      border-top: 1px solid #FF6B00;
-      border-bottom: 1px solid #FF6B00;
+      border-top: 1px solid #43A86A;
+      border-bottom: 1px solid #43A86A;
       height: 38px;
       display: flex;
       align-items: stretch;
       position: relative;
       /* overflow:hidden は .news-ticker-track にだけ持たせる（ドロップダウン用にここは visible） */
-      box-shadow: 0 4px 14px rgba(255, 80, 0, 0.18) inset, 0 2px 6px rgba(0,0,0,0.25);
+      box-shadow: 0 4px 14px rgba(67, 168, 106, 0.18) inset, 0 2px 6px rgba(0,0,0,0.25);
     }
     .news-ticker-label {
-      background: linear-gradient(90deg, #FF3D00 0%, #FF7B1C 100%);
+      background: linear-gradient(90deg, #2D8D57 0%, #43A86A 100%);
       color: #fff;
       padding: 0 14px;
       font-family: 'Inter', 'Noto Sans JP', sans-serif;
       font-size: 11px;
       font-weight: 800;
       letter-spacing: 0.14em;
-      text-shadow: 0 0 6px rgba(255, 220, 100, 0.4);
+      text-shadow: 0 0 6px rgba(180, 230, 200, 0.4);
       display: flex;
       align-items: center;
       gap: 6px;
@@ -532,8 +532,8 @@
       position: absolute;
       top: 38px;
       left: 0;
-      background: #1a1410;
-      border: 1px solid #FF6B00;
+      background: #0F1A14;
+      border: 1px solid #43A86A;
       border-radius: 0 8px 8px 8px;
       z-index: 100;
       min-width: 180px;
@@ -547,7 +547,7 @@
       text-align: left;
       background: transparent;
       border: none;
-      color: #FF9542;
+      color: #6BCB77;
       font-family: inherit;
       font-size: 13px;
       font-weight: 600;
@@ -555,20 +555,20 @@
       cursor: pointer;
       transition: background 0.12s, color 0.12s;
     }
-    .news-genre-menu button:hover { background: #2a1a0a; color: #FFD66B; }
+    .news-genre-menu button:hover { background: #142A1C; color: #C5E5D1; }
     .news-genre-menu button.active {
-      background: #3a1a0a;
-      color: #FFD66B;
-      box-shadow: inset 3px 0 0 #FFD66B;
+      background: #1A3A24;
+      color: #C5E5D1;
+      box-shadow: inset 3px 0 0 #C5E5D1;
     }
     .news-genre-header {
       font-size: 10px;
       font-weight: 800;
-      color: #FF6B00;
+      color: #43A86A;
       letter-spacing: 0.18em;
       padding: 8px 16px 4px;
       text-transform: uppercase;
-      border-top: 1px dashed rgba(255, 107, 0, 0.3);
+      border-top: 1px dashed rgba(67, 168, 106, 0.3);
       margin-top: 2px;
     }
     .news-genre-header:first-child { border-top: none; margin-top: 0; padding-top: 4px; }
@@ -585,10 +585,10 @@
       background:
         repeating-linear-gradient(
           0deg,
-          rgba(255, 80, 0, 0) 0px,
-          rgba(255, 80, 0, 0) 2px,
-          rgba(255, 80, 0, 0.08) 2px,
-          rgba(255, 80, 0, 0.08) 3px
+          rgba(67, 168, 106, 0) 0px,
+          rgba(67, 168, 106, 0) 2px,
+          rgba(67, 168, 106, 0.08) 2px,
+          rgba(67, 168, 106, 0.08) 3px
         );
     }
     .news-ticker-content {
@@ -603,17 +603,17 @@
       font-family: 'Courier New', 'IBM Plex Mono', 'Noto Sans JP', monospace;
       font-weight: 700;
       font-size: 15px;
-      color: #FF9542;
+      color: #6BCB77;
       letter-spacing: 0.04em;
       /* 発光は弱めにして輪郭をはっきり */
       text-shadow:
-        0 0 2px rgba(255, 123, 28, 0.55),
-        0 0 5px rgba(255, 80, 0, 0.18);
+        0 0 2px rgba(107, 203, 119, 0.55),
+        0 0 5px rgba(45, 141, 87, 0.18);
       white-space: nowrap;
     }
-    .news-set .news-sep { color: #FF6B00; margin: 0 18px; opacity: 0.7; }
+    .news-set .news-sep { color: #43A86A; margin: 0 18px; opacity: 0.7; }
     .news-set .news-link { color: inherit; text-decoration: none; transition: color 0.15s; }
-    .news-set .news-link:hover { color: #FFD66B; }
+    .news-set .news-link:hover { color: #C5E5D1; }
     @keyframes news-scroll {
       from { transform: translate3d(0, 0, 0); }
       to   { transform: translate3d(-50%, 0, 0); }
