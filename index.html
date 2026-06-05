@@ -561,6 +561,17 @@
       color: #FFD66B;
       box-shadow: inset 3px 0 0 #FFD66B;
     }
+    .news-genre-header {
+      font-size: 10px;
+      font-weight: 800;
+      color: #FF6B00;
+      letter-spacing: 0.18em;
+      padding: 8px 16px 4px;
+      text-transform: uppercase;
+      border-top: 1px dashed rgba(255, 107, 0, 0.3);
+      margin-top: 2px;
+    }
+    .news-genre-header:first-child { border-top: none; margin-top: 0; padding-top: 4px; }
     @media (max-width: 640px) {
       .news-genre-menu { min-width: 150px; top: 32px; }
       .news-genre-menu button { font-size: 12px; padding: 7px 14px; }
@@ -1305,8 +1316,12 @@
 (function initNewsTicker() {
   const GENRES = {
     ai: {
-      label: 'AI NEWS',
-      sources: ['https://rss.itmedia.co.jp/rss/2.0/aiplus.xml'],
+      label: 'AI NEWS', lang: 'ja',
+      sources: [
+        'https://rss.itmedia.co.jp/rss/2.0/aiplus.xml',        // ITmedia AI+
+        'https://ledge.ai/feed/',                                // Ledge.ai
+        'https://b.hatena.ne.jp/q/AI?sort=recent&mode=rss',     // はてブAI関連
+      ],
       fallback: [
         'OpenAI、次世代モデルの開発進捗を公表',
         'Google DeepMind、Gemini の長文脈処理を強化',
@@ -1317,8 +1332,12 @@
       ],
     },
     biz: {
-      label: 'BUSINESS',
-      sources: ['https://b.hatena.ne.jp/hotentry/economics.rss'],
+      label: 'BUSINESS', lang: 'ja',
+      sources: [
+        'https://b.hatena.ne.jp/hotentry/economics.rss',         // はてブ経済
+        'https://toyokeizai.net/list/feed/rss',                  // 東洋経済オンライン
+        'https://business.nikkei.com/rss/business.rdf',          // 日経ビジネス
+      ],
       fallback: [
         '日経平均、年初来高値を更新',
         '主要企業の決算、AI関連投資が拡大',
@@ -1327,8 +1346,12 @@
       ],
     },
     tech: {
-      label: 'IT/TECH',
-      sources: ['https://b.hatena.ne.jp/hotentry/it.rss'],
+      label: 'IT/TECH', lang: 'ja',
+      sources: [
+        'https://b.hatena.ne.jp/hotentry/it.rss',                // はてブIT
+        'https://www.publickey1.jp/atom.xml',                    // Publickey
+        'https://gihyo.jp/feed/rss2',                            // gihyo.jp
+      ],
       fallback: [
         'GitHub Copilot、新エンタープライズ機能',
         'Apple、開発者カンファレンスでAI戦略を発表',
@@ -1336,22 +1359,13 @@
         'Webブラウザ各社、新機能でしのぎを削る',
       ],
     },
-    world: {
-      label: 'WORLD TECH',
-      sources: [
-        'https://techcrunch.com/feed/',
-        'https://www.theverge.com/rss/index.xml',
-      ],
-      fallback: [
-        'TechCrunch: New AI startup raises Series A funding',
-        'Apple unveils latest hardware lineup',
-        'EU passes new tech regulation framework',
-        'Major cloud provider announces price cuts',
-      ],
-    },
     ent: {
-      label: 'ENTERTAINMENT',
-      sources: ['https://b.hatena.ne.jp/hotentry/entertainment.rss'],
+      label: 'ENTERTAINMENT', lang: 'ja',
+      sources: [
+        'https://b.hatena.ne.jp/hotentry/entertainment.rss',     // はてブエンタメ
+        'https://nlab.itmedia.co.jp/rss/2.0/nlab.xml',           // ねとらぼ
+        'https://eiga.com/rss/news/',                            // 映画.com
+      ],
       fallback: [
         '話題の新作映画、興行収入ランキング1位',
         '人気アーティスト、新アルバム発売を発表',
@@ -1360,8 +1374,12 @@
       ],
     },
     life: {
-      label: 'LIFE & TIPS',
-      sources: ['https://b.hatena.ne.jp/hotentry/life.rss'],
+      label: 'LIFE & TIPS', lang: 'ja',
+      sources: [
+        'https://b.hatena.ne.jp/hotentry/life.rss',              // はてブライフ
+        'https://www.lifehacker.jp/feed/index.xml',              // ライフハッカー
+        'https://b.hatena.ne.jp/hotentry/fun.rss',               // はてブおもしろ
+      ],
       fallback: [
         '在宅勤務の生産性アップ術まとめ',
         '健康習慣、簡単に続けられる5つのコツ',
@@ -1370,8 +1388,12 @@
       ],
     },
     knowledge: {
-      label: 'KNOWLEDGE',
-      sources: ['https://b.hatena.ne.jp/hotentry/knowledge.rss'],
+      label: 'KNOWLEDGE', lang: 'ja',
+      sources: [
+        'https://b.hatena.ne.jp/hotentry/knowledge.rss',         // はてブ知識
+        'https://natgeo.nikkeibp.co.jp/rss/index.rdf',           // ナショジオ日本版
+        'https://nazology.kusuguru.co.jp/feed',                  // ナゾロジー
+      ],
       fallback: [
         '宇宙の最新観測データ、新発見の可能性',
         '心理学：効果的な学習法に関する研究',
@@ -1379,9 +1401,24 @@
         '科学者が解明する身近な現象の仕組み',
       ],
     },
+    world: {
+      label: 'WORLD TECH (EN)', lang: 'en',
+      sources: [
+        'https://techcrunch.com/feed/',                          // TechCrunch
+        'https://www.theverge.com/rss/index.xml',                // The Verge
+        'https://hnrss.org/best',                                // Hacker News best
+      ],
+      fallback: [
+        'TechCrunch: New AI startup raises Series A funding',
+        'Apple unveils latest hardware lineup',
+        'EU passes new tech regulation framework',
+        'Major cloud provider announces price cuts',
+      ],
+    },
   };
 
-  const GENRE_ORDER = ['ai', 'biz', 'tech', 'world', 'ent', 'life', 'knowledge'];
+  // 日本語ジャンル → 英語ジャンルの順
+  const GENRE_ORDER = ['ai', 'biz', 'tech', 'ent', 'life', 'knowledge', 'world'];
   const STORAGE_KEY = 'piyo-news-genre';
   const CORS_PROXIES = [
     'https://corsproxy.io/?',
@@ -1420,16 +1457,33 @@
     }
   }
 
+  function shuffleArr(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  async function fetchOneSource(url) {
+    // 各プロキシを順に試して最初に成功した結果を返す
+    for (const proxy of CORS_PROXIES) {
+      const news = await tryFetchRSS(url, proxy);
+      if (news && news.length > 0) return news;
+    }
+    return [];
+  }
+
   async function fetchGenreNews(genre) {
     const g = GENRES[genre];
     if (!g) return null;
-    for (const url of g.sources) {
-      for (const proxy of CORS_PROXIES) {
-        const news = await tryFetchRSS(url, proxy);
-        if (news && news.length > 0) return news;
-      }
-    }
-    return null;
+    // 全ソースを並列フェッチ → 結合 → シャッフル
+    const perSource = await Promise.all(g.sources.map(fetchOneSource));
+    // 各ソースから最大8件まで取得して混ぜる（偏らないように）
+    const combined = perSource.flatMap(arr => arr.slice(0, 8));
+    if (combined.length === 0) return null;
+    return shuffleArr(combined).slice(0, 24);
   }
 
   function renderTicker(items) {
@@ -1482,10 +1536,18 @@
   function buildMenu() {
     const menu = document.getElementById('news-genre-menu');
     if (!menu) return;
-    menu.innerHTML = GENRE_ORDER.map(key => {
+    const LANG_HEADERS = { ja: '日本語', en: 'ENGLISH' };
+    let html = '';
+    let lastLang = null;
+    GENRE_ORDER.forEach(key => {
       const g = GENRES[key];
-      return `<button type="button" role="option" data-genre="${key}">${escHTML(g.label)}</button>`;
-    }).join('');
+      if (g.lang !== lastLang) {
+        html += `<div class="news-genre-header">${LANG_HEADERS[g.lang] || g.lang}</div>`;
+        lastLang = g.lang;
+      }
+      html += `<button type="button" role="option" data-genre="${key}">${escHTML(g.label)}</button>`;
+    });
+    menu.innerHTML = html;
     menu.querySelectorAll('button').forEach(btn => {
       btn.addEventListener('click', () => {
         setGenre(btn.dataset.genre);
