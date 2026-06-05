@@ -1435,6 +1435,28 @@
     return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  function getItemTitle(it) {
+    return (it.querySelector('title')?.textContent || '').trim();
+  }
+  function getItemLink(it) {
+    // RSS: <link>URL</link>
+    // Atom: <link href="URL"/>
+    // 代替: <guid>URL</guid>
+    const linkEls = it.querySelectorAll('link');
+    for (const el of linkEls) {
+      const text = (el.textContent || '').trim();
+      if (/^https?:\/\//i.test(text)) return text;
+      const href = el.getAttribute('href');
+      if (href && /^https?:\/\//i.test(href)) return href;
+    }
+    const guid = it.querySelector('guid');
+    if (guid) {
+      const t = (guid.textContent || '').trim();
+      if (/^https?:\/\//i.test(t)) return t;
+    }
+    return '';
+  }
+
   async function tryFetchRSS(url, proxy) {
     const fullUrl = proxy + encodeURIComponent(url);
     const controller = new AbortController();
@@ -1445,12 +1467,12 @@
       if (!res.ok) return null;
       const text = await res.text();
       const doc = new DOMParser().parseFromString(text, 'text/xml');
-      const items = Array.from(doc.querySelectorAll('item')).slice(0, 15);
+      // RSS は <item>, Atom は <entry>
+      const items = Array.from(doc.querySelectorAll('item, entry')).slice(0, 15);
       if (items.length === 0) return null;
-      return items.map(it => ({
-        title: (it.querySelector('title')?.textContent || '').trim(),
-        link:  (it.querySelector('link')?.textContent  || '').trim(),
-      })).filter(it => it.title.length > 0);
+      return items
+        .map(it => ({ title: getItemTitle(it), link: getItemLink(it) }))
+        .filter(it => it.title.length > 0);
     } catch (e) {
       clearTimeout(tid);
       return null;
@@ -1486,7 +1508,7 @@
     return shuffleArr(combined).slice(0, 24);
   }
 
-  function renderTicker(items) {
+  function buildTickerHTML(items) {
     const sep = ' <span class="news-sep">◆</span> ';
     const formatItem = (it) => {
       const t = typeof it === 'string' ? it : it.title;
@@ -1497,11 +1519,12 @@
         : title;
     };
     const inner = items.map(formatItem).join(sep) + sep;
-    const html = `<span class="news-set">${inner}</span><span class="news-set">${inner}</span>`;
-    const el = document.getElementById('news-ticker-content');
-    if (!el) return;
+    return `<span class="news-set">${inner}</span><span class="news-set">${inner}</span>`;
+  }
+
+  function applyRender(el, html) {
     el.innerHTML = html;
-    // ★ コンテンツ幅から所要時間を計算して、常に一定速度（px/秒）にする
+    // ★ コンテンツ幅から所要時間を計算して、常に一定速度（px/秒）に
     requestAnimationFrame(() => {
       const firstSet = el.querySelector('.news-set');
       if (!firstSet) return;
@@ -1512,9 +1535,36 @@
     });
   }
 
-  async function refresh() {
+  let pendingSwap = null;   // 周回完了待ちの保留中HTML
+
+  function renderTicker(items, smooth) {
+    const html = buildTickerHTML(items);
+    const el = document.getElementById('news-ticker-content');
+    if (!el) return;
+    // 初回 or 即時：そのまま差し替え
+    if (!smooth || !el.dataset.rendered) {
+      applyRender(el, html);
+      el.dataset.rendered = '1';
+      pendingSwap = null;
+      return;
+    }
+    // スムーズモード：次のアニメ周回完了に差し替えを予約
+    pendingSwap = html;
+    // 既にリスナを仕掛けてあれば再仕掛け不要（once: true で1回で外れる）
+    el.removeEventListener('animationiteration', onIterationSwap);
+    el.addEventListener('animationiteration', onIterationSwap, { once: true });
+  }
+
+  function onIterationSwap() {
+    const el = document.getElementById('news-ticker-content');
+    if (!el || !pendingSwap) return;
+    applyRender(el, pendingSwap);
+    pendingSwap = null;
+  }
+
+  async function refresh(smooth = false) {
     const news = await fetchGenreNews(currentGenre);
-    if (news && news.length > 0) renderTicker(news);
+    if (news && news.length > 0) renderTicker(news, smooth);
   }
 
   function setGenre(genre) {
@@ -1590,7 +1640,8 @@
 
   function startAutoRefresh() {
     if (refreshTimer) return;
-    refreshTimer = setInterval(refresh, REFRESH_INTERVAL_MS);
+    // 自動更新は smooth=true で「周回完了時」に切替（途中切替を防ぐ）
+    refreshTimer = setInterval(() => refresh(true), REFRESH_INTERVAL_MS);
   }
   function stopAutoRefresh() {
     if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
