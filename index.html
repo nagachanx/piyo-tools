@@ -515,10 +515,55 @@
       text-shadow: 0 0 6px rgba(255, 220, 100, 0.4);
       display: flex;
       align-items: center;
+      gap: 6px;
       flex-shrink: 0;
       z-index: 2;
       box-shadow: 6px 0 14px rgba(0,0,0,0.55);
       white-space: nowrap;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .news-ticker-label:hover { filter: brightness(1.08); }
+    .news-ticker-label .news-caret { font-size: 9px; opacity: 0.9; transition: transform 0.15s; }
+    .news-ticker-label[aria-expanded="true"] .news-caret { transform: rotate(180deg); }
+
+    .news-genre-menu {
+      position: absolute;
+      top: 38px;
+      left: 0;
+      background: #1a1410;
+      border: 1px solid #FF6B00;
+      border-radius: 0 8px 8px 8px;
+      z-index: 100;
+      min-width: 180px;
+      box-shadow: 0 6px 22px rgba(0,0,0,0.6);
+      padding: 4px 0;
+    }
+    .news-genre-menu[hidden] { display: none; }
+    .news-genre-menu button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: #FF9542;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+    }
+    .news-genre-menu button:hover { background: #2a1a0a; color: #FFD66B; }
+    .news-genre-menu button.active {
+      background: #3a1a0a;
+      color: #FFD66B;
+      box-shadow: inset 3px 0 0 #FFD66B;
+    }
+    @media (max-width: 640px) {
+      .news-genre-menu { min-width: 150px; top: 32px; }
+      .news-genre-menu button { font-size: 12px; padding: 7px 14px; }
     }
     .news-ticker-track {
       flex: 1;
@@ -549,10 +594,10 @@
       font-size: 15px;
       color: #FF9542;
       letter-spacing: 0.04em;
+      /* 発光は弱めにして輪郭をはっきり */
       text-shadow:
-        0 0 4px rgba(255, 123, 28, 0.85),
-        0 0 10px rgba(255, 80, 0, 0.55),
-        0 0 18px rgba(255, 60, 0, 0.25);
+        0 0 2px rgba(255, 123, 28, 0.55),
+        0 0 5px rgba(255, 80, 0, 0.18);
       white-space: nowrap;
     }
     .news-set .news-sep { color: #FF6B00; margin: 0 18px; opacity: 0.7; }
@@ -602,9 +647,12 @@
   </div>
 </header>
 
-<!-- 最新AIニュースの電光掲示板風ティッカー -->
+<!-- 最新ニュースの電光掲示板風ティッカー -->
 <div class="news-ticker" id="news-ticker">
-  <span class="news-ticker-label">📡 AI NEWS</span>
+  <button class="news-ticker-label" id="news-genre-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+    📡 <span id="news-genre-label">AI NEWS</span><span class="news-caret">▾</span>
+  </button>
+  <div class="news-genre-menu" id="news-genre-menu" hidden role="listbox"></div>
   <div class="news-ticker-track">
     <div class="news-ticker-content" id="news-ticker-content">
       <span class="news-set">読み込み中…</span>
@@ -1252,29 +1300,99 @@
 })();
 
 // ═══════════════════════════════════════════
-// AI News Ticker：RSSから最新AIニュースを取得して右→左に流す
+// News Ticker：ジャンル切替対応・自動更新（5分ごと）
 // ═══════════════════════════════════════════
 (function initNewsTicker() {
-  // フォールバック（取得失敗時に表示する固定ニュース）
-  const FALLBACK_NEWS = [
-    'OpenAI、次世代モデルの開発進捗を公表',
-    'Google DeepMind、Gemini の長文脈処理を強化',
-    'Anthropic、Claude のエージェント機能を拡張',
-    'Microsoft、Copilot の企業向け新機能を投入',
-    'Meta、LLaMA 最新版をオープンソースで公開',
-    '東大とNTT、日本語特化LLMを共同開発',
-    'AI生成画像の著作権、ガイドライン整備が進む',
-    'GPU需給、各社の調達競争が引き続き激化',
-  ];
-  const RSS_SOURCES = [
-    'https://rss.itmedia.co.jp/rss/2.0/aiplus.xml',  // ITmedia AI+
-    'https://b.hatena.ne.jp/q/AI?sort=recent&mode=rss',  // はてブAI関連
-  ];
+  const GENRES = {
+    ai: {
+      label: 'AI NEWS',
+      sources: ['https://rss.itmedia.co.jp/rss/2.0/aiplus.xml'],
+      fallback: [
+        'OpenAI、次世代モデルの開発進捗を公表',
+        'Google DeepMind、Gemini の長文脈処理を強化',
+        'Anthropic、Claude のエージェント機能を拡張',
+        'Meta、LLaMA 最新版をオープンソースで公開',
+        '東大とNTT、日本語特化LLMを共同開発',
+        'AI生成画像の著作権、ガイドライン整備が進む',
+      ],
+    },
+    biz: {
+      label: 'BUSINESS',
+      sources: ['https://b.hatena.ne.jp/hotentry/economics.rss'],
+      fallback: [
+        '日経平均、年初来高値を更新',
+        '主要企業の決算、AI関連投資が拡大',
+        '生成AI導入企業、業務効率化の事例が増加',
+        '中小企業のDX、補助金活用事例まとめ',
+      ],
+    },
+    tech: {
+      label: 'IT/TECH',
+      sources: ['https://b.hatena.ne.jp/hotentry/it.rss'],
+      fallback: [
+        'GitHub Copilot、新エンタープライズ機能',
+        'Apple、開発者カンファレンスでAI戦略を発表',
+        'React 新バージョン、性能改善が話題',
+        'Webブラウザ各社、新機能でしのぎを削る',
+      ],
+    },
+    world: {
+      label: 'WORLD TECH',
+      sources: [
+        'https://techcrunch.com/feed/',
+        'https://www.theverge.com/rss/index.xml',
+      ],
+      fallback: [
+        'TechCrunch: New AI startup raises Series A funding',
+        'Apple unveils latest hardware lineup',
+        'EU passes new tech regulation framework',
+        'Major cloud provider announces price cuts',
+      ],
+    },
+    ent: {
+      label: 'ENTERTAINMENT',
+      sources: ['https://b.hatena.ne.jp/hotentry/entertainment.rss'],
+      fallback: [
+        '話題の新作映画、興行収入ランキング1位',
+        '人気アーティスト、新アルバム発売を発表',
+        'ストリーミング配信、新シリーズが大ヒット',
+        '注目のドラマ、最終回が話題に',
+      ],
+    },
+    life: {
+      label: 'LIFE & TIPS',
+      sources: ['https://b.hatena.ne.jp/hotentry/life.rss'],
+      fallback: [
+        '在宅勤務の生産性アップ術まとめ',
+        '健康習慣、簡単に続けられる5つのコツ',
+        '料理初心者でも作れる時短レシピ集',
+        '家計を整える節約テク、最新版',
+      ],
+    },
+    knowledge: {
+      label: 'KNOWLEDGE',
+      sources: ['https://b.hatena.ne.jp/hotentry/knowledge.rss'],
+      fallback: [
+        '宇宙の最新観測データ、新発見の可能性',
+        '心理学：効果的な学習法に関する研究',
+        '歴史の知られざるエピソード',
+        '科学者が解明する身近な現象の仕組み',
+      ],
+    },
+  };
+
+  const GENRE_ORDER = ['ai', 'biz', 'tech', 'world', 'ent', 'life', 'knowledge'];
+  const STORAGE_KEY = 'piyo-news-genre';
   const CORS_PROXIES = [
     'https://corsproxy.io/?',
     'https://api.allorigins.win/raw?url=',
     'https://api.codetabs.com/v1/proxy?quest=',
   ];
+  const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+
+  let currentGenre = localStorage.getItem(STORAGE_KEY) || 'ai';
+  if (!GENRES[currentGenre]) currentGenre = 'ai';
+  let refreshTimer = null;
 
   function escHTML(s) {
     return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1302,8 +1420,10 @@
     }
   }
 
-  async function fetchNews() {
-    for (const url of RSS_SOURCES) {
+  async function fetchGenreNews(genre) {
+    const g = GENRES[genre];
+    if (!g) return null;
+    for (const url of g.sources) {
       for (const proxy of CORS_PROXIES) {
         const news = await tryFetchRSS(url, proxy);
         if (news && news.length > 0) return news;
@@ -1323,18 +1443,110 @@
         : title;
     };
     const inner = items.map(formatItem).join(sep) + sep;
-    // 二重表示でシームレスループ
     const html = `<span class="news-set">${inner}</span><span class="news-set">${inner}</span>`;
     const el = document.getElementById('news-ticker-content');
     if (el) el.innerHTML = html;
   }
 
-  async function init() {
-    // まずフォールバックを即座に表示
-    renderTicker(FALLBACK_NEWS);
-    // 取得を試みる
-    const news = await fetchNews();
+  async function refresh() {
+    const news = await fetchGenreNews(currentGenre);
     if (news && news.length > 0) renderTicker(news);
+  }
+
+  function setGenre(genre) {
+    if (!GENRES[genre]) return;
+    currentGenre = genre;
+    try { localStorage.setItem(STORAGE_KEY, genre); } catch (e) {}
+    // ラベル更新
+    const labelEl = document.getElementById('news-genre-label');
+    if (labelEl) labelEl.textContent = GENRES[genre].label;
+    // メニュー内のアクティブ更新
+    document.querySelectorAll('#news-genre-menu button').forEach(b => {
+      b.classList.toggle('active', b.dataset.genre === genre);
+    });
+    // フォールバックをすぐに表示してから取得
+    renderTicker(GENRES[genre].fallback);
+    refresh();
+  }
+
+  function buildMenu() {
+    const menu = document.getElementById('news-genre-menu');
+    if (!menu) return;
+    menu.innerHTML = GENRE_ORDER.map(key => {
+      const g = GENRES[key];
+      return `<button type="button" role="option" data-genre="${key}">${escHTML(g.label)}</button>`;
+    }).join('');
+    menu.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setGenre(btn.dataset.genre);
+        closeMenu();
+      });
+    });
+  }
+
+  function openMenu() {
+    const menu = document.getElementById('news-genre-menu');
+    const btn  = document.getElementById('news-genre-btn');
+    if (menu) menu.hidden = false;
+    if (btn) btn.setAttribute('aria-expanded', 'true');
+  }
+  function closeMenu() {
+    const menu = document.getElementById('news-genre-menu');
+    const btn  = document.getElementById('news-genre-btn');
+    if (menu) menu.hidden = true;
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+
+  function wireUpMenu() {
+    const btn = document.getElementById('news-genre-btn');
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const menu = document.getElementById('news-genre-menu');
+      if (!menu) return;
+      if (menu.hidden) openMenu(); else closeMenu();
+    });
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('news-genre-menu');
+      if (!menu || menu.hidden) return;
+      if (!menu.contains(e.target) && !btn.contains(e.target)) closeMenu();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMenu();
+    });
+  }
+
+  function startAutoRefresh() {
+    if (refreshTimer) return;
+    refreshTimer = setInterval(refresh, REFRESH_INTERVAL_MS);
+  }
+  function stopAutoRefresh() {
+    if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+  }
+
+  async function init() {
+    buildMenu();
+    wireUpMenu();
+    // 保存していたジャンルでラベル＆フォールバック表示
+    const labelEl = document.getElementById('news-genre-label');
+    if (labelEl) labelEl.textContent = GENRES[currentGenre].label;
+    document.querySelectorAll('#news-genre-menu button').forEach(b => {
+      b.classList.toggle('active', b.dataset.genre === currentGenre);
+    });
+    renderTicker(GENRES[currentGenre].fallback);
+
+    // 初回フェッチ
+    await refresh();
+    // 5分ごとに自動更新（タブが非表示の間は走らせない）
+    startAutoRefresh();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        startAutoRefresh();
+        refresh();
+      } else {
+        stopAutoRefresh();
+      }
+    });
   }
 
   init();
