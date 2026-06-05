@@ -1523,14 +1523,9 @@
   }
 
   function applyRender(el, html, restart) {
+    el.style.animation = '';   // ローディング中など animation:none が残っていたら戻す
     el.innerHTML = html;
-    if (restart) {
-      // アニメーションを完全に初期化（始点から再生）
-      el.style.animation = 'none';
-      void el.offsetWidth;   // force reflow
-      el.style.animation = '';
-    }
-    // ★ コンテンツ幅から所要時間を計算して、常に一定速度（px/秒）に
+    // コンテンツ幅を測ってから speed と animation 状態を確定（同フレーム内）
     requestAnimationFrame(() => {
       const firstSet = el.querySelector('.news-set');
       if (!firstSet) return;
@@ -1538,24 +1533,41 @@
       const PX_PER_SEC = 100;
       const duration = Math.max(20, setW / PX_PER_SEC);
       el.style.animationDuration = duration + 's';
+      if (restart) {
+        // Web Animations API で確実に始点へ戻す
+        try {
+          el.getAnimations().forEach(a => { a.currentTime = 0; });
+        } catch (e) {
+          // 古い環境フォールバック：name を一旦 none に
+          el.style.animationName = 'none';
+          void el.offsetWidth;
+          el.style.animationName = '';
+        }
+      }
     });
+  }
+
+  function showLoadingState(label) {
+    const el = document.getElementById('news-ticker-content');
+    if (!el) return;
+    // ローディング中はアニメ停止＋中央寄りに静止表示
+    el.style.animation = 'none';
+    el.innerHTML = `<span class="news-set" style="padding:0 24px;opacity:0.55;letter-spacing:0.08em;">${escHTML(label)} 取得中…</span>`;
   }
 
   let pendingSwap = null;         // 周回完了待ちの保留中HTML
   let swapListenerAttached = false;
 
   // mode:
-  //   'restart' = 即時差し替え＋アニメ初期化（ユーザー操作・初回ロード時）
+  //   'restart' = 即時差し替え＋アニメ始点から再生（ユーザー操作・初回ロード時）
   //   'smooth'  = 次のアニメ周回完了に予約（バックグラウンド更新時）
   function renderTicker(items, mode) {
     const html = buildTickerHTML(items);
     const el = document.getElementById('news-ticker-content');
     if (!el) return;
-    const isFirst = !el.dataset.rendered;
-    if (mode === 'restart' || isFirst) {
-      // 保留中の周回待ちはキャンセル
+    if (mode === 'restart' || !el.dataset.rendered) {
       pendingSwap = null;
-      applyRender(el, html, !isFirst);   // 初回は restart 不要、それ以外は restart
+      applyRender(el, html, true);   // restart モードでも初回でも、必ず始点から
       el.dataset.rendered = '1';
       return;
     }
@@ -1571,13 +1583,23 @@
     swapListenerAttached = false;
     const el = document.getElementById('news-ticker-content');
     if (!el || !pendingSwap) return;
-    applyRender(el, pendingSwap, false);   // 周回完了時は位置が始点なので restart 不要
+    applyRender(el, pendingSwap, false);   // 周回完了時は始点なので restart 不要
     pendingSwap = null;
   }
 
   async function refresh(mode = 'smooth') {
     const news = await fetchGenreNews(currentGenre);
     if (news && news.length > 0) renderTicker(news, mode);
+  }
+
+  // RSS取得→1回だけ描画。タイムアウト時はフォールバックを使用。
+  async function loadAndDisplay(genre) {
+    const newsP = fetchGenreNews(genre).catch(() => null);
+    const timeoutP = new Promise(r => setTimeout(r, 8000, null));
+    const news = await Promise.race([newsP, timeoutP]);
+    if (currentGenre !== genre) return;     // 別ジャンルに切り替えられていたらスキップ
+    const items = (news && news.length > 0) ? news : GENRES[genre].fallback;
+    renderTicker(items, 'restart');
   }
 
   async function setGenre(genre) {
@@ -1591,12 +1613,9 @@
     document.querySelectorAll('#news-genre-menu button').forEach(b => {
       b.classList.toggle('active', b.dataset.genre === genre);
     });
-    // ジャンル変更時：まずフォールバックでアニメをリスタート（即時フィードバック）
-    renderTicker(GENRES[genre].fallback, 'restart');
-    // RSS取得後もリスタート（途中切替を避ける）
-    const news = await fetchGenreNews(genre);
-    if (currentGenre !== genre) return;   // 別ジャンルに切り替えられていたらスキップ
-    if (news && news.length > 0) renderTicker(news, 'restart');
+    // ローディング表示で即時フィードバック → RSS取得後に1回だけ描画
+    showLoadingState(GENRES[genre].label);
+    await loadAndDisplay(genre);
   }
 
   function buildMenu() {
@@ -1666,18 +1685,15 @@
   async function init() {
     buildMenu();
     wireUpMenu();
-    // 保存していたジャンルでラベル＆フォールバック表示
+    // 保存していたジャンルでラベル＆メニュー状態を設定
     const labelEl = document.getElementById('news-genre-label');
     if (labelEl) labelEl.textContent = GENRES[currentGenre].label;
     document.querySelectorAll('#news-genre-menu button').forEach(b => {
       b.classList.toggle('active', b.dataset.genre === currentGenre);
     });
-    // 初回ロード：フォールバックを即時表示（初回なので restart 不要）
-    renderTicker(GENRES[currentGenre].fallback);
-
-    // 初回フェッチ：RSS到着後は restart で1回だけ綺麗に差し替え
-    const news = await fetchGenreNews(currentGenre);
-    if (news && news.length > 0) renderTicker(news, 'restart');
+    // ローディング表示 → RSS取得後に1回だけ描画
+    showLoadingState(GENRES[currentGenre].label);
+    await loadAndDisplay(currentGenre);
 
     // 5分ごとに自動更新（バックグラウンドなので smooth = 周回完了時切替）
     startAutoRefresh();
