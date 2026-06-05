@@ -1497,37 +1497,93 @@
     return '';
   }
 
-  async function tryFetchRSS(url) {
-    // Jina Reader を経由：RSS XMLを整形HTML（h1〜h3 のリンクリスト）として返してくれる
+  function isValidArticle(title, link) {
+    if (!/\S/.test(title)) return false;
+    if (title.length < 5 || title.length > 300) return false;
+    if (!/^https?:\/\//i.test(link)) return false;
+    if (/^https?:\/\//i.test(title)) return false;     // タイトルがURLそのものなのは弾く（lifehacker等）
+    return true;
+  }
+
+  function extractFromHTML(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const seen = new Set();
+    const items = [];
+    // 記事は h1〜h4 > a 形式が多い
+    doc.querySelectorAll('h1 > a, h2 > a, h3 > a, h4 > a').forEach(a => {
+      const title = cleanTitleText(a.textContent);
+      const link = (a.getAttribute('href') || '').trim();
+      if (!isValidArticle(title, link)) return;
+      if (seen.has(link)) return;
+      seen.add(link);
+      items.push({ title, link });
+    });
+    return items;
+  }
+
+  function extractFromMarkdown(text) {
+    const items = [];
+    const seen = new Set();
+    const lines = text.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/^#+\s+(.+?)\s*$/);
+      if (!m) continue;
+      let title = m[1].trim();
+      // ケース1: タイトル末尾にURLが続く形式 ("Title https://...")
+      const inline = title.match(/^(.+?)\s+(https?:\/\/\S+)\s*$/);
+      if (inline) {
+        title = cleanTitleText(inline[1]);
+        const link = inline[2].trim();
+        if (isValidArticle(title, link) && !seen.has(link)) {
+          seen.add(link); items.push({ title, link });
+        }
+        continue;
+      }
+      // ケース2: 直後数行のいずれかにURLがある
+      title = cleanTitleText(title);
+      for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+        const u = lines[j].match(/(https?:\/\/[^\s)\]]+)/);
+        if (u) {
+          const link = u[1].trim();
+          if (isValidArticle(title, link) && !seen.has(link)) {
+            seen.add(link); items.push({ title, link });
+          }
+          break;
+        }
+      }
+    }
+    return items;
+  }
+
+  async function fetchJinaText(url, format) {
     const controller = new AbortController();
     const tid = setTimeout(() => controller.abort(), 9000);
     try {
-      const res = await fetch(JINA_BASE + url, {
-        signal: controller.signal,
-        headers: { 'X-Return-Format': 'html' },
-      });
+      const headers = format === 'html' ? { 'X-Return-Format': 'html' } : {};
+      const res = await fetch(JINA_BASE + url, { signal: controller.signal, headers });
       clearTimeout(tid);
       if (!res.ok) return null;
-      const html = await res.text();
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      const seen = new Set();
-      const items = [];
-      // 各記事は <h1〜h4><a href="...">タイトル</a></h?> 形式
-      doc.querySelectorAll('h1 > a, h2 > a, h3 > a, h4 > a').forEach(a => {
-        const title = cleanTitleText(a.textContent);
-        const link = (a.getAttribute('href') || '').trim();
-        if (!/\S/.test(title) || title.length < 5) return;
-        if (!/^https?:\/\//i.test(link)) return;
-        // 同じリンクの重複を除外
-        if (seen.has(link)) return;
-        seen.add(link);
-        items.push({ title, link });
-      });
-      return items.length > 0 ? items.slice(0, 15) : null;
+      return await res.text();
     } catch (e) {
       clearTimeout(tid);
       return null;
     }
+  }
+
+  async function tryFetchRSS(url) {
+    // 1) HTMLフォーマットで取得 → h1〜h4 > a を抽出
+    const html = await fetchJinaText(url, 'html');
+    if (html) {
+      const items = extractFromHTML(html);
+      if (items.length > 0) return items.slice(0, 15);
+    }
+    // 2) フォールバック：markdownフォーマット → # 見出しとURLから抽出
+    const md = await fetchJinaText(url, 'markdown');
+    if (md) {
+      const items = extractFromMarkdown(md);
+      if (items.length > 0) return items.slice(0, 15);
+    }
+    return null;
   }
 
   function shuffleArr(arr) {
