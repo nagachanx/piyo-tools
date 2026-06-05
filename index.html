@@ -1447,19 +1447,21 @@
     let t = (s || '');
     // 残ったHTMLタグを除去
     t = t.replace(/<[^>]+>/g, '');
-    // ゼロ幅文字・制御文字を除去
-    t = t.replace(/[\u200B-\u200F\u2060\uFEFF]/g, '');
+    // 不可視文字を網羅除去
+    t = t.replace(/[\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\u3164\uFEFF\uFFA0]/g, '');
     // 制御文字を除去
     t = t.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-    // すべての空白（半角・全角・nbsp）を単一スペースに正規化＋trim
-    t = t.replace(/[\s 　]+/g, ' ').trim();
+    // すべての空白を単一スペースに正規化
+    t = t.replace(/[\s\u00A0\u3000]+/g, ' ');
+    // 文頭・文末を強力にtrim
+    t = t.replace(/^[\s\u00A0\u3000]+|[\s\u00A0\u3000]+$/g, '');
     return t;
   }
   function getItemTitle(it) {
     const els = getDirectChildren(it, 'title');
     for (const el of els) {
       const t = cleanTitleText(el.textContent);
-      if (t.length >= 3) return t;   // あまりに短いタイトルは弾く
+      if (/\S/.test(t)) return t;   // 非空白文字が1つでもあればOK
     }
     return '';
   }
@@ -1513,7 +1515,8 @@
       if (items.length === 0) return null;
       return items
         .map(it => ({ title: getItemTitle(it), link: getItemLink(it) }))
-        .filter(it => it.title.length > 0);
+        // タイトルが空白以外を含み、リンクも取得できた記事だけ通す（クリックできない・空白だけの表示を防止）
+        .filter(it => /\S/.test(it.title) && it.link);
     } catch (e) {
       clearTimeout(tid);
       return null;
@@ -1563,11 +1566,10 @@
     return `<span class="news-set">${inner}</span><span class="news-set">${inner}</span>`;
   }
 
-  // ─── JS駆動スクロール（マウスホバー停止＋ドラッグで巻き戻し可） ───
+  // ─── JS駆動スクロール（ドラッグで停止・巻き戻し可、通常時は常に流れる） ───
   const PX_PER_SEC = 100;
   let scrollPos = 0;
   let setW = 0;
-  let isHovering = false;
   let isDragging = false;
   let dragStartX = 0;
   let dragStartPos = 0;
@@ -1587,7 +1589,7 @@
       el.style.transform = '';
       return;
     }
-    const paused = isHovering || isDragging;
+    const paused = isDragging;
     let crossedBoundary = false;
     if (!paused) {
       scrollPos -= (PX_PER_SEC * dt) / 1000;
@@ -1646,14 +1648,11 @@
     pendingSwap = html;
   }
 
-  // ホバー停止＋ドラッグで巻き戻し
+  // ドラッグで巻き戻し（ホバー停止はしない＝マウス置いただけでは流れ続ける）
   function wireUpInteraction() {
     const track = document.querySelector('.news-ticker-track');
     const content = document.getElementById('news-ticker-content');
     if (!track || !content) return;
-    // ホバーで一時停止
-    track.addEventListener('mouseenter', () => { isHovering = true; });
-    track.addEventListener('mouseleave', () => { isHovering = false; });
     // マウスドラッグ
     content.addEventListener('mousedown', (e) => {
       if (e.target.closest('a')) return;   // リンククリックは通常通り
@@ -1681,7 +1680,6 @@
       if (loadingActive) return;
       if (e.touches.length !== 1) return;
       isDragging = true;
-      isHovering = true;
       touchStartX = e.touches[0].clientX;
       touchStartPos = scrollPos;
     }, { passive: true });
@@ -1691,7 +1689,6 @@
     }, { passive: true });
     content.addEventListener('touchend', () => {
       isDragging = false;
-      isHovering = false;
     });
   }
 
