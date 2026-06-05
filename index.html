@@ -1315,9 +1315,8 @@
     ai: {
       label: 'AI NEWS', lang: 'ja',
       sources: [
-        'https://rss.itmedia.co.jp/rss/2.0/aiplus.xml',        // ITmedia AI+
-        'https://ledge.ai/feed/',                                // Ledge.ai
-        'https://b.hatena.ne.jp/q/AI?sort=recent&mode=rss',     // はてブAI関連
+        'https://rss.itmedia.co.jp/rss/2.0/aiplus.xml',          // ITmedia AI+
+        'https://news.yahoo.co.jp/rss/topics/it.xml',            // Yahoo IT
       ],
       fallback: [
         'OpenAI、次世代モデルの開発進捗を公表',
@@ -1331,9 +1330,8 @@
     biz: {
       label: 'BUSINESS', lang: 'ja',
       sources: [
-        'https://b.hatena.ne.jp/hotentry/economics.rss',         // はてブ経済
-        'https://toyokeizai.net/list/feed/rss',                  // 東洋経済オンライン
-        'https://business.nikkei.com/rss/business.rdf',          // 日経ビジネス
+        'https://rss.itmedia.co.jp/rss/2.0/business.xml',        // ITmedia ビジネス
+        'https://news.yahoo.co.jp/rss/topics/business.xml',      // Yahoo ビジネス
       ],
       fallback: [
         '日経平均、年初来高値を更新',
@@ -1345,8 +1343,8 @@
     tech: {
       label: 'IT/TECH', lang: 'ja',
       sources: [
-        'https://b.hatena.ne.jp/hotentry/it.rss',                // はてブIT
-        'https://www.publickey1.jp/atom.xml',                    // Publickey
+        'https://rss.itmedia.co.jp/rss/2.0/enterprise.xml',      // ITmedia エンタプライズ
+        'https://gigazine.net/news/rss_2.0/',                    // GIGAZINE
         'https://gihyo.jp/feed/rss2',                            // gihyo.jp
       ],
       fallback: [
@@ -1359,9 +1357,8 @@
     ent: {
       label: 'ENTERTAINMENT', lang: 'ja',
       sources: [
-        'https://b.hatena.ne.jp/hotentry/entertainment.rss',     // はてブエンタメ
         'https://nlab.itmedia.co.jp/rss/2.0/nlab.xml',           // ねとらぼ
-        'https://eiga.com/rss/news/',                            // 映画.com
+        'https://news.yahoo.co.jp/rss/topics/entertainment.xml', // Yahoo エンタメ
       ],
       fallback: [
         '話題の新作映画、興行収入ランキング1位',
@@ -1373,9 +1370,8 @@
     life: {
       label: 'LIFE & TIPS', lang: 'ja',
       sources: [
-        'https://b.hatena.ne.jp/hotentry/life.rss',              // はてブライフ
-        'https://www.lifehacker.jp/feed/index.xml',              // ライフハッカー
-        'https://b.hatena.ne.jp/hotentry/fun.rss',               // はてブおもしろ
+        'https://gigazine.net/news/rss_2.0/',                    // GIGAZINE
+        'https://nlab.itmedia.co.jp/rss/2.0/nlab.xml',           // ねとらぼ
       ],
       fallback: [
         '在宅勤務の生産性アップ術まとめ',
@@ -1387,9 +1383,8 @@
     knowledge: {
       label: 'KNOWLEDGE', lang: 'ja',
       sources: [
-        'https://b.hatena.ne.jp/hotentry/knowledge.rss',         // はてブ知識
-        'https://natgeo.nikkeibp.co.jp/rss/index.rdf',           // ナショジオ日本版
         'https://nazology.kusuguru.co.jp/feed',                  // ナゾロジー
+        'https://gigazine.net/news/rss_2.0/',                    // GIGAZINE
       ],
       fallback: [
         '宇宙の最新観測データ、新発見の可能性',
@@ -1499,23 +1494,25 @@
     return '';
   }
 
-  function isValidArticle(title, link) {
+  function isValidArticle(title, link, pageTitle) {
     if (!/\S/.test(title)) return false;
-    if (title.length < 5 || title.length > 300) return false;
+    // タイトル長を一定範囲に：短すぎ（サイト名・カテゴリ名）も長すぎ（説明全体）も除外
+    if (title.length < 15 || title.length > 150) return false;
     if (!/^https?:\/\//i.test(link)) return false;
-    if (/^https?:\/\//i.test(title)) return false;     // タイトルがURLそのものなのは弾く（lifehacker等）
+    if (/^https?:\/\//i.test(title)) return false;     // URLそのものは弾く
+    if (pageTitle && title === pageTitle) return false;  // ページのタイトル（サイト名）と一致 → 弾く
     return true;
   }
 
   function extractFromHTML(html) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
+    const pageTitle = cleanTitleText(doc.querySelector('title')?.textContent || '');
     const seen = new Set();
     const items = [];
-    // 記事は h1〜h4 > a 形式が多い
     doc.querySelectorAll('h1 > a, h2 > a, h3 > a, h4 > a').forEach(a => {
       const title = cleanTitleText(a.textContent);
       const link = (a.getAttribute('href') || '').trim();
-      if (!isValidArticle(title, link)) return;
+      if (!isValidArticle(title, link, pageTitle)) return;
       if (seen.has(link)) return;
       seen.add(link);
       items.push({ title, link });
@@ -1527,16 +1524,24 @@
     const items = [];
     const seen = new Set();
     const lines = text.split('\n');
+    // ページのタイトル行を検出（"Title: ..." 形式）して除外用に使う
+    let pageTitle = '';
+    const titleHead = text.match(/^Title:\s*(.+)$/m);
+    if (titleHead) pageTitle = cleanTitleText(titleHead[1]);
+
     for (let i = 0; i < lines.length; i++) {
-      const m = lines[i].match(/^#+\s+(.+?)\s*$/);
+      const m = lines[i].match(/^(#+)\s+(.+?)\s*$/);
       if (!m) continue;
-      let title = m[1].trim();
+      const level = m[1].length;
+      // H1（サイト名）はスキップ — 記事は通常 H2 以下
+      if (level === 1) continue;
+      let title = m[2].trim();
       // ケース1: タイトル末尾にURLが続く形式 ("Title https://...")
       const inline = title.match(/^(.+?)\s+(https?:\/\/\S+)\s*$/);
       if (inline) {
         title = cleanTitleText(inline[1]);
         const link = inline[2].trim();
-        if (isValidArticle(title, link) && !seen.has(link)) {
+        if (isValidArticle(title, link, pageTitle) && !seen.has(link)) {
           seen.add(link); items.push({ title, link });
         }
         continue;
@@ -1547,7 +1552,7 @@
         const u = lines[j].match(/(https?:\/\/[^\s)\]]+)/);
         if (u) {
           const link = u[1].trim();
-          if (isValidArticle(title, link) && !seen.has(link)) {
+          if (isValidArticle(title, link, pageTitle) && !seen.has(link)) {
             seen.add(link); items.push({ title, link });
           }
           break;
