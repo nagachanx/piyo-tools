@@ -1522,8 +1522,14 @@
     return `<span class="news-set">${inner}</span><span class="news-set">${inner}</span>`;
   }
 
-  function applyRender(el, html) {
+  function applyRender(el, html, restart) {
     el.innerHTML = html;
+    if (restart) {
+      // アニメーションを完全に初期化（始点から再生）
+      el.style.animation = 'none';
+      void el.offsetWidth;   // force reflow
+      el.style.animation = '';
+    }
     // ★ コンテンツ幅から所要時間を計算して、常に一定速度（px/秒）に
     requestAnimationFrame(() => {
       const firstSet = el.querySelector('.news-set');
@@ -1535,39 +1541,46 @@
     });
   }
 
-  let pendingSwap = null;   // 周回完了待ちの保留中HTML
+  let pendingSwap = null;         // 周回完了待ちの保留中HTML
+  let swapListenerAttached = false;
 
-  function renderTicker(items, smooth) {
+  // mode:
+  //   'restart' = 即時差し替え＋アニメ初期化（ユーザー操作・初回ロード時）
+  //   'smooth'  = 次のアニメ周回完了に予約（バックグラウンド更新時）
+  function renderTicker(items, mode) {
     const html = buildTickerHTML(items);
     const el = document.getElementById('news-ticker-content');
     if (!el) return;
-    // 初回 or 即時：そのまま差し替え
-    if (!smooth || !el.dataset.rendered) {
-      applyRender(el, html);
-      el.dataset.rendered = '1';
+    const isFirst = !el.dataset.rendered;
+    if (mode === 'restart' || isFirst) {
+      // 保留中の周回待ちはキャンセル
       pendingSwap = null;
+      applyRender(el, html, !isFirst);   // 初回は restart 不要、それ以外は restart
+      el.dataset.rendered = '1';
       return;
     }
-    // スムーズモード：次のアニメ周回完了に差し替えを予約
+    // smooth：次のアニメ周回完了に差し替えを予約
     pendingSwap = html;
-    // 既にリスナを仕掛けてあれば再仕掛け不要（once: true で1回で外れる）
-    el.removeEventListener('animationiteration', onIterationSwap);
-    el.addEventListener('animationiteration', onIterationSwap, { once: true });
+    if (!swapListenerAttached) {
+      swapListenerAttached = true;
+      el.addEventListener('animationiteration', onIterationSwap, { once: true });
+    }
   }
 
   function onIterationSwap() {
+    swapListenerAttached = false;
     const el = document.getElementById('news-ticker-content');
     if (!el || !pendingSwap) return;
-    applyRender(el, pendingSwap);
+    applyRender(el, pendingSwap, false);   // 周回完了時は位置が始点なので restart 不要
     pendingSwap = null;
   }
 
-  async function refresh(smooth = false) {
+  async function refresh(mode = 'smooth') {
     const news = await fetchGenreNews(currentGenre);
-    if (news && news.length > 0) renderTicker(news, smooth);
+    if (news && news.length > 0) renderTicker(news, mode);
   }
 
-  function setGenre(genre) {
+  async function setGenre(genre) {
     if (!GENRES[genre]) return;
     currentGenre = genre;
     try { localStorage.setItem(STORAGE_KEY, genre); } catch (e) {}
@@ -1578,9 +1591,12 @@
     document.querySelectorAll('#news-genre-menu button').forEach(b => {
       b.classList.toggle('active', b.dataset.genre === genre);
     });
-    // フォールバックをすぐに表示してから取得
-    renderTicker(GENRES[genre].fallback);
-    refresh();
+    // ジャンル変更時：まずフォールバックでアニメをリスタート（即時フィードバック）
+    renderTicker(GENRES[genre].fallback, 'restart');
+    // RSS取得後もリスタート（途中切替を避ける）
+    const news = await fetchGenreNews(genre);
+    if (currentGenre !== genre) return;   // 別ジャンルに切り替えられていたらスキップ
+    if (news && news.length > 0) renderTicker(news, 'restart');
   }
 
   function buildMenu() {
@@ -1640,8 +1656,8 @@
 
   function startAutoRefresh() {
     if (refreshTimer) return;
-    // 自動更新は smooth=true で「周回完了時」に切替（途中切替を防ぐ）
-    refreshTimer = setInterval(() => refresh(true), REFRESH_INTERVAL_MS);
+    // 自動更新は smooth（周回完了時に切替）で途中切替を防ぐ
+    refreshTimer = setInterval(() => refresh('smooth'), REFRESH_INTERVAL_MS);
   }
   function stopAutoRefresh() {
     if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
@@ -1656,16 +1672,19 @@
     document.querySelectorAll('#news-genre-menu button').forEach(b => {
       b.classList.toggle('active', b.dataset.genre === currentGenre);
     });
+    // 初回ロード：フォールバックを即時表示（初回なので restart 不要）
     renderTicker(GENRES[currentGenre].fallback);
 
-    // 初回フェッチ
-    await refresh();
-    // 5分ごとに自動更新（タブが非表示の間は走らせない）
+    // 初回フェッチ：RSS到着後は restart で1回だけ綺麗に差し替え
+    const news = await fetchGenreNews(currentGenre);
+    if (news && news.length > 0) renderTicker(news, 'restart');
+
+    // 5分ごとに自動更新（バックグラウンドなので smooth = 周回完了時切替）
     startAutoRefresh();
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         startAutoRefresh();
-        refresh();
+        refresh('smooth');
       } else {
         stopAutoRefresh();
       }
