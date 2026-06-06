@@ -484,9 +484,10 @@
 
     /* ─ Responsive ────────────────────────── */
     @media (max-width: 720px) {
-      .topbar-inner { padding: 12px 16px; gap: 8px; flex-wrap: wrap; }
+      .topbar-inner { padding: 12px 16px; gap: 8px; flex-wrap: nowrap; }
       .brand-sub { display: none; }
-      .search-input { width: 100%; }
+      .search-input { flex: 1; min-width: 0; width: auto; }    /* テーマ切替ボタンと同じ行に収まるよう可変幅に */
+      .theme-toggle { flex-shrink: 0; }
       .page-header { padding: 28px 20px 4px; }
       .page-header h1 { font-size: 24px; }
       main { padding: 8px 20px 60px; }
