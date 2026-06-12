@@ -300,7 +300,8 @@
 <script>
 const STORE = {
   settings: 'piyo-pomodoro-settings',
-  stats:    'piyo-pomodoro-stats'
+  stats:    'piyo-pomodoro-stats',
+  active:   'piyo-pomodoro-active'   // 全ページ共通：進行中タイマーの状態
 };
 const DEFAULT_SETTINGS = {
   focusMin: 25, breakMin: 5, longBreakMin: 15,
@@ -343,6 +344,25 @@ function getStats() {
   } catch { return { date: today, focusRounds: 0, focusMinutes: 0 }; }
 }
 function saveStats(s) { try { localStorage.setItem(STORE.stats, JSON.stringify(s)); } catch {} }
+
+// ── 全ページ共通：進行中タイマーの状態を永続化（piyo-theme.js のウォッチャーが読む）──
+function saveActiveState() {
+  if (!state.running || !state.endTimeMs) return;
+  const data = {
+    phase: state.phase,
+    round: state.round,
+    total: state.total,
+    endTimeMs: state.endTimeMs,
+    alarmFired: false
+  };
+  try { localStorage.setItem(STORE.active, JSON.stringify(data)); } catch {}
+}
+function clearActiveState() {
+  try { localStorage.removeItem(STORE.active); } catch {}
+}
+function readActiveState() {
+  try { return JSON.parse(localStorage.getItem(STORE.active) || 'null'); } catch { return null; }
+}
 
 function renderStats() {
   const s = getStats();
@@ -410,6 +430,7 @@ function loadPhase(phase, opts = {}) {
   state.remaining = state.total;
   state.endTimeMs = null;
   pauseTimer();
+  clearActiveState();   // フェーズ切替時はウォッチャー表示をクリア
   renderPhase();
   renderTime();
   if (opts.autoStart && settings.autoNext) startTimer();
@@ -423,6 +444,7 @@ function startTimer() {
   document.querySelector('#start-btn svg').innerHTML = '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>';
   state.intervalId = setInterval(tick, 250);
   renderTime();
+  saveActiveState();   // 走行開始：他ページのウォッチャーに通知
 }
 
 function pauseTimer() {
@@ -436,6 +458,7 @@ function pauseTimer() {
   document.getElementById('start-label').textContent = '再開';
   document.querySelector('#start-btn svg').innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
   renderTime();
+  clearActiveState();   // 一時停止：ウォッチャー表示をクリア
 }
 
 function toggleTimer() {
@@ -508,24 +531,25 @@ function switchPhase(phase) {
 }
 
 // ── 完了音（Web Audio API）──
+// 心地よいベル風チャイム：Cメジャー和音（C5/E5/G5）を時間差で重ね、ベル風に減衰
 let audioCtx = null;
 function playAlarm() {
   if (!settings.sound) return;
   try {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     const t = audioCtx.currentTime;
-    // 3つのトーンで完了感を出す
-    [880, 1108, 1318].forEach((freq, i) => {
+    [523.25, 659.25, 783.99].forEach((freq, i) => {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.frequency.value = freq;
       osc.type = 'sine';
-      gain.gain.setValueAtTime(0, t + i * 0.2);
-      gain.gain.linearRampToValueAtTime(0.25, t + i * 0.2 + 0.04);
-      gain.gain.linearRampToValueAtTime(0, t + i * 0.2 + 0.5);
+      const t0 = t + i * 0.12;
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.18, t0 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 2.2);
       osc.connect(gain).connect(audioCtx.destination);
-      osc.start(t + i * 0.2);
-      osc.stop(t + i * 0.2 + 0.55);
+      osc.start(t0);
+      osc.stop(t0 + 2.3);
     });
   } catch (e) { console.warn('音再生失敗', e); }
 }
@@ -569,7 +593,57 @@ document.addEventListener('keydown', e => {
 
 // ── 初期化 ──
 applySettingsToUI();
-loadPhase('focus');
+
+// 他ページから戻ってきた場合に走行中タイマーを復元
+function tryRestoreActiveState() {
+  const s = readActiveState();
+  if (!s || !s.endTimeMs) return false;
+  const now = Date.now();
+  state.phase = s.phase;
+  state.round = s.round || 1;
+  state.total = s.total;
+
+  if (now >= s.endTimeMs) {
+    // 留守中に時間切れになっていた場合 → フェーズ完了処理
+    state.remaining = 0;
+    state.endTimeMs = s.endTimeMs;
+    state.running = false;
+    renderPhase();
+    renderTime();
+    // ウォッチャーがまだ鳴らしていなければ鳴らす
+    if (!s.alarmFired) playAlarm();
+    notifyBrowser(PHASE_NAMES[state.phase].jp + ' 終了！');
+    // 統計加算
+    if (state.phase === 'focus') {
+      const stats = getStats();
+      stats.focusRounds += 1;
+      stats.focusMinutes += settings.focusMin;
+      saveStats(stats);
+    }
+    // 次フェーズへ
+    const nextPhase = decideNextPhase();
+    if (state.phase === 'focus') state.round += 1;
+    if (state.round > settings.roundsPerSet) state.round = 1;
+    clearActiveState();
+    loadPhase(nextPhase, { autoStart: true });
+    return true;
+  }
+
+  // 走行中 → そのまま継続
+  state.endTimeMs = s.endTimeMs;
+  state.remaining = (s.endTimeMs - now) / 1000;
+  state.running = true;
+  renderPhase();
+  renderTime();
+  state.intervalId = setInterval(tick, 250);
+  document.getElementById('start-label').textContent = '一時停止';
+  document.querySelector('#start-btn svg').innerHTML = '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>';
+  return true;
+}
+
+if (!tryRestoreActiveState()) {
+  loadPhase('focus');
+}
 renderStats();
 
 // 通知許可は最初のスタート時に求める
