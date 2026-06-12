@@ -155,9 +155,10 @@ html[data-pomo-phase="long-break"] .topbar .piyo-eye {
   transition: fill 0.6s ease;
 }
 
-/* ポモドーロ走行中：他ツールページのヘッダーぴよちゃんをトマト色に */
-html.piyo-tool-page[data-pomo-phase] .topbar .brand-logo svg [fill="#FCD34D"] {
-  fill: #E74C3C;
+/* ポモドーロ走行中：全ページ（ダッシュボード含む）のヘッダーぴよちゃんをトマト色に
+   #F26A3B：赤に少しオレンジを混ぜた、完熟トマトらしい暖色 */
+html[data-pomo-phase] .topbar .brand-logo svg [fill="#FCD34D"] {
+  fill: #F26A3B;
 }
 
 /* 集中フェーズ：目がぐるぐる回る（他ツールページ） */
