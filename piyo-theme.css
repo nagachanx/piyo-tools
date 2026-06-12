@@ -188,7 +188,7 @@ html.piyo-tool-page[data-pomo-phase="long-break"] .topbar .brand-logo svg circle
   align-items: center;
   gap: 10px;
   padding: 10px 18px;
-  background: #43A86A;
+  background: #EF4444;   /* 集中：ポモドーロページの --focus と統一 */
   color: white;
   border-radius: 999px;
   font-family: 'Inter', 'Noto Sans JP', system-ui, sans-serif;
@@ -203,8 +203,8 @@ html.piyo-tool-page[data-pomo-phase="long-break"] .topbar .brand-logo svg circle
 }
 #piyo-pomo-watcher.active { display: inline-flex; }
 #piyo-pomo-watcher:hover  { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0,0,0,0.32); }
-#piyo-pomo-watcher[data-phase="break"]      { background: #E0A24C; }
-#piyo-pomo-watcher[data-phase="long-break"] { background: #C99500; }
+#piyo-pomo-watcher[data-phase="break"]      { background: #3B82F6; }   /* 休憩：--break */
+#piyo-pomo-watcher[data-phase="long-break"] { background: #8B5CF6; }   /* 長休憩：--long-break */
 #piyo-pomo-watcher[data-phase="done"]       { background: #E11D48; animation: piyo-pomo-pulse 1.1s ease-in-out infinite; }
 #piyo-pomo-watcher .piyo-pomo-time  { font-variant-numeric: tabular-nums; min-width: 48px; text-align: center; }
 #piyo-pomo-watcher .piyo-pomo-label { font-weight: 600; opacity: 0.9; font-size: 12px; }
