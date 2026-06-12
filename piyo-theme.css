@@ -126,13 +126,24 @@ html[data-theme="dark"] .alert-warn { background: rgba(245,158,11,0.10); border-
   75%  { transform: translate(0, -1.3px); }
   100% { transform: translate(1.3px, 0); }
 }
+/* 休憩中：左右にゆったり振れる */
+@keyframes piyoEyeSwing {
+  0%, 100% { transform: translateX(-1.4px); }
+  50%      { transform: translateX(1.4px); }
+}
 .piyo-eye {
   transform-box: fill-box;
   transform-origin: center;
   animation: piyoEye 16s ease-in-out infinite;
 }
-html[data-pomo-running="true"] .topbar .piyo-eye {
+/* 集中フェーズ：目がぐるぐる */
+html[data-pomo-phase="focus"] .topbar .piyo-eye {
   animation: piyoEyeSpin 1.2s linear infinite;
+}
+/* 休憩フェーズ：目が左右にスイング */
+html[data-pomo-phase="break"] .topbar .piyo-eye,
+html[data-pomo-phase="long-break"] .topbar .piyo-eye {
+  animation: piyoEyeSwing 1.4s ease-in-out infinite;
 }
 
 /* ─── ポモドーロ・ウォッチャー（全ページ共通の進行中タイマー表示） ─── */

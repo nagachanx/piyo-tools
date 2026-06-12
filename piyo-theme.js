@@ -75,7 +75,7 @@
 (function () {
   const STORE_KEY = 'piyo-pomodoro-active';
   const PHASE_LABEL = { 'focus': '集中', 'break': '休憩', 'long-break': '長休憩' };
-  const PHASE_ICON  = { 'focus': '⚡',   'break': '☕',   'long-break': '🌿'   };
+  const PHASE_ICON  = { 'focus': '🍅', 'break': '☕', 'long-break': '🌿' };
   let audioCtx = null;
   let widget = null;
 
@@ -117,7 +117,7 @@
     widget.id = 'piyo-pomo-watcher';
     widget.href = 'pomodoro.html';
     widget.title = 'ポモドーロタイマーへ戻る';
-    const iconEl  = document.createElement('span'); iconEl.className = 'piyo-pomo-icon';  iconEl.textContent = '⚡';
+    const iconEl  = document.createElement('span'); iconEl.className = 'piyo-pomo-icon';  iconEl.textContent = '🍅';
     const timeEl  = document.createElement('span'); timeEl.className = 'piyo-pomo-time';  timeEl.textContent = '00:00';
     const labelEl = document.createElement('span'); labelEl.className = 'piyo-pomo-label';
     widget.appendChild(iconEl);
@@ -131,19 +131,42 @@
     if (widget) widget.classList.remove('active');
   }
 
-  function setRunningFlag(running) {
-    if (running) document.documentElement.setAttribute('data-pomo-running', 'true');
-    else         document.documentElement.removeAttribute('data-pomo-running');
+  function setPhaseFlag(phase) {
+    if (phase) document.documentElement.setAttribute('data-pomo-phase', phase);
+    else       document.documentElement.removeAttribute('data-pomo-phase');
+  }
+
+  // タブタイトル管理：ポモドーロ走行中はアイコン＋残り時間を頭に付ける
+  const originalTitle = document.title;
+  let titleModified = false;
+  function updateTitle(running, icon, time) {
+    if (running) {
+      document.title = icon + ' ' + time + ' — ' + originalTitle;
+      titleModified = true;
+    } else if (titleModified) {
+      document.title = originalTitle;
+      titleModified = false;
+    }
   }
 
   function tick() {
     const s = readState();
     const remainMs = (s && s.endTimeMs) ? (s.endTimeMs - Date.now()) : 0;
-    // ヘッダーのぴよちゃんの目をぐるぐる回す制御（全ページ共通）
-    setRunningFlag(!!(s && s.endTimeMs && remainMs > 0));
+    const isRunning = !!(s && s.endTimeMs && remainMs > 0);
 
-    // ポモドーロページ自体ではウィジェット非表示（タイマー表示と重複するため）
-    if (/pomodoro\.html$/.test(location.pathname)) { hideWidget(); return; }
+    // ヘッダーぴよちゃんの目アニメーション制御（フェーズ別）
+    setPhaseFlag(isRunning ? s.phase : null);
+
+    const isPomoPage = /pomodoro\.html$/.test(location.pathname);
+
+    // タブタイトル管理（ポモドーロページは自前で管理するのでスキップ）
+    if (!isPomoPage) {
+      updateTitle(isRunning, PHASE_ICON[s && s.phase] || '🍅',
+                  isRunning ? fmtTime(remainMs / 1000) : '');
+    }
+
+    // ポモドーロページ自体ではウィジェット非表示
+    if (isPomoPage) { hideWidget(); return; }
 
     if (!s || !s.endTimeMs) { hideWidget(); return; }
 
@@ -151,7 +174,7 @@
     w.classList.add('active');
 
     // アイコンをフェーズ別に切替
-    w.querySelector('.piyo-pomo-icon').textContent = PHASE_ICON[s.phase] || '⚡';
+    w.querySelector('.piyo-pomo-icon').textContent = PHASE_ICON[s.phase] || '🍅';
 
     if (remainMs <= 0) {
       w.dataset.phase = 'done';
