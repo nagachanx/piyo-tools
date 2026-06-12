@@ -111,6 +111,30 @@ html[data-theme="dark"] .alert-warn { background: rgba(245,158,11,0.10); border-
 
 /* くじ引きの紙吹雪オーバーレイ内の色は維持（タイムズスクエア演出のためそのまま） */
 
+/* ─── ぴよちゃんの目アニメーション（全ページ共通） ─── */
+@keyframes piyoEye {
+  0%, 28%   { transform: translateX(0); }
+  30%, 33%  { transform: translateX(1.4px); }
+  35%, 67%  { transform: translateX(0); }
+  69%, 72%  { transform: translateX(-1.4px); }
+  74%, 100% { transform: translateX(0); }
+}
+@keyframes piyoEyeSpin {
+  0%   { transform: translate(1.3px, 0); }
+  25%  { transform: translate(0, 1.3px); }
+  50%  { transform: translate(-1.3px, 0); }
+  75%  { transform: translate(0, -1.3px); }
+  100% { transform: translate(1.3px, 0); }
+}
+.piyo-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: piyoEye 16s ease-in-out infinite;
+}
+html[data-pomo-running="true"] .topbar .piyo-eye {
+  animation: piyoEyeSpin 1.2s linear infinite;
+}
+
 /* ─── ポモドーロ・ウォッチャー（全ページ共通の進行中タイマー表示） ─── */
 #piyo-pomo-watcher {
   position: fixed;

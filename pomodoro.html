@@ -176,8 +176,8 @@
           <rect x="0" y="15" width="48" height="22" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
           <path d="M20 19.5 Q19 19.8 18 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
           <path d="M28 19.5 Q29 19.8 30 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
-          <circle cx="15.5" cy="28" r="1.5" fill="#3D2F1F"/>
-          <circle cx="32.5" cy="28" r="1.5" fill="#3D2F1F"/>
+          <circle class="piyo-eye" cx="15.5" cy="28" r="1.5" fill="#3D2F1F"/>
+          <circle class="piyo-eye" cx="32.5" cy="28" r="1.5" fill="#3D2F1F"/>
           <path d="M24 25 Q18 28 19.5 32 Q24 34.2 28.5 32 Q30 28 24 25 Z" fill="#FCD34D"/>
           <path d="M19.5 32 Q24 34.2 28.5 32" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
         </svg>
@@ -200,7 +200,7 @@
 
 <main>
   <div class="phase-tabs">
-    <button class="phase-tab active" data-phase="focus" onclick="switchPhase('focus')">🍅 集中</button>
+    <button class="phase-tab active" data-phase="focus" onclick="switchPhase('focus')">⚡ 集中</button>
     <button class="phase-tab" data-phase="break" onclick="switchPhase('break')">☕ 休憩</button>
     <button class="phase-tab" data-phase="long-break" onclick="switchPhase('long-break')">🌿 長休憩</button>
   </div>
@@ -308,7 +308,7 @@ const DEFAULT_SETTINGS = {
   roundsPerSet: 4, autoNext: true, sound: true
 };
 const PHASE_NAMES = {
-  focus: { jp: '集中', label: 'FOCUS', emoji: '🍅' },
+  focus: { jp: '集中', label: 'FOCUS', emoji: '⚡' },
   break: { jp: '休憩', label: 'BREAK', emoji: '☕' },
   'long-break': { jp: '長休憩', label: 'LONG BREAK', emoji: '🌿' }
 };

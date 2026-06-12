@@ -75,6 +75,7 @@
 (function () {
   const STORE_KEY = 'piyo-pomodoro-active';
   const PHASE_LABEL = { 'focus': '集中', 'break': '休憩', 'long-break': '長休憩' };
+  const PHASE_ICON  = { 'focus': '⚡',   'break': '☕',   'long-break': '🌿'   };
   let audioCtx = null;
   let widget = null;
 
@@ -116,7 +117,7 @@
     widget.id = 'piyo-pomo-watcher';
     widget.href = 'pomodoro.html';
     widget.title = 'ポモドーロタイマーへ戻る';
-    const iconEl  = document.createElement('span'); iconEl.textContent = '🍅';
+    const iconEl  = document.createElement('span'); iconEl.className = 'piyo-pomo-icon';  iconEl.textContent = '⚡';
     const timeEl  = document.createElement('span'); timeEl.className = 'piyo-pomo-time';  timeEl.textContent = '00:00';
     const labelEl = document.createElement('span'); labelEl.className = 'piyo-pomo-label';
     widget.appendChild(iconEl);
@@ -148,6 +149,9 @@
 
     const w = ensureWidget();
     w.classList.add('active');
+
+    // アイコンをフェーズ別に切替
+    w.querySelector('.piyo-pomo-icon').textContent = PHASE_ICON[s.phase] || '⚡';
 
     if (remainMs <= 0) {
       w.dataset.phase = 'done';
