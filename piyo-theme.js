@@ -64,6 +64,13 @@
   });
 })();
 
+// ダッシュボード以外（他ツールページ）を識別するクラスを <html> に付与
+// — CSS でヘッダーぴよちゃんの色変えや目アニメ拡張を行うため
+(function () {
+  const isDashboard = /\/(index\.html)?$/.test(location.pathname);
+  if (!isDashboard) document.documentElement.classList.add('piyo-tool-page');
+})();
+
 // ╔════════════════════════════════════════════════════════════╗
 // ║ ポモドーロ・ウォッチャー（全ページ共通）                     ║
 // ║                                                            ║

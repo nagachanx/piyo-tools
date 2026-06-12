@@ -146,6 +146,37 @@ html[data-pomo-phase="long-break"] .topbar .piyo-eye {
   animation: piyoEyeSwing 1.4s ease-in-out infinite;
 }
 
+/* ─── ダッシュボード以外（他ツールページ）のヘッダーぴよちゃんへの拡張演出 ─── */
+/* class なしのSVGにもアトリビュート経由で同じ動きと色を適用する */
+
+/* 色をなめらかに切り替えるベース transition（全ページ共通：色変化時に滑らかに） */
+.topbar .brand-logo svg path[fill="#FCD34D"],
+.topbar .brand-logo svg circle[fill="#FCD34D"] {
+  transition: fill 0.6s ease;
+}
+
+/* ポモドーロ走行中：他ツールページのヘッダーぴよちゃんをトマト色に */
+html.piyo-tool-page[data-pomo-phase] .topbar .brand-logo svg [fill="#FCD34D"] {
+  fill: #E74C3C;
+}
+
+/* 集中フェーズ：目がぐるぐる回る（他ツールページ） */
+html.piyo-tool-page[data-pomo-phase="focus"] .topbar .brand-logo svg circle[cx="15.5"][cy="28"],
+html.piyo-tool-page[data-pomo-phase="focus"] .topbar .brand-logo svg circle[cx="32.5"][cy="28"] {
+  animation: piyoEyeSpin 1.2s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+/* 休憩フェーズ：目が左右にスイング（他ツールページ） */
+html.piyo-tool-page[data-pomo-phase="break"]      .topbar .brand-logo svg circle[cx="15.5"][cy="28"],
+html.piyo-tool-page[data-pomo-phase="break"]      .topbar .brand-logo svg circle[cx="32.5"][cy="28"],
+html.piyo-tool-page[data-pomo-phase="long-break"] .topbar .brand-logo svg circle[cx="15.5"][cy="28"],
+html.piyo-tool-page[data-pomo-phase="long-break"] .topbar .brand-logo svg circle[cx="32.5"][cy="28"] {
+  animation: piyoEyeSwing 1.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 /* ─── ポモドーロ・ウォッチャー（全ページ共通の進行中タイマー表示） ─── */
 #piyo-pomo-watcher {
   position: fixed;
