@@ -541,8 +541,8 @@ function renderEventHeader(){
 function renderCalendar(){
   const e = state.event;
   const duration = e.slot_duration_min;
-  // セル高さを時間に比例（15分=11px、30分=22px、45分=33px、60分=44px）
-  document.documentElement.style.setProperty('--cal-cell-min-h', ((duration / 15) * 11) + 'px');
+  // セル高さを時間に比例（15分=12px、30分=24px、45分=36px、60分=48px）— 約+10%拡幅
+  document.documentElement.style.setProperty('--cal-cell-min-h', ((duration / 15) * 12) + 'px');
   const startHour = 8, endHour = 20;
   const slotsPerHour = 60 / duration;
   const ws = state.weekStart;
