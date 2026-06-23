@@ -65,7 +65,9 @@
     .btn { padding: 10px 18px; border: 1px solid var(--border-strong); border-radius: var(--radius); font-weight: 600; font-size: 13px; cursor: pointer; background: #fff; color: var(--text-1); font-family: inherit; transition: all 0.12s; }
     .btn:hover:not(:disabled) { background: #F5F5F4; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary { background: linear-gradient(135deg, #5BB585 0%, #43A86A 50%, #2D8D57 100%); color: #fff; border: none; border-radius: var(--radius); padding: 10px 24px; box-shadow: 0 2px 4px rgba(67,168,106,0.25); font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; transition: filter 0.15s; }
+    .btn-primary { background: linear-gradient(135deg, #5BB585 0%, #43A86A 50%, #2D8D57 100%); color: #fff; border: none; border-radius: var(--radius); padding: 10px 24px; box-shadow: 0 2px 4px rgba(67,168,106,0.25); font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; transition: filter 0.15s; display: inline-flex; align-items: center; gap: 8px; justify-content: center; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
     .btn-danger { background: #fff; color: var(--danger); border-color: #FECACA; }
     .btn-danger:hover:not(:disabled) { background: var(--danger-bg); }
@@ -459,26 +461,37 @@ document.getElementById('btn-create').addEventListener('click', async () => {
   const duration = parseInt(document.querySelector('input[name="duration"]:checked').value, 10);
   const capmode  = document.querySelector('input[name="capmode"]:checked').value;
   const defcap   = parseInt(document.getElementById('new-defcap').value, 10);
-  const location = document.getElementById('new-location').value.trim();
+  const place    = document.getElementById('new-location').value.trim();   // ⚠ ローカル名は location 以外（window.location とのシャドウ回避）
   const meeting  = document.getElementById('new-meeting').value.trim();
 
   if (!title) { showAlert('error', 'イベント名を入力してください'); return; }
   if (!(defcap >= 1)) { showAlert('error', '定員は1人以上で入力してください'); return; }
 
-  document.getElementById('btn-create').disabled = true;
+  // ボタンを「作成中…」表示にしてダブルクリック防止
+  const btn = document.getElementById('btn-create');
+  const originalLabel = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" aria-hidden="true"></span> 作成中…';
+
   const { data, error } = await supa.from('bookings').insert({
     title, description: desc || null,
     slot_duration_min: duration,
     capacity_mode: capmode,
     default_capacity: defcap,
-    location: location || null,
+    location: place || null,
     meeting_url: meeting || null
   }).select().single();
-  document.getElementById('btn-create').disabled = false;
 
-  if (error) { showAlert('error', '作成に失敗：' + error.message); return; }
+  if (error) {
+    btn.disabled = false;
+    btn.innerHTML = originalLabel;
+    showAlert('error', '作成に失敗：' + error.message);
+    return;
+  }
   pushRecent(data.id, data.title);
-  location.href = `?id=${encodeURIComponent(data.id)}`;
+  // 成功時はボタン無効のままページ遷移（ボタンを連打されないよう）
+  btn.innerHTML = '<span class="spinner" aria-hidden="true"></span> 移動中…';
+  window.location.href = `?id=${encodeURIComponent(data.id)}`;
 });
 
 // ─── イベント管理画面の状態 ───
