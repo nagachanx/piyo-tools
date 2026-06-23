@@ -183,6 +183,60 @@
     footer { max-width: 1100px; margin: 24px auto; padding: 20px 24px; color: var(--text-4); font-size: 12px; text-align: center; }
     footer a { color: var(--text-3); text-decoration: none; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; margin-left: 8px; }
     footer a:hover { background: #fff; color: var(--text-1); }
+
+    /* ─── Night mode 対応 ─── */
+    html[data-theme="dark"] .card,
+    html[data-theme="dark"] .modal,
+    html[data-theme="dark"] .recent-item,
+    html[data-theme="dark"] .res-row,
+    html[data-theme="dark"] .cal-day { background: var(--surface); border-color: var(--border); }
+    /* カレンダー */
+    html[data-theme="dark"] .cal-grid { background: var(--border); border-color: var(--border); }
+    html[data-theme="dark"] .cal-cell { background: var(--surface); }
+    html[data-theme="dark"] .cal-cell:hover { background: #323237; }
+    html[data-theme="dark"] .cal-cell.past { background: #1F1F22; }
+    html[data-theme="dark"] .cal-head { background: #2A2A2D; color: var(--text-2); border-bottom-color: var(--border); }
+    html[data-theme="dark"] .cal-time { background: #1F1F22; color: var(--text-3); }
+    html[data-theme="dark"] .cal-grid .cal-head:nth-child(7),
+    html[data-theme="dark"] .cal-grid .cal-head:nth-child(8) { background: #25252A; }
+    html[data-theme="dark"] .cal-head.today,
+    html[data-theme="dark"] .cal-day-head.today { background: rgba(74, 222, 128, 0.20); color: #BBF7D0; }
+    html[data-theme="dark"] .cal-day-head { background: #2A2A2D; }
+    html[data-theme="dark"] .cal-day-slot { background: #1F1F22; border-color: var(--border); }
+    /* スロット枠 */
+    html[data-theme="dark"] .cal-cell .slot { background: rgba(74, 222, 128, 0.15); border-color: rgba(74, 222, 128, 0.35); color: #BBF7D0; }
+    html[data-theme="dark"] .cal-cell .slot.full { background: rgba(220, 38, 38, 0.18); border-color: rgba(220, 38, 38, 0.45); color: #FCA5A5; }
+    /* チップ */
+    html[data-theme="dark"] .chip { background: #2A2A2D; color: var(--text-2); border-color: var(--border); }
+    html[data-theme="dark"] .chip svg { color: var(--text-3); }
+    html[data-theme="dark"] .chip strong { color: var(--text-1); }
+    html[data-theme="dark"] .chip-link:hover { background: #36363A; }
+    /* 管理者バッジ＆作成者タグ */
+    html[data-theme="dark"] .admin-name-bar { background: rgba(74, 222, 128, 0.12); border-color: rgba(74, 222, 128, 0.32); }
+    html[data-theme="dark"] .admin-name-bar strong,
+    html[data-theme="dark"] .admin-name-bar .admin-name-icon { color: #BBF7D0; }
+    html[data-theme="dark"] .creator-tag { background: rgba(74, 222, 128, 0.15); color: #BBF7D0; border-color: rgba(74, 222, 128, 0.35); }
+    /* ボタン */
+    html[data-theme="dark"] .btn { background: var(--surface); color: var(--text-1); border-color: var(--border-strong); }
+    html[data-theme="dark"] .btn:hover:not(:disabled) { background: #323237; }
+    html[data-theme="dark"] .btn-danger { background: var(--surface); color: #FCA5A5; border-color: rgba(220, 38, 38, 0.4); }
+    html[data-theme="dark"] .btn-danger:hover:not(:disabled) { background: rgba(220, 38, 38, 0.15); }
+    /* ラジオピル */
+    html[data-theme="dark"] .radio-pill { background: var(--surface); color: var(--text-2); border-color: var(--border-strong); }
+    html[data-theme="dark"] .radio-pill:hover { background: #323237; }
+    html[data-theme="dark"] .radio-pill.on { background: var(--primary); border-color: var(--primary); color: #0B1410; }
+    /* アラート */
+    html[data-theme="dark"] .alert.success { background: rgba(74, 222, 128, 0.12); color: #BBF7D0; border-color: rgba(74, 222, 128, 0.32); }
+    html[data-theme="dark"] .alert.error { background: rgba(220, 38, 38, 0.15); color: #FCA5A5; border-color: rgba(220, 38, 38, 0.4); }
+    html[data-theme="dark"] .alert.info { background: rgba(59, 130, 246, 0.15); color: #93C5FD; border-color: rgba(59, 130, 246, 0.4); }
+    /* 空状態 */
+    html[data-theme="dark"] .empty { background: var(--surface); border-color: var(--border-strong); color: var(--text-3); }
+    /* URLボックス */
+    html[data-theme="dark"] .url-box { background: #2A2A2D; border-color: var(--border-strong); }
+    html[data-theme="dark"] .url-box input { color: var(--text-1); }
+    /* フッター */
+    html[data-theme="dark"] footer a { border-color: var(--border); color: var(--text-3); }
+    html[data-theme="dark"] footer a:hover { background: var(--surface); color: var(--text-1); }
   </style>
 </head>
 <body>
@@ -270,7 +324,7 @@
       </div>
 
       <div class="card">
-        <h2 class="section-h">🕘 最近作成したイベント</h2>
+        <h2 class="section-h">🕘 イベント履歴</h2>
         <div id="recent-list" class="recent-list"></div>
       </div>
     </div>
