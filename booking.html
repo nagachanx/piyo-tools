@@ -124,13 +124,15 @@
     /* Calendar */
     .cal-toolbar { display: flex; gap: 8px; align-items: center; margin: 18px 0 10px; flex-wrap: wrap; }
     .cal-toolbar .week-label { font-weight: 700; font-size: 15px; margin: 0 8px; }
-    .cal-grid { display: grid; grid-template-columns: 56px repeat(5, 1fr) 0.7fr 0.7fr; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; min-width: 720px; }
+    .cal-grid { display: grid; grid-template-columns: 56px repeat(5, 1fr) 0.7fr 0.7fr 56px; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); min-width: 760px; position: relative; }
     .cal-grid .cal-head:nth-child(7), .cal-grid .cal-head:nth-child(8) { background: #FAFAF6; color: var(--text-3); }
-    .cal-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius); }
-    .cal-head { background: #FAFAF9; padding: 8px 4px; font-size: 12px; font-weight: 700; text-align: center; color: var(--text-2); border-bottom: 1px solid var(--border); }
+    .cal-wrap { -webkit-overflow-scrolling: touch; border-radius: var(--radius); overflow-x: auto; overflow-y: visible; }
+    .cal-head { background: #FAFAF9; padding: 8px 4px; font-size: 12px; font-weight: 700; text-align: center; color: var(--text-2); border-bottom: 1px solid var(--border); position: sticky; top: 88px; z-index: 5; }
     .cal-head.today { background: #D4F0DE; color: #0F5132; }
     .cal-head .dow { display: block; font-size: 11px; color: var(--text-3); font-weight: 600; }
     .cal-time { background: #FAFAF9; padding: 0 8px 0 4px; min-height: var(--cal-cell-min-h, 22px); line-height: 1; font-size: 11px; font-weight: 600; color: var(--text-3); display: flex; align-items: center; justify-content: flex-end; font-variant-numeric: tabular-nums; }
+    .cal-time.right { justify-content: flex-start; padding: 0 4px 0 8px; }
+    @media (max-width: 640px) { .cal-head { top: 64px; } }
     .cal-cell { background: #fff; min-height: var(--cal-cell-min-h, 22px); padding: 1px; cursor: pointer; transition: background 0.12s; position: relative; display: flex; }
     .cal-cell:hover { background: #F5F5F4; }
     .cal-cell.past { background: #FAFAF9; cursor: default; opacity: 0.55; }
@@ -685,7 +687,7 @@ function renderCalendar(){
   const grid = document.getElementById('cal-grid');
   grid.innerHTML = '';
   const today = new Date();
-  // ヘッダ行
+  // ヘッダ行（左端：時刻 / 7日間 / 右端：時刻）
   grid.appendChild(headEl(''));
   for (let i=0;i<7;i++){
     const d = addDays(ws, i);
@@ -694,23 +696,31 @@ function renderCalendar(){
     head.innerHTML = `${fmtMD(d)}<span class="dow">${DOW_JP[d.getDay()]}</span>`;
     grid.appendChild(head);
   }
+  grid.appendChild(headEl(''));  // 右端の時刻カラム用
   // 時刻行
   for (let h=startHour; h<endHour; h++){
     for (let s=0;s<slotsPerHour;s++){
       const mins = s * duration;
-      const t = document.createElement('div');
-      t.className = 'cal-time';
-      t.textContent = `${PAD(h)}:${PAD(mins)}`;
-      grid.appendChild(t);
+      const timeText = `${PAD(h)}:${PAD(mins)}`;
+      // 左の時刻ラベル
+      const tLeft = document.createElement('div');
+      tLeft.className = 'cal-time';
+      tLeft.textContent = timeText;
+      grid.appendChild(tLeft);
+      // 7日分のデータセル
       for (let dd=0; dd<7; dd++){
         const day = addDays(ws, dd);
         const cellStart = new Date(day);
         cellStart.setHours(h, mins, 0, 0);
-        const isPast = cellStart < today && !sameDay(cellStart, today);
         // 同日の過去時刻も past 扱い
         const cellPast = cellStart < new Date(today.getFullYear(), today.getMonth(), today.getDate(), today.getHours(), today.getMinutes(), 0, 0);
         grid.appendChild(makeCell(cellStart, cellPast));
       }
+      // 右の時刻ラベル
+      const tRight = document.createElement('div');
+      tRight.className = 'cal-time right';
+      tRight.textContent = timeText;
+      grid.appendChild(tRight);
     }
   }
 
