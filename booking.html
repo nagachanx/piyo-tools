@@ -136,7 +136,9 @@
     .cal-cell:hover { background: #F5F5F4; }
     .cal-cell.past { background: #FAFAF9; cursor: default; opacity: 0.55; }
     .cal-cell.past:hover { background: #FAFAF9; }
-    .cal-cell .slot { width: 100%; background: var(--primary-bg); border: 1px solid var(--primary-lt); border-radius: 4px; padding: 1px 4px; font-size: 11px; font-weight: 700; color: var(--primary-dk); text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1.2; }
+    .cal-cell .slot { width: 100%; background: var(--primary-bg); border: 1px solid var(--primary-lt); border-radius: 4px; padding: 1px 4px; font-size: 11px; font-weight: 700; color: var(--primary-dk); text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; gap: 1px; overflow: hidden; }
+    .cal-cell .slot .slot-creator { font-size: 9.5px; font-weight: 600; opacity: 0.85; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cal-cell .slot .slot-count { font-size: 11px; font-weight: 800; }
     .cal-cell .slot.full { background: #FEE2E2; border-color: #FCA5A5; color: #991B1B; }
     .cal-cell .slot:hover { filter: brightness(0.96); }
     .cal-cell .plus { display: none; color: var(--text-4); font-weight: 700; font-size: 16px; align-items: center; justify-content: center; height: 100%; width: 100%; }
@@ -756,6 +758,12 @@ function renderCalendar(){
         t.textContent = fmtTime(cellStart);
         row.appendChild(t);
         if (slotData) {
+          if (slotData.created_by_name) {
+            const cr = document.createElement('span');
+            cr.style.cssText = 'flex:1;text-align:right;font-size:11px;color:var(--text-3);font-weight:600;margin:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+            cr.textContent = slotData.created_by_name;
+            row.appendChild(cr);
+          }
           const c = document.createElement('span');
           c.className = 'count';
           c.textContent = `${slotResCount(slotData)}/${slotData.capacity}`;
@@ -795,10 +803,17 @@ function makeCell(cellStart, cellPast){
     const full = cnt >= slotData.capacity;
     const slotEl = document.createElement('div');
     slotEl.className = 'slot' + (full ? ' full' : '');
-    slotEl.textContent = `${cnt}/${slotData.capacity}`;
     if (slotData.created_by_name) {
+      const creator = document.createElement('span');
+      creator.className = 'slot-creator';
+      creator.textContent = slotData.created_by_name;
+      slotEl.appendChild(creator);
       slotEl.title = `${slotData.created_by_name} 作成 / 予約 ${cnt}/${slotData.capacity}`;
     }
+    const countEl = document.createElement('span');
+    countEl.className = 'slot-count';
+    countEl.textContent = `${cnt}/${slotData.capacity}`;
+    slotEl.appendChild(countEl);
     slotEl.addEventListener('click', e => { e.stopPropagation(); openSlotDialog(slotData); });
     cell.appendChild(slotEl);
   } else if (!cellPast) {
