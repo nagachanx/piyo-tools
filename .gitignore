@@ -2,6 +2,7 @@
 lottery-setup.sql
 schedule-setup.sql
 request-setup.sql
+booking-setup.sql
 
 # macOS
 .DS_Store

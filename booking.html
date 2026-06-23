@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>予約フォーム — ぴよツールズ</title>
+  <link rel="icon" href="piyo-favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="piyo-theme.css">
+  <script src="piyo-theme.js"></script>
+  <script src="piyo-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F5F5F4; --surface:#FFFFFF; --border:#E7E5E4; --border-strong:#D6D3D1;
+      --text-1:#1C1917; --text-2:#44403C; --text-3:#78716C; --text-4:#A8A29E;
+      --primary:#43A86A; --primary-dk:#2D8D57; --primary-lt:#C5E5D1; --primary-bg:#EEF7F1;
+      --danger:#DC2626; --danger-bg:#FEF2F2; --warn-bg:#FFFBEB; --warn-border:#FDE68A;
+      --radius-card:14px; --radius:8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif; background: var(--bg); min-height: 100vh; color: var(--text-1); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .topbar-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+    .brand-logo { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo svg { width: 60px; height: 60px; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; gap: 4px; }
+    .brand-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 13px; color: var(--text-3); }
+    .topbar-sep { color: var(--text-4); font-size: 18px; margin-left: 6px; }
+    .topbar-current { font-size: 15px; font-weight: 600; color: var(--text-2); }
+    @media (max-width: 640px) {
+      .topbar-inner { padding: 10px 16px; gap: 8px; }
+      .brand-sub { display: none; }
+      .brand-logo, .brand-logo svg { width: 44px; height: 44px; }
+      .brand-name { font-size: 20px; }
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px 80px; }
+    .page-title { font-size: 28px; font-weight: 800; margin: 8px 0 6px; letter-spacing: -0.02em; }
+    .page-desc { color: var(--text-3); margin: 0 0 24px; font-size: 14px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 22px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
+    .section-h { font-size: 16px; font-weight: 700; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .field label { font-size: 13px; font-weight: 600; color: var(--text-2); }
+    .field input[type="text"], .field input[type="url"], .field input[type="number"], .field textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius);
+      font-size: 14px; font-family: inherit; background: #fff; color: inherit;
+    }
+    .field textarea { min-height: 80px; resize: vertical; }
+    .field input:focus, .field textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,168,106,0.18); }
+    .field-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .field-row .field { flex: 1; min-width: 160px; }
+
+    .radio-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .radio-pill { display: inline-flex; align-items: center; padding: 8px 16px; border: 1px solid var(--border-strong); border-radius: 999px; cursor: pointer; font-size: 13px; font-weight: 600; background: #fff; transition: all 0.12s; user-select: none; }
+    .radio-pill input { display: none; }
+    .radio-pill:hover { background: #F5F5F4; }
+    .radio-pill.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+    .btn { padding: 10px 18px; border: 1px solid var(--border-strong); border-radius: var(--radius); font-weight: 600; font-size: 13px; cursor: pointer; background: #fff; color: var(--text-1); font-family: inherit; transition: all 0.12s; }
+    .btn:hover:not(:disabled) { background: #F5F5F4; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: linear-gradient(135deg, #5BB585 0%, #43A86A 50%, #2D8D57 100%); color: #fff; border: none; padding: 10px 24px; box-shadow: 0 2px 4px rgba(67,168,106,0.25); font-size: 14px; }
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
+    .btn-danger { background: #fff; color: var(--danger); border-color: #FECACA; }
+    .btn-danger:hover:not(:disabled) { background: var(--danger-bg); }
+    .btn-icon { padding: 8px 12px; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    .alert { padding: 10px 14px; border-radius: var(--radius); margin-bottom: 12px; font-size: 13px; }
+    .alert.success { background: #ECFDF5; color: #065F46; border: 1px solid #BBF7D0; }
+    .alert.error { background: var(--danger-bg); color: #991B1B; border: 1px solid #FECACA; }
+    .alert.info { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
+
+    /* Entry screen */
+    .entry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+    @media (max-width: 760px) { .entry-grid { grid-template-columns: 1fr; } }
+    .recent-list { display: flex; flex-direction: column; gap: 8px; }
+    .recent-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; }
+    .recent-item .meta { display: flex; flex-direction: column; }
+    .recent-item .title { font-weight: 700; font-size: 14px; color: var(--text-1); }
+    .recent-item .date { font-size: 11px; color: var(--text-3); }
+    .recent-item .btn { font-size: 12px; padding: 6px 12px; }
+    .empty { text-align: center; color: var(--text-3); padding: 24px 16px; border: 1px dashed var(--border-strong); border-radius: var(--radius); font-size: 13px; }
+
+    /* Event header */
+    .event-header { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+    .event-header .info { flex: 1; min-width: 200px; }
+    .event-header h1 { font-size: 24px; font-weight: 800; margin: 0 0 4px; }
+    .event-header .desc { color: var(--text-3); font-size: 13px; white-space: pre-wrap; }
+    .event-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .event-meta { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: var(--text-3); margin-top: 8px; }
+    .event-meta .item { display: flex; align-items: center; gap: 4px; }
+
+    /* Calendar */
+    .cal-toolbar { display: flex; gap: 8px; align-items: center; margin: 18px 0 10px; flex-wrap: wrap; }
+    .cal-toolbar .week-label { font-weight: 700; font-size: 15px; margin: 0 8px; }
+    .cal-grid { display: grid; grid-template-columns: 56px repeat(7, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; min-width: 720px; }
+    .cal-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius); }
+    .cal-head { background: #FAFAF9; padding: 8px 4px; font-size: 12px; font-weight: 700; text-align: center; color: var(--text-2); border-bottom: 1px solid var(--border); }
+    .cal-head.today { background: #FEF3C7; color: #92400E; }
+    .cal-head .dow { display: block; font-size: 11px; color: var(--text-3); font-weight: 600; }
+    .cal-time { background: #FAFAF9; padding: 4px; font-size: 11px; font-weight: 600; text-align: right; color: var(--text-3); padding-right: 8px; }
+    .cal-cell { background: #fff; min-height: 38px; padding: 2px; cursor: pointer; transition: background 0.12s; position: relative; }
+    .cal-cell:hover { background: #F5F5F4; }
+    .cal-cell.past { background: #FAFAF9; cursor: default; opacity: 0.55; }
+    .cal-cell.past:hover { background: #FAFAF9; }
+    .cal-cell .slot { background: var(--primary-bg); border: 1px solid var(--primary-lt); border-radius: 6px; padding: 3px 6px; font-size: 11px; font-weight: 700; color: var(--primary-dk); text-align: center; cursor: pointer; }
+    .cal-cell .slot.full { background: #FEE2E2; border-color: #FCA5A5; color: #991B1B; }
+    .cal-cell .slot:hover { filter: brightness(0.96); }
+    .cal-cell .plus { display: none; color: var(--text-4); font-weight: 700; font-size: 16px; align-items: center; justify-content: center; height: 100%; }
+    .cal-cell:hover .plus { display: flex; }
+    .cal-cell.past .plus { display: none !important; }
+
+    /* Mobile calendar: vertical list per day */
+    @media (max-width: 760px) {
+      .cal-grid { display: none; }
+      .cal-mobile { display: block; }
+    }
+    .cal-mobile { display: none; }
+    .cal-day { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+    .cal-day-head { background: #FAFAF9; padding: 10px 14px; font-weight: 700; font-size: 13px; }
+    .cal-day-head.today { background: #FEF3C7; color: #92400E; }
+    .cal-day-slots { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .cal-day-slot { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; background: #FAFAF9; }
+    .cal-day-slot.has { background: var(--primary-bg); border-color: var(--primary-lt); }
+    .cal-day-slot.has.full { background: #FEE2E2; border-color: #FCA5A5; }
+    .cal-day-slot .time { font-weight: 700; font-size: 13px; }
+    .cal-day-slot .count { font-size: 11px; color: var(--text-3); font-weight: 600; }
+    .cal-day-slot .add { font-size: 11px; color: var(--primary-dk); font-weight: 700; }
+
+    /* Reservations list */
+    .res-list { display: flex; flex-direction: column; gap: 8px; }
+    .res-row { display: grid; grid-template-columns: 160px 1fr 100px; gap: 12px; align-items: start; padding: 12px 14px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+    @media (max-width: 600px) { .res-row { grid-template-columns: 1fr; gap: 8px; } }
+    .res-row .when { font-size: 12px; color: var(--text-3); }
+    .res-row .when .date { font-weight: 700; color: var(--text-1); font-size: 13px; display: block; }
+    .res-row .person { font-size: 14px; line-height: 1.5; }
+    .res-row .person .name { font-weight: 700; }
+    .res-row .person .memo { color: var(--text-3); font-size: 13px; margin-top: 3px; white-space: pre-wrap; }
+
+    /* Modal */
+    .modal-back { position: fixed; inset: 0; background: rgba(15,23,42,0.45); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
+    .modal-back[hidden] { display: none; }
+    .modal { background: #fff; border-radius: var(--radius-card); padding: 22px; max-width: 480px; width: 100%; box-shadow: 0 12px 40px rgba(0,0,0,0.22); max-height: 90vh; overflow-y: auto; }
+    .modal h2 { font-size: 18px; font-weight: 800; margin: 0 0 12px; }
+    .modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+
+    .url-box { display: flex; gap: 6px; align-items: center; background: #FAFAF9; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 8px; font-size: 12px; color: var(--text-2); word-break: break-all; }
+    .url-box input { flex: 1; background: transparent; border: none; font-size: 12px; color: var(--text-1); font-family: monospace; min-width: 0; }
+    .url-box input:focus { outline: none; }
+
+    footer { max-width: 1100px; margin: 24px auto; padding: 20px 24px; color: var(--text-4); font-size: 12px; text-align: center; }
+    footer a { color: var(--text-3); text-decoration: none; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; margin-left: 8px; }
+    footer a:hover { background: #fff; color: var(--text-1); }
+  </style>
+</head>
+<body>
+
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <a href="index.html" class="brand" aria-label="ぴよツールズ ホーム">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 9 C19 5 18 1 21 1 C22.5 1 23 4 24 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <path d="M24 9 C29 5 30 1 27 1 C25.5 1 25 4 24 9 Z" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.1" stroke-linejoin="round"/>
+          <circle cx="24" cy="28" r="19" fill="#FCD34D" stroke="#3D2F1F" stroke-width="1.2"/>
+          <clipPath id="piyoBody"><circle cx="24" cy="28" r="18"/></clipPath>
+          <rect x="0" y="15" width="48" height="22" fill="#F5EFE0" clip-path="url(#piyoBody)"/>
+          <path d="M20 19.5 Q19 19.8 18 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <path d="M28 19.5 Q29 19.8 30 20.5" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+          <circle class="piyo-eye" cx="15.5" cy="28" r="1.5" fill="#3D2F1F"/>
+          <circle class="piyo-eye" cx="32.5" cy="28" r="1.5" fill="#3D2F1F"/>
+          <path d="M24 25 Q18 28 19.5 32 Q24 34.2 28.5 32 Q30 28 24 25 Z" fill="#FCD34D"/>
+          <path d="M19.5 32 Q24 34.2 28.5 32" stroke="#3D2F1F" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ぴよツールズ</span>
+        <span class="brand-sub">サクッと使えるWebツール</span>
+      </div>
+    </a>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-current">予約フォーム</span>
+    <span style="flex:1"></span>
+    <button type="button" class="theme-toggle" aria-label="テーマ切替"></button>
+  </div>
+</header>
+
+<div class="container">
+  <div id="alert-area"></div>
+
+  <!-- ============ エントリ画面 ============ -->
+  <div id="screen-entry" hidden>
+    <h1 class="page-title">📅 予約フォーム</h1>
+    <p class="page-desc">主催者が空き枠をいくつか公開し、参加者が先着順で枠を予約していくツールです。営業のアポ取りや勉強会の参加者募集などに利用できます。</p>
+
+    <div class="entry-grid">
+      <div class="card">
+        <h2 class="section-h">✨ 新規イベント作成</h2>
+        <div class="field">
+          <label for="new-title">イベント名 <span style="color:var(--danger)">*</span></label>
+          <input id="new-title" type="text" maxlength="80" placeholder="例：12月の営業アポ枠">
+        </div>
+        <div class="field">
+          <label for="new-desc">説明（任意）</label>
+          <textarea id="new-desc" maxlength="500" placeholder="例：30分のWeb会議です。事前に資料を共有します。"></textarea>
+        </div>
+        <div class="field">
+          <label>1枠の長さ</label>
+          <div class="radio-pills" id="new-duration">
+            <label class="radio-pill"><input type="radio" name="duration" value="15">15分</label>
+            <label class="radio-pill on"><input type="radio" name="duration" value="30" checked>30分</label>
+            <label class="radio-pill"><input type="radio" name="duration" value="45">45分</label>
+            <label class="radio-pill"><input type="radio" name="duration" value="60">60分</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>定員方式</label>
+          <div class="radio-pills" id="new-capmode">
+            <label class="radio-pill on"><input type="radio" name="capmode" value="uniform" checked>すべての枠で同じ定員</label>
+            <label class="radio-pill"><input type="radio" name="capmode" value="per_slot">枠ごとに個別設定</label>
+          </div>
+        </div>
+        <div class="field" id="new-defcap-field">
+          <label for="new-defcap">デフォルト定員（人）</label>
+          <input id="new-defcap" type="number" min="1" max="999" value="1" style="max-width:120px">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="new-location">📍 場所（任意）</label>
+            <input id="new-location" type="text" maxlength="100" placeholder="例：東京本社 会議室A">
+          </div>
+          <div class="field">
+            <label for="new-meeting">🎥 ミーティングURL（任意）</label>
+            <input id="new-meeting" type="url" maxlength="500" placeholder="https://zoom.us/j/...">
+          </div>
+        </div>
+        <button id="btn-create" class="btn-primary">作成して管理画面へ</button>
+      </div>
+
+      <div class="card">
+        <h2 class="section-h">🕘 最近作成したイベント</h2>
+        <div id="recent-list" class="recent-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ イベント管理画面 ============ -->
+  <div id="screen-manage" hidden>
+    <div class="card">
+      <div class="event-header">
+        <div class="info">
+          <h1 id="ev-title">—</h1>
+          <div class="desc" id="ev-desc"></div>
+          <div class="event-meta">
+            <span class="item">🕐 <span id="ev-duration"></span>分</span>
+            <span class="item">👥 <span id="ev-capmode"></span></span>
+            <span class="item" id="ev-location-wrap" hidden>📍 <span id="ev-location"></span></span>
+            <span class="item" id="ev-meeting-wrap" hidden>🎥 <a id="ev-meeting" href="#" target="_blank" rel="noopener" style="color:var(--primary-dk);text-decoration:underline">ミーティングURL</a></span>
+          </div>
+        </div>
+        <div class="event-actions">
+          <button class="btn" id="btn-copy-public">🔗 公開URLをコピー</button>
+          <button class="btn" id="btn-edit-event">⚙️ 設定</button>
+          <button class="btn btn-danger" id="btn-delete-event">🗑️ 削除</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cal-toolbar">
+      <button class="btn btn-sm" id="cal-prev">← 前週</button>
+      <span class="week-label" id="cal-week-label">—</span>
+      <button class="btn btn-sm" id="cal-next">翌週 →</button>
+      <button class="btn btn-sm" id="cal-today">今週</button>
+      <span style="flex:1"></span>
+      <span style="font-size:12px;color:var(--text-3)">空セルをクリックで枠作成、既存枠クリックで予約確認</span>
+    </div>
+
+    <div class="cal-wrap">
+      <div id="cal-grid" class="cal-grid"></div>
+    </div>
+    <div id="cal-mobile" class="cal-mobile"></div>
+
+    <div class="card" style="margin-top:18px">
+      <h2 class="section-h">📋 予約一覧</h2>
+      <div id="res-list" class="res-list"></div>
+    </div>
+
+    <div style="text-align:center;margin-top:18px">
+      <a href="booking.html" class="btn btn-sm">← トップへ戻る</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modal ============ -->
+<div id="modal" class="modal-back" hidden>
+  <div class="modal" id="modal-body"></div>
+</div>
+
+<footer>
+  ぴよツールズ — 社内専用<a href="request.html">💬 リクエスト</a>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ─────────────────────────────────────────────────────────────
+// 予約フォーム 管理画面
+// ─────────────────────────────────────────────────────────────
+const SUPABASE_URL      = (window.PIYO_CONFIG && window.PIYO_CONFIG.SUPABASE_URL) || '';
+const SUPABASE_ANON_KEY = (window.PIYO_CONFIG && window.PIYO_CONFIG.SUPABASE_ANON_KEY) || '';
+const PUBLIC_URL_BASE = 'https://nagachanx.github.io/piyo-schedule/booking/';
+const RECENT_KEY = 'piyo-booking-recent';
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  document.getElementById('alert-area').innerHTML = '<div class="alert error">⚠ Supabase接続情報が未設定です。<code>piyo-config.js</code>を確認してください。</div>';
+}
+const supa = (SUPABASE_URL && SUPABASE_ANON_KEY)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+// ─── ユーティリティ ───
+const DOW_JP = ['日','月','火','水','木','金','土'];
+const PAD = n => String(n).padStart(2,'0');
+
+function startOfWeek(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - x.getDay()); return x; }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function fmtDate(d){ return `${d.getFullYear()}/${PAD(d.getMonth()+1)}/${PAD(d.getDate())}`; }
+function fmtMD(d){ return `${PAD(d.getMonth()+1)}/${PAD(d.getDate())}`; }
+function fmtTime(d){ return `${PAD(d.getHours())}:${PAD(d.getMinutes())}`; }
+function fmtDateTime(d){ return `${fmtMD(d)}(${DOW_JP[d.getDay()]}) ${fmtTime(d)}`; }
+function sameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+
+function showAlert(type, msg, timeout=4000){
+  const el = document.createElement('div');
+  el.className = 'alert ' + type;
+  el.textContent = msg;
+  const area = document.getElementById('alert-area');
+  area.innerHTML = '';
+  area.appendChild(el);
+  if (timeout > 0) setTimeout(()=>{ if (el.parentNode) el.parentNode.removeChild(el); }, timeout);
+}
+
+function showModal(html){
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal').hidden = false;
+}
+function hideModal(){ document.getElementById('modal').hidden = true; }
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target.id === 'modal') hideModal();
+});
+
+function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+// ─── localStorage：最近作成イベント ───
+function getRecent(){ try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; } }
+function pushRecent(id, title){
+  const list = getRecent().filter(x => x.id !== id);
+  list.unshift({ id, title, at: Date.now() });
+  localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 12)));
+}
+function removeRecent(id){
+  const list = getRecent().filter(x => x.id !== id);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(list));
+}
+
+// ─── ラジオピル制御 ───
+document.querySelectorAll('.radio-pills').forEach(group => {
+  group.addEventListener('click', e => {
+    const label = e.target.closest('.radio-pill');
+    if (!label) return;
+    group.querySelectorAll('.radio-pill').forEach(l => l.classList.remove('on'));
+    label.classList.add('on');
+    const inp = label.querySelector('input');
+    if (inp) inp.checked = true;
+    if (group.id === 'new-capmode') {
+      const mode = inp.value;
+      document.getElementById('new-defcap-field').querySelector('label').textContent =
+        mode === 'uniform' ? 'デフォルト定員（人）' : '枠作成時の初期定員（人・後で個別変更可）';
+    }
+  });
+});
+
+// ─── 画面切替 ───
+function showScreen(name){
+  document.getElementById('screen-entry').hidden  = name !== 'entry';
+  document.getElementById('screen-manage').hidden = name !== 'manage';
+}
+
+// ─── エントリ画面初期化 ───
+function renderRecent(){
+  const list = getRecent();
+  const el = document.getElementById('recent-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty">まだ作成したイベントはありません</div>';
+    return;
+  }
+  el.innerHTML = list.map(x =>
+    `<div class="recent-item">
+      <div class="meta">
+        <span class="title">${escapeHtml(x.title)}</span>
+        <span class="date">${new Date(x.at).toLocaleString('ja-JP', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
+      </div>
+      <a class="btn" href="?id=${encodeURIComponent(x.id)}">開く</a>
+    </div>`).join('');
+}
+
+document.getElementById('btn-create').addEventListener('click', async () => {
+  if (!supa) return;
+  const title = document.getElementById('new-title').value.trim();
+  const desc  = document.getElementById('new-desc').value.trim();
+  const duration = parseInt(document.querySelector('input[name="duration"]:checked').value, 10);
+  const capmode  = document.querySelector('input[name="capmode"]:checked').value;
+  const defcap   = parseInt(document.getElementById('new-defcap').value, 10);
+  const location = document.getElementById('new-location').value.trim();
+  const meeting  = document.getElementById('new-meeting').value.trim();
+
+  if (!title) { showAlert('error', 'イベント名を入力してください'); return; }
+  if (!(defcap >= 1)) { showAlert('error', '定員は1人以上で入力してください'); return; }
+
+  document.getElementById('btn-create').disabled = true;
+  const { data, error } = await supa.from('bookings').insert({
+    title, description: desc || null,
+    slot_duration_min: duration,
+    capacity_mode: capmode,
+    default_capacity: defcap,
+    location: location || null,
+    meeting_url: meeting || null
+  }).select().single();
+  document.getElementById('btn-create').disabled = false;
+
+  if (error) { showAlert('error', '作成に失敗：' + error.message); return; }
+  pushRecent(data.id, data.title);
+  location.href = `?id=${encodeURIComponent(data.id)}`;
+});
+
+// ─── イベント管理画面の状態 ───
+const state = {
+  eventId: null,
+  event: null,
+  weekStart: startOfWeek(new Date()),
+  slots: [],
+  reservations: []
+};
+
+async function loadEvent(){
+  if (!supa || !state.eventId) return;
+  const { data: ev, error: e1 } = await supa.from('bookings').select('*').eq('id', state.eventId).single();
+  if (e1 || !ev) {
+    document.getElementById('alert-area').innerHTML = '<div class="alert error">⚠ イベントが見つかりません。削除された可能性があります。<a href="booking.html">← トップへ</a></div>';
+    removeRecent(state.eventId);
+    return;
+  }
+  state.event = ev;
+  pushRecent(ev.id, ev.title);
+  renderEventHeader();
+
+  const { data: slots } = await supa.from('booking_slots').select('*').eq('booking_id', state.eventId).order('starts_at');
+  state.slots = slots || [];
+  const slotIds = state.slots.map(s => s.id);
+  let res = [];
+  if (slotIds.length) {
+    const { data: r } = await supa.from('booking_reservations').select('*').in('slot_id', slotIds).order('created_at');
+    res = r || [];
+  }
+  state.reservations = res;
+  renderCalendar();
+  renderReservations();
+}
+
+function renderEventHeader(){
+  const e = state.event;
+  document.getElementById('ev-title').textContent = e.title;
+  document.getElementById('ev-desc').textContent = e.description || '';
+  document.getElementById('ev-duration').textContent = e.slot_duration_min;
+  document.getElementById('ev-capmode').textContent = e.capacity_mode === 'uniform' ? `定員 ${e.default_capacity} 人（一律）` : '定員：枠ごと';
+  const locWrap = document.getElementById('ev-location-wrap');
+  if (e.location) { locWrap.hidden = false; document.getElementById('ev-location').textContent = e.location; } else locWrap.hidden = true;
+  const meetWrap = document.getElementById('ev-meeting-wrap');
+  if (e.meeting_url && /^https?:\/\//.test(e.meeting_url)) {
+    meetWrap.hidden = false;
+    const a = document.getElementById('ev-meeting');
+    a.href = e.meeting_url;
+    a.textContent = e.meeting_url;
+  } else meetWrap.hidden = true;
+  document.title = `${e.title} — 予約フォーム`;
+}
+
+// ─── カレンダー描画 ───
+function renderCalendar(){
+  const e = state.event;
+  const duration = e.slot_duration_min;
+  const startHour = 9, endHour = 19;
+  const slotsPerHour = 60 / duration;
+  const ws = state.weekStart;
+  const we = addDays(ws, 6);
+  document.getElementById('cal-week-label').textContent = `${fmtMD(ws)} 〜 ${fmtMD(we)}`;
+
+  // PC：グリッド
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const today = new Date();
+  // ヘッダ行
+  grid.appendChild(headEl(''));
+  for (let i=0;i<7;i++){
+    const d = addDays(ws, i);
+    const head = document.createElement('div');
+    head.className = 'cal-head' + (sameDay(d, today) ? ' today' : '');
+    head.innerHTML = `${fmtMD(d)}<span class="dow">${DOW_JP[d.getDay()]}</span>`;
+    grid.appendChild(head);
+  }
+  // 時刻行
+  for (let h=startHour; h<endHour; h++){
+    for (let s=0;s<slotsPerHour;s++){
+      const mins = s * duration;
+      const t = document.createElement('div');
+      t.className = 'cal-time';
+      t.textContent = `${PAD(h)}:${PAD(mins)}`;
+      grid.appendChild(t);
+      for (let dd=0; dd<7; dd++){
+        const day = addDays(ws, dd);
+        const cellStart = new Date(day);
+        cellStart.setHours(h, mins, 0, 0);
+        const isPast = cellStart < today && !sameDay(cellStart, today);
+        // 同日の過去時刻も past 扱い
+        const cellPast = cellStart < new Date(today.getFullYear(), today.getMonth(), today.getDate(), today.getHours(), today.getMinutes(), 0, 0);
+        grid.appendChild(makeCell(cellStart, cellPast));
+      }
+    }
+  }
+
+  // モバイル：縦リスト
+  const mob = document.getElementById('cal-mobile');
+  mob.innerHTML = '';
+  for (let dd=0; dd<7; dd++){
+    const day = addDays(ws, dd);
+    const dayBox = document.createElement('div');
+    dayBox.className = 'cal-day';
+    const head = document.createElement('div');
+    head.className = 'cal-day-head' + (sameDay(day, today) ? ' today' : '');
+    head.textContent = `${fmtMD(day)}（${DOW_JP[day.getDay()]}）`;
+    dayBox.appendChild(head);
+    const slotsBox = document.createElement('div');
+    slotsBox.className = 'cal-day-slots';
+    let anyShown = false;
+    for (let h=startHour; h<endHour; h++){
+      for (let s=0;s<slotsPerHour;s++){
+        const cellStart = new Date(day);
+        cellStart.setHours(h, s*duration, 0, 0);
+        const cellPast = cellStart < new Date();
+        const slotData = findSlot(cellStart);
+        // モバイルでは既存枠 or 当日の未来枠のみ表示
+        if (!slotData && (cellPast || !sameDay(day, today) && day < today)) continue;
+        const row = document.createElement('div');
+        row.className = 'cal-day-slot' + (slotData ? ' has' : '') + (slotData && slotResCount(slotData) >= slotData.capacity ? ' full' : '');
+        if (cellPast) row.style.opacity = '0.55';
+        const t = document.createElement('span');
+        t.className = 'time';
+        t.textContent = fmtTime(cellStart);
+        row.appendChild(t);
+        if (slotData) {
+          const c = document.createElement('span');
+          c.className = 'count';
+          c.textContent = `${slotResCount(slotData)}/${slotData.capacity}`;
+          row.appendChild(c);
+          row.addEventListener('click', () => openSlotDialog(slotData));
+        } else if (!cellPast) {
+          const a = document.createElement('span');
+          a.className = 'add';
+          a.textContent = '＋ 枠を追加';
+          row.appendChild(a);
+          row.addEventListener('click', () => createSlot(cellStart));
+        }
+        slotsBox.appendChild(row);
+        anyShown = true;
+      }
+    }
+    if (!anyShown) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'padding:10px;color:var(--text-3);font-size:12px;text-align:center';
+      empty.textContent = '枠なし（PCで枠を作成）';
+      slotsBox.appendChild(empty);
+    }
+    dayBox.appendChild(slotsBox);
+    mob.appendChild(dayBox);
+  }
+}
+function headEl(txt){ const d = document.createElement('div'); d.className='cal-head'; d.textContent = txt; return d; }
+function findSlot(d){ return state.slots.find(s => new Date(s.starts_at).getTime() === d.getTime()); }
+function slotResCount(slot){ return state.reservations.filter(r => r.slot_id === slot.id).length; }
+
+function makeCell(cellStart, cellPast){
+  const cell = document.createElement('div');
+  cell.className = 'cal-cell' + (cellPast ? ' past' : '');
+  const slotData = findSlot(cellStart);
+  if (slotData) {
+    const cnt = slotResCount(slotData);
+    const full = cnt >= slotData.capacity;
+    const slotEl = document.createElement('div');
+    slotEl.className = 'slot' + (full ? ' full' : '');
+    slotEl.textContent = `${cnt}/${slotData.capacity}`;
+    slotEl.addEventListener('click', e => { e.stopPropagation(); openSlotDialog(slotData); });
+    cell.appendChild(slotEl);
+  } else if (!cellPast) {
+    const plus = document.createElement('div');
+    plus.className = 'plus';
+    plus.textContent = '＋';
+    cell.appendChild(plus);
+    cell.addEventListener('click', () => createSlot(cellStart));
+  }
+  return cell;
+}
+
+async function createSlot(startsAt){
+  const ev = state.event;
+  let cap = ev.default_capacity;
+  if (ev.capacity_mode === 'per_slot') {
+    const input = prompt(`定員を入力（${fmtDateTime(startsAt)}）`, String(ev.default_capacity));
+    if (input == null) return;
+    const n = parseInt(input, 10);
+    if (!(n >= 1)) { showAlert('error', '定員は1人以上で入力してください'); return; }
+    cap = n;
+  }
+  const { error } = await supa.from('booking_slots').insert({
+    booking_id: ev.id,
+    starts_at: startsAt.toISOString(),
+    capacity: cap
+  });
+  if (error) { showAlert('error', '枠の作成に失敗：' + error.message); return; }
+  await loadEvent();
+}
+
+function openSlotDialog(slot){
+  const reservations = state.reservations.filter(r => r.slot_id === slot.id);
+  const startsAt = new Date(slot.starts_at);
+  const endsAt = new Date(startsAt.getTime() + state.event.slot_duration_min * 60000);
+  let html = `
+    <h2>${fmtDateTime(startsAt)}–${fmtTime(endsAt)}</h2>
+    <div style="margin-bottom:10px;color:var(--text-3);font-size:13px">予約 ${reservations.length} / 定員 ${slot.capacity}</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">`;
+  if (!reservations.length) {
+    html += `<div class="empty">まだ予約はありません</div>`;
+  } else {
+    reservations.forEach(r => {
+      html += `<div style="padding:10px;border:1px solid var(--border);border-radius:8px;background:#FAFAF9">
+        <div style="font-weight:700">${escapeHtml(r.name)}</div>
+        ${r.memo ? `<div style="font-size:13px;color:var(--text-3);margin-top:3px;white-space:pre-wrap">${escapeHtml(r.memo)}</div>` : ''}
+        <div style="font-size:11px;color:var(--text-4);margin-top:4px">${new Date(r.created_at).toLocaleString('ja-JP')}</div>
+        <button class="btn btn-sm btn-danger" data-cancel-res="${r.id}" style="margin-top:6px">この予約をキャンセル</button>
+      </div>`;
+    });
+  }
+  html += `</div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" data-del-slot="${slot.id}">枠を削除</button>
+      <button class="btn" data-modal-close>閉じる</button>
+    </div>`;
+  showModal(html);
+
+  document.querySelectorAll('[data-cancel-res]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('この予約をキャンセルしますか？')) return;
+    const { error } = await supa.from('booking_reservations').delete().eq('id', b.dataset.cancelRes);
+    if (error) { showAlert('error', 'キャンセル失敗：' + error.message); return; }
+    hideModal(); await loadEvent();
+  }));
+  document.querySelectorAll('[data-del-slot]').forEach(b => b.addEventListener('click', async () => {
+    const cnt = state.reservations.filter(r => r.slot_id === slot.id).length;
+    const msg = cnt > 0 ? `この枠には ${cnt} 件の予約が入っています。一緒に削除されますがよろしいですか？` : 'この枠を削除しますか？';
+    if (!confirm(msg)) return;
+    const { error } = await supa.from('booking_slots').delete().eq('id', slot.id);
+    if (error) { showAlert('error', '削除失敗：' + error.message); return; }
+    hideModal(); await loadEvent();
+  }));
+  document.querySelectorAll('[data-modal-close]').forEach(b => b.addEventListener('click', hideModal));
+}
+
+function renderReservations(){
+  const ev = state.event;
+  const dur = ev.slot_duration_min;
+  const slotMap = Object.fromEntries(state.slots.map(s => [s.id, s]));
+  const rows = state.reservations
+    .map(r => {
+      const slot = slotMap[r.slot_id];
+      if (!slot) return null;
+      return { r, slot, start: new Date(slot.starts_at) };
+    })
+    .filter(Boolean)
+    .sort((a,b) => a.start - b.start);
+  const el = document.getElementById('res-list');
+  if (!rows.length) { el.innerHTML = '<div class="empty">まだ予約はありません</div>'; return; }
+  el.innerHTML = rows.map(x => {
+    const end = new Date(x.start.getTime() + dur * 60000);
+    return `<div class="res-row">
+      <div class="when"><span class="date">${fmtDateTime(x.start)}</span>– ${fmtTime(end)}</div>
+      <div class="person"><span class="name">${escapeHtml(x.r.name)}</span>${x.r.memo ? `<div class="memo">${escapeHtml(x.r.memo)}</div>` : ''}</div>
+      <div><button class="btn btn-sm btn-danger" data-cancel="${x.r.id}">キャンセル</button></div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('この予約をキャンセルしますか？')) return;
+    const { error } = await supa.from('booking_reservations').delete().eq('id', b.dataset.cancel);
+    if (error) { showAlert('error', 'キャンセル失敗：' + error.message); return; }
+    await loadEvent();
+  }));
+}
+
+// ─── ツールバーアクション ───
+document.getElementById('cal-prev').addEventListener('click', () => { state.weekStart = addDays(state.weekStart, -7); renderCalendar(); });
+document.getElementById('cal-next').addEventListener('click', () => { state.weekStart = addDays(state.weekStart, 7); renderCalendar(); });
+document.getElementById('cal-today').addEventListener('click', () => { state.weekStart = startOfWeek(new Date()); renderCalendar(); });
+
+document.getElementById('btn-copy-public').addEventListener('click', async () => {
+  const url = PUBLIC_URL_BASE + '?id=' + encodeURIComponent(state.eventId);
+  try {
+    await navigator.clipboard.writeText(url);
+    showAlert('success', '公開URLをコピーしました：' + url);
+  } catch {
+    showModal(`<h2>公開URL</h2><div class="url-box"><input readonly value="${escapeHtml(url)}"></div><div class="modal-actions"><button class="btn" data-modal-close>閉じる</button></div>`);
+    document.querySelectorAll('[data-modal-close]').forEach(b => b.addEventListener('click', hideModal));
+  }
+});
+
+document.getElementById('btn-edit-event').addEventListener('click', () => {
+  const e = state.event;
+  showModal(`
+    <h2>イベント設定</h2>
+    <div class="field"><label>イベント名</label><input id="edit-title" type="text" maxlength="80" value="${escapeHtml(e.title)}"></div>
+    <div class="field"><label>説明</label><textarea id="edit-desc" maxlength="500">${escapeHtml(e.description||'')}</textarea></div>
+    <div class="field"><label>📍 場所</label><input id="edit-location" type="text" maxlength="100" value="${escapeHtml(e.location||'')}"></div>
+    <div class="field"><label>🎥 ミーティングURL</label><input id="edit-meeting" type="url" maxlength="500" value="${escapeHtml(e.meeting_url||'')}"></div>
+    <div class="alert info" style="font-size:12px">スロット時間と定員方式は変更できません（既存予約と矛盾を防ぐため）。</div>
+    <div class="modal-actions">
+      <button class="btn" data-modal-close>キャンセル</button>
+      <button class="btn-primary" id="edit-save">保存</button>
+    </div>
+  `);
+  document.querySelectorAll('[data-modal-close]').forEach(b => b.addEventListener('click', hideModal));
+  document.getElementById('edit-save').addEventListener('click', async () => {
+    const title = document.getElementById('edit-title').value.trim();
+    if (!title) { showAlert('error', 'イベント名は必須です'); return; }
+    const { error } = await supa.from('bookings').update({
+      title,
+      description: document.getElementById('edit-desc').value.trim() || null,
+      location: document.getElementById('edit-location').value.trim() || null,
+      meeting_url: document.getElementById('edit-meeting').value.trim() || null,
+      updated_at: new Date().toISOString()
+    }).eq('id', state.eventId);
+    if (error) { showAlert('error', '保存失敗：' + error.message); return; }
+    hideModal();
+    showAlert('success', '保存しました');
+    await loadEvent();
+  });
+});
+
+document.getElementById('btn-delete-event').addEventListener('click', async () => {
+  if (!confirm('このイベントを削除しますか？すべての枠と予約が消えます。')) return;
+  if (!confirm('本当に削除しますか？この操作は元に戻せません。')) return;
+  const { error } = await supa.from('bookings').delete().eq('id', state.eventId);
+  if (error) { showAlert('error', '削除失敗：' + error.message); return; }
+  removeRecent(state.eventId);
+  window.location.href = 'booking.html';
+});
+
+// ─── 初期化 ───
+const params = new URLSearchParams(location.search);
+const initId = params.get('id');
+if (initId) {
+  state.eventId = initId;
+  showScreen('manage');
+  loadEvent();
+} else {
+  showScreen('entry');
+  renderRecent();
+}
+</script>
+
+</body>
+</html>
