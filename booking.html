@@ -111,11 +111,11 @@
     .chip-link:hover { background: #E7E5E4; }
     .chip-link span { overflow: hidden; text-overflow: ellipsis; }
 
-    /* 複数人運用の案内バー */
-    .multi-admin-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: var(--radius); margin-bottom: 10px; font-size: 12.5px; color: #0C4A6E; flex-wrap: wrap; line-height: 1.5; }
-    .multi-admin-bar .info-icon { width: 16px; height: 16px; color: #0369A1; flex-shrink: 0; }
+    /* 複数人運用の案内バー（admin-name-bar とは別トーンの鮮やかな緑） */
+    .multi-admin-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #DCFCE7; border: 1px solid #86EFAC; border-radius: var(--radius); margin-bottom: 10px; font-size: 12.5px; color: #14532D; flex-wrap: wrap; line-height: 1.5; }
+    .multi-admin-bar .info-icon { width: 16px; height: 16px; color: #16A34A; flex-shrink: 0; }
     .multi-admin-bar .text { flex: 1; min-width: 200px; }
-    .multi-admin-bar .text strong { color: #075985; font-weight: 700; }
+    .multi-admin-bar .text strong { color: #166534; font-weight: 700; }
     .multi-admin-bar .btn { padding: 6px 14px; font-size: 12px; flex-shrink: 0; }
 
     /* 管理者名バッジ（複数人で運用する時の自分の識別用） */
@@ -221,10 +221,10 @@
     html[data-theme="dark"] .chip svg { color: var(--text-3); }
     html[data-theme="dark"] .chip strong { color: var(--text-1); }
     html[data-theme="dark"] .chip-link:hover { background: #36363A; }
-    /* 複数人運用バー */
-    html[data-theme="dark"] .multi-admin-bar { background: rgba(59, 130, 246, 0.10); border-color: rgba(59, 130, 246, 0.32); color: #BAE6FD; }
-    html[data-theme="dark"] .multi-admin-bar .text strong { color: #DBEAFE; }
-    html[data-theme="dark"] .multi-admin-bar .info-icon { color: #93C5FD; }
+    /* 複数人運用バー（鮮やかな緑系・ダークモード） */
+    html[data-theme="dark"] .multi-admin-bar { background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.40); color: #BBF7D0; }
+    html[data-theme="dark"] .multi-admin-bar .text strong { color: #DCFCE7; }
+    html[data-theme="dark"] .multi-admin-bar .info-icon { color: #86EFAC; }
     /* 管理者バッジ＆作成者タグ */
     html[data-theme="dark"] .admin-name-bar { background: rgba(74, 222, 128, 0.12); border-color: rgba(74, 222, 128, 0.32); }
     html[data-theme="dark"] .admin-name-bar strong,
