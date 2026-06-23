@@ -88,14 +88,25 @@
     .recent-item .btn { font-size: 12px; padding: 6px 12px; }
     .empty { text-align: center; color: var(--text-3); padding: 24px 16px; border: 1px dashed var(--border-strong); border-radius: var(--radius); font-size: 13px; }
 
-    /* Event header */
-    .event-header { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
-    .event-header .info { flex: 1; min-width: 200px; }
-    .event-header h1 { font-size: 24px; font-weight: 800; margin: 0 0 4px; }
-    .event-header .desc { color: var(--text-3); font-size: 13px; white-space: pre-wrap; }
+    /* Event header (公開ページと統一) */
+    .event-header-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 12px; }
+    .event-title-wrap { flex: 1; min-width: 200px; }
+    .event-title { font-size: 26px; font-weight: 800; margin: 0; line-height: 1.25; letter-spacing: -0.01em; }
     .event-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .event-meta { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: var(--text-3); margin-top: 8px; }
-    .event-meta .item { display: flex; align-items: center; gap: 4px; }
+    .event-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .event-desc { color: var(--text-3); font-size: 13px; white-space: pre-wrap; margin-top: 4px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px;
+      background: #F5F5F4; color: var(--text-2);
+      border: 1px solid var(--border); border-radius: 999px;
+      font-size: 12.5px; font-weight: 600; white-space: nowrap;
+    }
+    .chip svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--text-3); stroke-width: 2; }
+    .chip strong { font-weight: 800; color: var(--text-1); margin: 0 1px; font-size: 13px; }
+    .chip-link { text-decoration: none; cursor: pointer; max-width: 280px; overflow: hidden; }
+    .chip-link:hover { background: #E7E5E4; }
+    .chip-link span { overflow: hidden; text-overflow: ellipsis; }
 
     /* Calendar */
     .cal-toolbar { display: flex; gap: 8px; align-items: center; margin: 18px 0 10px; flex-wrap: wrap; }
@@ -254,23 +265,35 @@
   <!-- ============ イベント管理画面 ============ -->
   <div id="screen-manage" hidden>
     <div class="card">
-      <div class="event-header">
-        <div class="info">
-          <h1 id="ev-title">—</h1>
-          <div class="desc" id="ev-desc"></div>
-          <div class="event-meta">
-            <span class="item">🕐 <span id="ev-duration"></span>分</span>
-            <span class="item">👥 <span id="ev-capmode"></span></span>
-            <span class="item" id="ev-location-wrap" hidden>📍 <span id="ev-location"></span></span>
-            <span class="item" id="ev-meeting-wrap" hidden>🎥 <a id="ev-meeting" href="#" target="_blank" rel="noopener" style="color:var(--primary-dk);text-decoration:underline">ミーティングURL</a></span>
-          </div>
+      <div class="event-header-row">
+        <div class="event-title-wrap">
+          <h1 id="ev-title" class="event-title">—</h1>
         </div>
         <div class="event-actions">
-          <button class="btn" id="btn-copy-public">🔗 公開URLをコピー</button>
-          <button class="btn" id="btn-edit-event">⚙️ 設定</button>
-          <button class="btn btn-danger" id="btn-delete-event">🗑️ 削除</button>
+          <button class="btn" id="btn-copy-public">公開URLをコピー</button>
+          <button class="btn" id="btn-edit-event">設定</button>
+          <button class="btn btn-danger" id="btn-delete-event">削除</button>
         </div>
       </div>
+      <div class="event-chips">
+        <span class="chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          1枠 <strong id="ev-duration">—</strong> 分
+        </span>
+        <span class="chip" id="ev-cap-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span id="ev-cap-text">—</span>
+        </span>
+        <span class="chip" id="ev-location-chip" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span id="ev-location"></span>
+        </span>
+        <a class="chip chip-link" id="ev-meeting-chip" hidden href="#" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span id="ev-meeting-text">ミーティングURL</span>
+        </a>
+      </div>
+      <div id="ev-desc" class="event-desc"></div>
     </div>
 
     <div class="cal-toolbar">
@@ -478,16 +501,22 @@ function renderEventHeader(){
   document.getElementById('ev-title').textContent = e.title;
   document.getElementById('ev-desc').textContent = e.description || '';
   document.getElementById('ev-duration').textContent = e.slot_duration_min;
-  document.getElementById('ev-capmode').textContent = e.capacity_mode === 'uniform' ? `定員 ${e.default_capacity} 人（一律）` : '定員：枠ごと';
-  const locWrap = document.getElementById('ev-location-wrap');
-  if (e.location) { locWrap.hidden = false; document.getElementById('ev-location').textContent = e.location; } else locWrap.hidden = true;
-  const meetWrap = document.getElementById('ev-meeting-wrap');
+  // 定員チップ
+  document.getElementById('ev-cap-text').textContent =
+    e.capacity_mode === 'uniform' ? `1枠 ${e.default_capacity} 名` : '枠ごとに定員';
+  // 場所チップ
+  const locChip = document.getElementById('ev-location-chip');
+  if (e.location) {
+    locChip.hidden = false;
+    document.getElementById('ev-location').textContent = e.location;
+  } else locChip.hidden = true;
+  // ミーティングURLチップ
+  const meetChip = document.getElementById('ev-meeting-chip');
   if (e.meeting_url && /^https?:\/\//.test(e.meeting_url)) {
-    meetWrap.hidden = false;
-    const a = document.getElementById('ev-meeting');
-    a.href = e.meeting_url;
-    a.textContent = e.meeting_url;
-  } else meetWrap.hidden = true;
+    meetChip.hidden = false;
+    meetChip.href = e.meeting_url;
+    document.getElementById('ev-meeting-text').textContent = e.meeting_url;
+  } else meetChip.hidden = true;
   document.title = `${e.title} — 予約フォーム`;
 }
 
