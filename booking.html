@@ -120,7 +120,7 @@
     .cal-head { background: #FAFAF9; padding: 8px 4px; font-size: 12px; font-weight: 700; text-align: center; color: var(--text-2); border-bottom: 1px solid var(--border); }
     .cal-head.today { background: #D4F0DE; color: #0F5132; }
     .cal-head .dow { display: block; font-size: 11px; color: var(--text-3); font-weight: 600; }
-    .cal-time { background: #FAFAF9; padding: 4px 8px 4px 4px; font-size: 11px; font-weight: 600; color: var(--text-3); display: flex; align-items: center; justify-content: flex-end; }
+    .cal-time { background: #FAFAF9; padding: 0 8px 0 4px; min-height: var(--cal-cell-min-h, 22px); line-height: 1; font-size: 11px; font-weight: 600; color: var(--text-3); display: flex; align-items: center; justify-content: flex-end; font-variant-numeric: tabular-nums; }
     .cal-cell { background: #fff; min-height: var(--cal-cell-min-h, 22px); padding: 1px; cursor: pointer; transition: background 0.12s; position: relative; display: flex; }
     .cal-cell:hover { background: #F5F5F4; }
     .cal-cell.past { background: #FAFAF9; cursor: default; opacity: 0.55; }
