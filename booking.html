@@ -105,7 +105,7 @@
     .cal-head { background: #FAFAF9; padding: 8px 4px; font-size: 12px; font-weight: 700; text-align: center; color: var(--text-2); border-bottom: 1px solid var(--border); }
     .cal-head.today { background: #FEF3C7; color: #92400E; }
     .cal-head .dow { display: block; font-size: 11px; color: var(--text-3); font-weight: 600; }
-    .cal-time { background: #FAFAF9; padding: 4px; font-size: 11px; font-weight: 600; text-align: right; color: var(--text-3); padding-right: 8px; }
+    .cal-time { background: #FAFAF9; padding: 4px 8px 4px 4px; font-size: 11px; font-weight: 600; color: var(--text-3); display: flex; align-items: center; justify-content: flex-end; }
     .cal-cell { background: #fff; min-height: var(--cal-cell-min-h, 38px); padding: 3px; cursor: pointer; transition: background 0.12s; position: relative; display: flex; }
     .cal-cell:hover { background: #F5F5F4; }
     .cal-cell.past { background: #FAFAF9; cursor: default; opacity: 0.55; }
@@ -495,8 +495,8 @@ function renderEventHeader(){
 function renderCalendar(){
   const e = state.event;
   const duration = e.slot_duration_min;
-  // セル高さを時間に比例（15分=32px、60分=128px）
-  document.documentElement.style.setProperty('--cal-cell-min-h', ((duration / 15) * 32) + 'px');
+  // セル高さを時間に比例（15分=22px、30分=44px、45分=66px、60分=88px）
+  document.documentElement.style.setProperty('--cal-cell-min-h', ((duration / 15) * 22) + 'px');
   const startHour = 9, endHour = 19;
   const slotsPerHour = 60 / duration;
   const ws = state.weekStart;
