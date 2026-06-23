@@ -111,6 +111,13 @@
     .chip-link:hover { background: #E7E5E4; }
     .chip-link span { overflow: hidden; text-overflow: ellipsis; }
 
+    /* 複数人運用の案内バー */
+    .multi-admin-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: var(--radius); margin-bottom: 10px; font-size: 12.5px; color: #0C4A6E; flex-wrap: wrap; line-height: 1.5; }
+    .multi-admin-bar .info-icon { width: 16px; height: 16px; color: #0369A1; flex-shrink: 0; }
+    .multi-admin-bar .text { flex: 1; min-width: 200px; }
+    .multi-admin-bar .text strong { color: #075985; font-weight: 700; }
+    .multi-admin-bar .btn { padding: 6px 14px; font-size: 12px; flex-shrink: 0; }
+
     /* 管理者名バッジ（複数人で運用する時の自分の識別用） */
     .admin-name-bar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--primary-bg); border: 1px solid var(--primary-lt); border-radius: var(--radius); margin-bottom: 14px; font-size: 13px; flex-wrap: wrap; }
     .admin-name-bar .admin-name-icon { width: 14px; height: 14px; color: var(--primary-dk); flex-shrink: 0; }
@@ -214,6 +221,10 @@
     html[data-theme="dark"] .chip svg { color: var(--text-3); }
     html[data-theme="dark"] .chip strong { color: var(--text-1); }
     html[data-theme="dark"] .chip-link:hover { background: #36363A; }
+    /* 複数人運用バー */
+    html[data-theme="dark"] .multi-admin-bar { background: rgba(59, 130, 246, 0.10); border-color: rgba(59, 130, 246, 0.32); color: #BAE6FD; }
+    html[data-theme="dark"] .multi-admin-bar .text strong { color: #DBEAFE; }
+    html[data-theme="dark"] .multi-admin-bar .info-icon { color: #93C5FD; }
     /* 管理者バッジ＆作成者タグ */
     html[data-theme="dark"] .admin-name-bar { background: rgba(74, 222, 128, 0.12); border-color: rgba(74, 222, 128, 0.32); }
     html[data-theme="dark"] .admin-name-bar strong,
@@ -365,6 +376,12 @@
         </a>
       </div>
       <div id="ev-desc" class="event-desc"></div>
+    </div>
+
+    <div class="multi-admin-bar">
+      <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="17" cy="9" r="3"/><path d="M21 21v-1a4 4 0 0 0-3-3.87"/></svg>
+      <span class="text"><strong>複数人で管理できます</strong>：このページのURLを他メンバーに共有すれば、それぞれの名前で枠の追加・キャンセル・予約管理が行えます。</span>
+      <button class="btn" id="btn-copy-admin">📋 管理URLをコピー</button>
     </div>
 
     <div class="admin-name-bar">
@@ -933,6 +950,17 @@ document.getElementById('cal-next').addEventListener('click', () => { state.week
 document.getElementById('cal-today').addEventListener('click', () => { state.weekStart = startOfWeek(new Date()); renderCalendar(); });
 
 document.getElementById('btn-change-name').addEventListener('click', () => promptAdminName());
+
+document.getElementById('btn-copy-admin').addEventListener('click', async () => {
+  const url = window.location.origin + window.location.pathname + '?id=' + encodeURIComponent(state.eventId);
+  try {
+    await navigator.clipboard.writeText(url);
+    showAlert('success', '管理URLをコピーしました（他メンバーへ共有可）：' + url);
+  } catch {
+    showModal(`<h2>管理URL（他メンバーへ共有可）</h2><div class="url-box"><input readonly value="${escapeHtml(url)}"></div><div class="modal-actions"><button class="btn" data-modal-close>閉じる</button></div>`);
+    document.querySelectorAll('[data-modal-close]').forEach(b => b.addEventListener('click', hideModal));
+  }
+});
 
 document.getElementById('btn-copy-public').addEventListener('click', async () => {
   const url = PUBLIC_URL_BASE + '?id=' + encodeURIComponent(state.eventId);
