@@ -254,6 +254,11 @@
             <input id="new-meeting" type="url" maxlength="500" placeholder="https://zoom.us/j/...">
           </div>
         </div>
+        <div class="field">
+          <label for="new-notify">📧 通知先メール（任意）</label>
+          <input id="new-notify" type="email" maxlength="200" placeholder="予約が入ったら届くメール（例：あなたのアドレス）">
+          <div style="font-size:11px;color:var(--text-3);margin-top:4px">予約が入るたびにこのメアド宛に通知が届きます（Power Automate設定が必要）</div>
+        </div>
         <button id="btn-create" class="btn-primary">作成して管理画面へ</button>
       </div>
 
@@ -294,6 +299,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
           <span id="ev-meeting-text">ミーティングURL</span>
         </a>
+        <span class="chip" id="ev-notify-chip" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <span id="ev-notify-text"></span>
+        </span>
       </div>
       <div id="ev-desc" class="event-desc"></div>
     </div>
@@ -461,6 +470,7 @@ document.getElementById('btn-create').addEventListener('click', async () => {
   const defcap   = parseInt(document.getElementById('new-defcap').value, 10);
   const location = document.getElementById('new-location').value.trim();
   const meeting  = document.getElementById('new-meeting').value.trim();
+  const notify   = document.getElementById('new-notify').value.trim();
 
   if (!title) { showAlert('error', 'イベント名を入力してください'); return; }
   if (!(defcap >= 1)) { showAlert('error', '定員は1人以上で入力してください'); return; }
@@ -472,7 +482,8 @@ document.getElementById('btn-create').addEventListener('click', async () => {
     capacity_mode: capmode,
     default_capacity: defcap,
     location: location || null,
-    meeting_url: meeting || null
+    meeting_url: meeting || null,
+    notify_email: notify || null
   }).select().single();
   document.getElementById('btn-create').disabled = false;
 
@@ -536,6 +547,12 @@ function renderEventHeader(){
     meetChip.href = e.meeting_url;
     document.getElementById('ev-meeting-text').textContent = e.meeting_url;
   } else meetChip.hidden = true;
+  // 通知先メールチップ
+  const notifyChip = document.getElementById('ev-notify-chip');
+  if (e.notify_email) {
+    notifyChip.hidden = false;
+    document.getElementById('ev-notify-text').textContent = e.notify_email;
+  } else notifyChip.hidden = true;
   document.title = `${e.title} — 予約フォーム`;
 }
 
@@ -783,6 +800,7 @@ document.getElementById('btn-edit-event').addEventListener('click', () => {
     <div class="field"><label>説明</label><textarea id="edit-desc" maxlength="500">${escapeHtml(e.description||'')}</textarea></div>
     <div class="field"><label>📍 場所</label><input id="edit-location" type="text" maxlength="100" value="${escapeHtml(e.location||'')}"></div>
     <div class="field"><label>🎥 ミーティングURL</label><input id="edit-meeting" type="url" maxlength="500" value="${escapeHtml(e.meeting_url||'')}"></div>
+    <div class="field"><label>📧 通知先メール</label><input id="edit-notify" type="email" maxlength="200" value="${escapeHtml(e.notify_email||'')}" placeholder="予約が入ったら届くメール"></div>
     <div class="alert info" style="font-size:12px">スロット時間と定員方式は変更できません（既存予約と矛盾を防ぐため）。</div>
     <div class="modal-actions">
       <button class="btn" data-modal-close>キャンセル</button>
@@ -798,6 +816,7 @@ document.getElementById('btn-edit-event').addEventListener('click', () => {
       description: document.getElementById('edit-desc').value.trim() || null,
       location: document.getElementById('edit-location').value.trim() || null,
       meeting_url: document.getElementById('edit-meeting').value.trim() || null,
+      notify_email: document.getElementById('edit-notify').value.trim() || null,
       updated_at: new Date().toISOString()
     }).eq('id', state.eventId);
     if (error) { showAlert('error', '保存失敗：' + error.message); return; }
