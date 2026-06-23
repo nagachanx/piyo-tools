@@ -115,7 +115,6 @@
     .multi-admin-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--primary-bg); border: 1px solid var(--primary-lt); border-radius: var(--radius); margin-bottom: 10px; font-size: 12.5px; color: var(--text-2); flex-wrap: wrap; line-height: 1.5; }
     .multi-admin-bar .info-icon { width: 16px; height: 16px; color: var(--primary-dk); flex-shrink: 0; }
     .multi-admin-bar .text { flex: 1; min-width: 200px; }
-    .multi-admin-bar .text strong { color: var(--primary-dk); font-weight: 700; }
     .multi-admin-bar .btn { padding: 6px 14px; font-size: 12px; flex-shrink: 0; }
 
     /* 管理者名バッジ（複数人で運用する時の自分の識別用） */
@@ -223,7 +222,6 @@
     html[data-theme="dark"] .chip-link:hover { background: #36363A; }
     /* 複数人運用バー（admin-name-bar と同じダーク色） */
     html[data-theme="dark"] .multi-admin-bar { background: rgba(74, 222, 128, 0.12); border-color: rgba(74, 222, 128, 0.32); color: var(--text-2); }
-    html[data-theme="dark"] .multi-admin-bar .text strong,
     html[data-theme="dark"] .multi-admin-bar .info-icon { color: #BBF7D0; }
     /* 管理者バッジ＆作成者タグ */
     html[data-theme="dark"] .admin-name-bar { background: rgba(74, 222, 128, 0.12); border-color: rgba(74, 222, 128, 0.32); }
@@ -380,7 +378,7 @@
 
     <div class="multi-admin-bar">
       <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="17" cy="9" r="3"/><path d="M21 21v-1a4 4 0 0 0-3-3.87"/></svg>
-      <span class="text"><strong>複数人で管理できます</strong>：このページのURLを他メンバーに共有すれば、それぞれの名前で枠の追加・キャンセル・予約管理が行えます。</span>
+      <span class="text">複数人で管理できます：このページのURLを他メンバーに共有すれば、それぞれの名前で枠の追加・キャンセル・予約管理が行えます。</span>
       <button class="btn" id="btn-copy-admin">📋 管理URLをコピー</button>
     </div>
 
