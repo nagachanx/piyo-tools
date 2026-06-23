@@ -117,11 +117,11 @@
     .cal-head.today { background: #FEF3C7; color: #92400E; }
     .cal-head .dow { display: block; font-size: 11px; color: var(--text-3); font-weight: 600; }
     .cal-time { background: #FAFAF9; padding: 4px 8px 4px 4px; font-size: 11px; font-weight: 600; color: var(--text-3); display: flex; align-items: center; justify-content: flex-end; }
-    .cal-cell { background: #fff; min-height: var(--cal-cell-min-h, 38px); padding: 3px; cursor: pointer; transition: background 0.12s; position: relative; display: flex; }
+    .cal-cell { background: #fff; min-height: var(--cal-cell-min-h, 22px); padding: 1px; cursor: pointer; transition: background 0.12s; position: relative; display: flex; }
     .cal-cell:hover { background: #F5F5F4; }
     .cal-cell.past { background: #FAFAF9; cursor: default; opacity: 0.55; }
     .cal-cell.past:hover { background: #FAFAF9; }
-    .cal-cell .slot { width: 100%; background: var(--primary-bg); border: 1px solid var(--primary-lt); border-radius: 6px; padding: 6px 6px; font-size: 12px; font-weight: 700; color: var(--primary-dk); text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .cal-cell .slot { width: 100%; background: var(--primary-bg); border: 1px solid var(--primary-lt); border-radius: 4px; padding: 1px 4px; font-size: 11px; font-weight: 700; color: var(--primary-dk); text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1.2; }
     .cal-cell .slot.full { background: #FEE2E2; border-color: #FCA5A5; color: #991B1B; }
     .cal-cell .slot:hover { filter: brightness(0.96); }
     .cal-cell .plus { display: none; color: var(--text-4); font-weight: 700; font-size: 16px; align-items: center; justify-content: center; height: 100%; width: 100%; }
@@ -524,8 +524,8 @@ function renderEventHeader(){
 function renderCalendar(){
   const e = state.event;
   const duration = e.slot_duration_min;
-  // セル高さを時間に比例（15分=22px、30分=44px、45分=66px、60分=88px）
-  document.documentElement.style.setProperty('--cal-cell-min-h', ((duration / 15) * 22) + 'px');
+  // セル高さを時間に比例（15分=11px、30分=22px、45分=33px、60分=44px）
+  document.documentElement.style.setProperty('--cal-cell-min-h', ((duration / 15) * 11) + 'px');
   const startHour = 9, endHour = 19;
   const slotsPerHour = 60 / duration;
   const ws = state.weekStart;
