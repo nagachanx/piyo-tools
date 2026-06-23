@@ -106,23 +106,23 @@
     .cal-head.today { background: #FEF3C7; color: #92400E; }
     .cal-head .dow { display: block; font-size: 11px; color: var(--text-3); font-weight: 600; }
     .cal-time { background: #FAFAF9; padding: 4px; font-size: 11px; font-weight: 600; text-align: right; color: var(--text-3); padding-right: 8px; }
-    .cal-cell { background: #fff; min-height: 38px; padding: 2px; cursor: pointer; transition: background 0.12s; position: relative; }
+    .cal-cell { background: #fff; min-height: var(--cal-cell-min-h, 38px); padding: 3px; cursor: pointer; transition: background 0.12s; position: relative; display: flex; }
     .cal-cell:hover { background: #F5F5F4; }
     .cal-cell.past { background: #FAFAF9; cursor: default; opacity: 0.55; }
     .cal-cell.past:hover { background: #FAFAF9; }
-    .cal-cell .slot { background: var(--primary-bg); border: 1px solid var(--primary-lt); border-radius: 6px; padding: 3px 6px; font-size: 11px; font-weight: 700; color: var(--primary-dk); text-align: center; cursor: pointer; }
+    .cal-cell .slot { width: 100%; background: var(--primary-bg); border: 1px solid var(--primary-lt); border-radius: 6px; padding: 6px 6px; font-size: 12px; font-weight: 700; color: var(--primary-dk); text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .cal-cell .slot.full { background: #FEE2E2; border-color: #FCA5A5; color: #991B1B; }
     .cal-cell .slot:hover { filter: brightness(0.96); }
-    .cal-cell .plus { display: none; color: var(--text-4); font-weight: 700; font-size: 16px; align-items: center; justify-content: center; height: 100%; }
+    .cal-cell .plus { display: none; color: var(--text-4); font-weight: 700; font-size: 16px; align-items: center; justify-content: center; height: 100%; width: 100%; }
     .cal-cell:hover .plus { display: flex; }
     .cal-cell.past .plus { display: none !important; }
 
     /* Mobile calendar: vertical list per day */
+    .cal-mobile { display: none; }
     @media (max-width: 760px) {
       .cal-grid { display: none; }
       .cal-mobile { display: block; }
     }
-    .cal-mobile { display: none; }
     .cal-day { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
     .cal-day-head { background: #FAFAF9; padding: 10px 14px; font-weight: 700; font-size: 13px; }
     .cal-day-head.today { background: #FEF3C7; color: #92400E; }
@@ -495,6 +495,8 @@ function renderEventHeader(){
 function renderCalendar(){
   const e = state.event;
   const duration = e.slot_duration_min;
+  // セル高さを時間に比例（15分=32px、60分=128px）
+  document.documentElement.style.setProperty('--cal-cell-min-h', ((duration / 15) * 32) + 'px');
   const startHour = 9, endHour = 19;
   const slotsPerHour = 60 / duration;
   const ws = state.weekStart;
