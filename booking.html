@@ -112,7 +112,8 @@
     /* Calendar */
     .cal-toolbar { display: flex; gap: 8px; align-items: center; margin: 18px 0 10px; flex-wrap: wrap; }
     .cal-toolbar .week-label { font-weight: 700; font-size: 15px; margin: 0 8px; }
-    .cal-grid { display: grid; grid-template-columns: 56px repeat(7, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; min-width: 720px; }
+    .cal-grid { display: grid; grid-template-columns: 56px repeat(5, 1fr) 0.7fr 0.7fr; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; min-width: 720px; }
+    .cal-grid .cal-head:nth-child(7), .cal-grid .cal-head:nth-child(8) { background: #FAFAF6; color: var(--text-3); }
     .cal-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius); }
     .cal-head { background: #FAFAF9; padding: 8px 4px; font-size: 12px; font-weight: 700; text-align: center; color: var(--text-2); border-bottom: 1px solid var(--border); }
     .cal-head.today { background: #FEF3C7; color: #92400E; }
@@ -352,7 +353,8 @@ const supa = (SUPABASE_URL && SUPABASE_ANON_KEY)
 const DOW_JP = ['日','月','火','水','木','金','土'];
 const PAD = n => String(n).padStart(2,'0');
 
-function startOfWeek(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - x.getDay()); return x; }
+// 週の始まりは月曜日
+function startOfWeek(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
 function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
 function fmtDate(d){ return `${d.getFullYear()}/${PAD(d.getMonth()+1)}/${PAD(d.getDate())}`; }
 function fmtMD(d){ return `${PAD(d.getMonth()+1)}/${PAD(d.getDate())}`; }
