@@ -81,10 +81,11 @@
     .entry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
     @media (max-width: 760px) { .entry-grid { grid-template-columns: 1fr; } }
     .recent-list { display: flex; flex-direction: column; gap: 8px; }
-    .recent-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; }
-    .recent-item .meta { display: flex; flex-direction: column; }
-    .recent-item .title { font-weight: 700; font-size: 14px; color: var(--text-1); }
+    .recent-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; gap: 8px; }
+    .recent-item .meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+    .recent-item .title { font-weight: 700; font-size: 14px; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .recent-item .date { font-size: 11px; color: var(--text-3); }
+    .recent-item .actions { display: flex; gap: 6px; flex-shrink: 0; }
     .recent-item .btn { font-size: 12px; padding: 6px 12px; }
     .empty { text-align: center; color: var(--text-3); padding: 24px 16px; border: 1px dashed var(--border-strong); border-radius: var(--radius); font-size: 13px; }
 
@@ -316,7 +317,7 @@
     </div>
 
     <div style="text-align:center;margin-top:18px">
-      <a href="booking.html" class="btn btn-sm">← 予約ツールのトップに戻る</a>
+      <a href="booking.html" class="btn btn-sm">← 予約フォーム トップへ</a>
     </div>
   </div>
 </div>
@@ -429,8 +430,24 @@ function renderRecent(){
         <span class="title">${escapeHtml(x.title)}</span>
         <span class="date">${new Date(x.at).toLocaleString('ja-JP', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
       </div>
-      <a class="btn" href="?id=${encodeURIComponent(x.id)}">開く</a>
+      <div class="actions">
+        <a class="btn" href="?id=${encodeURIComponent(x.id)}">開く</a>
+        <button class="btn btn-danger" data-del-id="${escapeHtml(x.id)}" data-del-title="${escapeHtml(x.title)}">削除</button>
+      </div>
     </div>`).join('');
+  el.querySelectorAll('[data-del-id]').forEach(b => b.addEventListener('click', async () => {
+    const id = b.dataset.delId;
+    const title = b.dataset.delTitle || 'このイベント';
+    if (!confirm(`「${title}」を削除しますか？すべての枠と予約が消えます。`)) return;
+    if (!confirm('本当に削除しますか？この操作は元に戻せません。')) return;
+    if (!supa) { showAlert('error', 'Supabase接続情報が未設定です'); return; }
+    b.disabled = true;
+    const { error } = await supa.from('bookings').delete().eq('id', id);
+    if (error) { showAlert('error', '削除失敗：' + error.message); b.disabled = false; return; }
+    removeRecent(id);
+    renderRecent();
+    showAlert('success', `「${title}」を削除しました`);
+  }));
 }
 
 document.getElementById('btn-create').addEventListener('click', async () => {
