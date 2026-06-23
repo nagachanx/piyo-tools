@@ -492,7 +492,10 @@ function promptAdminName(){
     hideModal();
   };
   document.getElementById('admin-name-save').addEventListener('click', save);
-  inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+  // 日本語入力（IME）の変換確定 Enter は無視。純粋な Enter（変換中でない）のみ保存
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) save();
+  });
 }
 
 function updateAdminNameDisplay(){
