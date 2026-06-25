@@ -866,23 +866,56 @@ async function createSlot(startsAt){
     promptAdminName();
     return;
   }
-  let cap = ev.default_capacity;
-  if (ev.capacity_mode === 'per_slot') {
-    const input = prompt(`定員を入力（${fmtDateTime(startsAt)}）`, String(ev.default_capacity));
-    if (input == null) return;
-    const n = parseInt(input, 10);
-    if (!(n >= 1)) { showAlert('error', '定員は1人以上で入力してください'); return; }
-    cap = n;
-  }
-  const { error } = await supa.from('booking_slots').insert({
-    booking_id: ev.id,
-    starts_at: startsAt.toISOString(),
-    capacity: cap,
-    created_by_name: getAdminName() || null,
-    created_by_email: getAdminEmail() || null
+  const endsAt = new Date(startsAt.getTime() + ev.slot_duration_min * 60000);
+  const capacityModeHint = ev.capacity_mode === 'per_slot'
+    ? '<span style="color:var(--text-3);font-size:11px">この枠だけ別の定員にしたい場合は変更できます</span>'
+    : `<span style="color:var(--text-3);font-size:11px">通常はデフォルト定員（${ev.default_capacity}名）のまま「作成する」を押してください</span>`;
+  showModal(`
+    <h2 style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;color:var(--primary-dk)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>枠を作成しますか？</h2>
+    <div style="background:var(--primary-bg);border:1px solid var(--primary-lt);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:12px;color:var(--text-3);margin-bottom:4px">日時</div>
+      <div style="font-weight:800;font-size:16px;color:var(--text-1)">${fmtDateTime(startsAt)}〜${fmtTime(endsAt)}</div>
+    </div>
+    <div class="field">
+      <label for="slot-cap-input">定員（人）</label>
+      <input id="slot-cap-input" type="number" min="1" max="999" value="${ev.default_capacity}" style="max-width:120px">
+      <div style="margin-top:4px">${capacityModeHint}</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" data-modal-close>キャンセル</button>
+      <button class="btn-primary" id="slot-create-confirm">作成する</button>
+    </div>
+  `);
+  document.querySelectorAll('[data-modal-close]').forEach(b => b.addEventListener('click', hideModal));
+  const capInput = document.getElementById('slot-cap-input');
+  capInput.focus();
+  capInput.select();
+  const confirmBtn = document.getElementById('slot-create-confirm');
+  const doCreate = async () => {
+    const cap = parseInt(capInput.value, 10);
+    if (!(cap >= 1)) { showAlert('error', '定員は1人以上で入力してください'); return; }
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '作成中…';
+    const { error } = await supa.from('booking_slots').insert({
+      booking_id: ev.id,
+      starts_at: startsAt.toISOString(),
+      capacity: cap,
+      created_by_name: getAdminName() || null,
+      created_by_email: getAdminEmail() || null
+    });
+    if (error) {
+      showAlert('error', '枠の作成に失敗：' + error.message);
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = '作成する';
+      return;
+    }
+    hideModal();
+    await loadEvent();
+  };
+  confirmBtn.addEventListener('click', doCreate);
+  capInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) doCreate();
   });
-  if (error) { showAlert('error', '枠の作成に失敗：' + error.message); return; }
-  await loadEvent();
 }
 
 function openSlotDialog(slot){
