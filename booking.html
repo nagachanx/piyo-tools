@@ -918,6 +918,49 @@ async function createSlot(startsAt){
   });
 }
 
+function openEditReservationDialog(r){
+  showModal(`
+    <h2>予約者情報の編集</h2>
+    <div class="field">
+      <label for="edit-res-name">お名前 <span style="color:var(--danger)">*</span></label>
+      <input id="edit-res-name" type="text" maxlength="30" value="${escapeHtml(r.name)}">
+    </div>
+    <div class="field">
+      <label for="edit-res-memo">メモ（任意）</label>
+      <textarea id="edit-res-memo" maxlength="500">${escapeHtml(r.memo||'')}</textarea>
+    </div>
+    <div class="alert info" style="font-size:12px">予約者本人ではなく、管理者として情報を修正します。予約者には通知されません。</div>
+    <div class="modal-actions">
+      <button class="btn" data-modal-close>キャンセル</button>
+      <button class="btn-primary" id="save-edit-res">保存</button>
+    </div>
+  `);
+  document.querySelectorAll('[data-modal-close]').forEach(b => b.addEventListener('click', hideModal));
+  const nameEl = document.getElementById('edit-res-name');
+  const memoEl = document.getElementById('edit-res-memo');
+  nameEl.focus();
+  nameEl.select();
+  const save = async () => {
+    const name = nameEl.value.trim();
+    const memo = memoEl.value.trim();
+    if (!name) { showAlert('error', '名前は必須です'); return; }
+    const btn = document.getElementById('save-edit-res');
+    btn.disabled = true;
+    btn.textContent = '保存中…';
+    const { error } = await supa.from('booking_reservations').update({
+      name, memo: memo || null
+    }).eq('id', r.id);
+    if (error) { showAlert('error', '保存失敗：' + error.message); btn.disabled = false; btn.textContent = '保存'; return; }
+    hideModal();
+    showAlert('success', '予約者情報を更新しました');
+    await loadEvent();
+  };
+  document.getElementById('save-edit-res').addEventListener('click', save);
+  nameEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) save();
+  });
+}
+
 function openSlotDialog(slot){
   const reservations = state.reservations.filter(r => r.slot_id === slot.id);
   const startsAt = new Date(slot.starts_at);
@@ -935,7 +978,10 @@ function openSlotDialog(slot){
         <div style="font-weight:700">${escapeHtml(r.name)}</div>
         ${r.memo ? `<div style="font-size:13px;color:var(--text-3);margin-top:3px;white-space:pre-wrap">${escapeHtml(r.memo)}</div>` : ''}
         <div style="font-size:11px;color:var(--text-4);margin-top:4px">${new Date(r.created_at).toLocaleString('ja-JP')}</div>
-        <button class="btn btn-sm btn-danger" data-cancel-res="${r.id}" style="margin-top:6px">この予約をキャンセル</button>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+          <button class="btn btn-sm" data-edit-res="${r.id}">編集</button>
+          <button class="btn btn-sm btn-danger" data-cancel-res="${r.id}">キャンセル</button>
+        </div>
       </div>`;
     });
   }
@@ -951,6 +997,11 @@ function openSlotDialog(slot){
     const { error } = await supa.from('booking_reservations').delete().eq('id', b.dataset.cancelRes);
     if (error) { showAlert('error', 'キャンセル失敗：' + error.message); return; }
     hideModal(); await loadEvent();
+  }));
+  document.querySelectorAll('[data-edit-res]').forEach(b => b.addEventListener('click', () => {
+    const r = state.reservations.find(x => x.id === b.dataset.editRes);
+    if (!r) return;
+    openEditReservationDialog(r);
   }));
   document.querySelectorAll('[data-del-slot]').forEach(b => b.addEventListener('click', async () => {
     const cnt = state.reservations.filter(r => r.slot_id === slot.id).length;
