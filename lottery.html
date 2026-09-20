@@ -1173,8 +1173,9 @@
     }
     #overlay.mtheme #shared-close-btn:hover { background: #24362C; }
 
-    /* SSRカード開封は当面非表示（コードは残してある。戻すときはこの1行を消す） */
+    /* SSRカード開封・カウントダウンは当面非表示（コードは残してある。戻すときは該当行を消す） */
     .anim-opt[data-anim="ssr"] { display: none; }
+    .anim-opt[data-anim="timessquare"] { display: none; }
 
     /* 8ビット演出：拡大してもドットをにじませない */
     #rpg-canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
@@ -1791,7 +1792,7 @@ async function startLottery() {
   const items = getItems();
   if (!items) { alert('候補を入力してください！'); return; }
   const winners = pickWinners(items, numWinners);
-  const ANIMS = ['timessquare','amida','bowling','particles','dice','slot','race','gacha','crane','rpg'];
+  const ANIMS = ['amida','bowling','particles','dice','slot','race','gacha','crane','rpg'];
   const anim = animMode === 'random' ? ANIMS[Math.floor(Math.random()*ANIMS.length)] : animMode;
   isRunning = true;
   document.getElementById('start-btn').disabled = true;
@@ -2502,7 +2503,7 @@ function playBowling(allItems, winners) {
       if (winners.length === 1) {
         winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
       } else {
-        winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)}`).join('<br>');
+        winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)} ${TROPHY_HTML}`).join('<br>');
       }
       winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
       setTimeout(() => {
@@ -2839,7 +2840,7 @@ function playParticles(allItems, winners) {
       if (winners.length === 1) {
         winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
       } else {
-        winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)}`).join('<br>');
+        winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)} ${TROPHY_HTML}`).join('<br>');
       }
       winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
       setTimeout(() => {
@@ -3057,7 +3058,7 @@ function playDice(allItems, winners) {
       if (winners.length === 1) {
         winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
       } else {
-        winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)}`).join('<br>');
+        winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)} ${TROPHY_HTML}`).join('<br>');
       }
       winnerEl.classList.add('show'); launchUnifiedConfetti(); showSharedTicker(winners);
       setTimeout(() => {
@@ -3440,7 +3441,7 @@ function playSlot(allItems, winners) {
       if (winners.length === 1) {
         winnerEl.innerHTML = `${TROPHY_HTML} ${esc(winners[0])} ${TROPHY_HTML}`;
       } else {
-        winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)}`).join('<br>');
+        winnerEl.innerHTML = winners.map(w => `${TROPHY_HTML} ${esc(w)} ${TROPHY_HTML}`).join('<br>');
       }
       winnerEl.classList.add('show');
       launchUnifiedConfetti();
@@ -3778,12 +3779,10 @@ function mFitText(ctx, text, maxW, baseSize, weight, minSize) {
 
 // 当選バナーの中身（ranked=true で「1着」バッジ付き）
 function mWinnerHTML(winners, ranked) {
-  if (winners.length === 1) return TROPHY_HTML + ' ' + esc(winners[0]);
+  if (winners.length === 1) return TROPHY_HTML + ' ' + esc(winners[0]) + ' ' + TROPHY_HTML;
   return winners.map(function (w, i) {
-    const head = ranked
-      ? '<span class="mwinner-rank">' + (i + 1) + '着</span>'
-      : TROPHY_HTML + ' ';
-    return '<span class="mwinner-row">' + head + esc(w) + '</span>';
+    const badge = ranked ? '<span class="mwinner-rank">' + (i + 1) + '着</span>' : '';
+    return '<span class="mwinner-row">' + TROPHY_HTML + ' ' + badge + esc(w) + ' ' + TROPHY_HTML + '</span>';
   }).join('');
 }
 
