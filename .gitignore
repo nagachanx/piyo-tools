@@ -6,3 +6,6 @@ booking-setup.sql
 
 # macOS
 .DS_Store
+
+# 改修前のバックアップ（ローカル専用）
+*.bak_*
