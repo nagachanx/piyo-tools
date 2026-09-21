@@ -4628,8 +4628,8 @@ function playCrane(allItems, winners) {
 
     // 1列だと小さくなりすぎるときだけ、2段・3段に積んで大きさを保つ
     const MIN_R = Math.min(18, areaW / 8);
-    // 段の間隔＝景品の高さ＋2段ぶんの名札。名札が下の段に重ならない値にする
-    const rowGapOf = function (r, sw) { return r * 2.2 + mClamp(sw * 0.28, 12, 20) * 2 + 6; };
+    // 段の間隔＝景品の高さ＋名札1行。名札が下の段に重ならない値にする
+    const rowGapOf = function (r, sw) { return r * 2.2 + mClamp(sw * 0.28, 12, 20) + 10; };
     let rows = 1;
     let perRow = nPrize;
     let slotW = areaW / nPrize;
@@ -4659,7 +4659,6 @@ function playCrane(allItems, winners) {
         y: floorY - plushR * 0.78 - (rows - 1 - row) * rowGap,
         rot: (Math.random() - 0.5) * 0.24,
         color: M_PALETTE[i % M_PALETTE.length],
-        tagRow: col % 2,
         hidden: false
       };
     });
@@ -4807,7 +4806,7 @@ function playCrane(allItems, winners) {
       if (withTag) {
         const tagW = mClamp(slotW - 3, 22, 96);
         const tagH = mClamp(slotW * 0.28, 12, 20);
-        const tagY = y + r * 1.02 + p.tagRow * (tagH + 2);
+        const tagY = y + r * 1.02;   // 全員同じ高さに横一列で並べる
         mShadow(ctx, 6, 2, 'rgba(20,33,26,0.14)');
         ctx.fillStyle = 'rgba(255,255,255,0.94)';
         mRoundRect(ctx, x - tagW / 2, tagY, tagW, tagH, Math.min(10, tagH / 2));
