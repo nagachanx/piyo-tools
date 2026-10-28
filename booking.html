@@ -144,18 +144,28 @@
     .cal-head .dow { display: block; font-size: 11px; color: var(--text-3); font-weight: 600; }
     .cal-time { background: #FAFAF9; padding: 0 4px; min-height: var(--cal-cell-min-h, 22px); line-height: 1; font-size: 11px; font-weight: 600; color: var(--text-3); display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
     @media (max-width: 640px) { .cal-head { top: 66px; } }
-    .cal-cell { background: #fff; min-height: var(--cal-cell-min-h, 22px); padding: 1px; cursor: pointer; transition: background 0.12s; position: relative; display: flex; }
+    .cal-grid { user-select: none; -webkit-user-select: none; }
+    .cal-cell { background: #fff; min-height: var(--cal-cell-min-h, 22px); padding: 1px; cursor: pointer; transition: background 0.12s; position: relative; display: flex; gap: 2px; }
     .cal-cell:hover { background: #F5F5F4; }
     .cal-cell.past { background: #FAFAF9; cursor: default; opacity: 0.55; }
     .cal-cell.past:hover { background: #FAFAF9; }
-    .cal-cell .slot { width: 100%; background: var(--primary-bg); border: 1px solid var(--primary-lt); border-radius: 4px; padding: 1px 4px; font-size: 11px; font-weight: 700; color: var(--primary-dk); text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; gap: 1px; overflow: hidden; }
-    .cal-cell .slot .slot-creator { font-size: 9.5px; font-weight: 600; opacity: 0.85; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cal-cell.sel, .cal-cell.sel:hover { background: #D4F0DE; box-shadow: inset 0 0 0 1px var(--primary); }
+    /* 担当者ごとの色は --staff で受け取る（同じ時間に複数人の枠を横並びで表示） */
+    .cal-cell .slot { flex: 1; min-width: 0; background: color-mix(in srgb, var(--staff, #43A86A) 14%, #fff); border: 1px solid color-mix(in srgb, var(--staff, #43A86A) 40%, #fff); border-left: 3px solid var(--staff, #43A86A); border-radius: 4px; padding: 1px 3px; font-size: 11px; font-weight: 700; color: color-mix(in srgb, var(--staff, #43A86A) 70%, #000); text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; gap: 1px; overflow: hidden; }
+    .cal-cell .slot .slot-creator { font-size: 9.5px; font-weight: 600; opacity: 0.9; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .cal-cell .slot .slot-count { font-size: 11px; font-weight: 800; }
-    .cal-cell .slot.full { background: #FEE2E2; border-color: #FCA5A5; color: #991B1B; }
+    .cal-cell .slot.full { background: #FEE2E2; border-color: #FCA5A5; border-left-color: var(--staff, #43A86A); color: #991B1B; }
     .cal-cell .slot:hover { filter: brightness(0.96); }
     .cal-cell .plus { display: none; color: var(--text-4); font-weight: 700; font-size: 16px; align-items: center; justify-content: center; height: 100%; width: 100%; }
+    .cal-cell .plus.mini { width: 16px; flex: 0 0 16px; font-size: 13px; }
     .cal-cell:hover .plus { display: flex; }
     .cal-cell.past .plus { display: none !important; }
+    .staff-legend { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 10px; font-size: 12px; color: var(--text-3); }
+    .staff-legend[hidden] { display: none; }
+    .staff-chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: color-mix(in srgb, var(--staff) 14%, #fff); color: color-mix(in srgb, var(--staff) 70%, #000); border: 1px solid color-mix(in srgb, var(--staff) 40%, #fff); white-space: nowrap; }
+    .staff-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--staff); flex-shrink: 0; }
+    .staff-chip.full { background: #FEE2E2; border-color: #FCA5A5; color: #991B1B; }
+    button.staff-chip { cursor: pointer; font-family: inherit; }
 
     /* Mobile calendar: vertical list per day */
     .cal-mobile { display: none; }
@@ -172,6 +182,7 @@
     .cal-day-slot.has.full { background: #FEE2E2; border-color: #FCA5A5; }
     .cal-day-slot .time { font-weight: 700; font-size: 13px; }
     .cal-day-slot .count { font-size: 11px; color: var(--text-3); font-weight: 600; }
+    .cal-day-slot .staff-list { flex: 1; display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; margin: 0 8px; }
     .cal-day-slot .add { font-size: 11px; color: var(--primary-dk); font-weight: 700; }
 
     /* Reservations list */
@@ -219,8 +230,11 @@
     html[data-theme="dark"] .cal-day-head { background: #2A2A2D; }
     html[data-theme="dark"] .cal-day-slot { background: #1F1F22; border-color: var(--border); }
     /* スロット枠 */
-    html[data-theme="dark"] .cal-cell .slot { background: rgba(74, 222, 128, 0.15); border-color: rgba(74, 222, 128, 0.35); color: #BBF7D0; }
-    html[data-theme="dark"] .cal-cell .slot.full { background: rgba(220, 38, 38, 0.18); border-color: rgba(220, 38, 38, 0.45); color: #FCA5A5; }
+    html[data-theme="dark"] .cal-cell .slot { background: color-mix(in srgb, var(--staff, #4ADE80) 22%, transparent); border-color: color-mix(in srgb, var(--staff, #4ADE80) 45%, transparent); border-left-color: var(--staff, #4ADE80); color: color-mix(in srgb, var(--staff, #4ADE80) 40%, #fff); }
+    html[data-theme="dark"] .cal-cell .slot.full { background: rgba(220, 38, 38, 0.18); border-color: rgba(220, 38, 38, 0.45); border-left-color: var(--staff, #4ADE80); color: #FCA5A5; }
+    html[data-theme="dark"] .cal-cell.sel, html[data-theme="dark"] .cal-cell.sel:hover { background: rgba(74, 222, 128, 0.20); box-shadow: inset 0 0 0 1px #4ADE80; }
+    html[data-theme="dark"] .staff-chip { background: color-mix(in srgb, var(--staff) 22%, transparent); border-color: color-mix(in srgb, var(--staff) 45%, transparent); color: color-mix(in srgb, var(--staff) 40%, #fff); }
+    html[data-theme="dark"] .staff-chip.full { background: rgba(220, 38, 38, 0.18); border-color: rgba(220, 38, 38, 0.45); color: #FCA5A5; }
     /* チップ */
     html[data-theme="dark"] .chip { background: #2A2A2D; color: var(--text-2); border-color: var(--border); }
     html[data-theme="dark"] .chip svg { color: var(--text-3); }
@@ -402,8 +416,9 @@
       <button class="btn btn-sm" id="cal-next">翌週 →</button>
       <button class="btn btn-sm" id="cal-today">今週</button>
       <span style="flex:1"></span>
-      <span style="font-size:12px;color:var(--text-3)">空セルをクリックで枠作成、既存枠クリックで予約確認</span>
+      <span style="font-size:12px;color:var(--text-3)">空いている所をドラッグでまとめて枠作成（クリックで1枠）、既存枠クリックで予約確認</span>
     </div>
+    <div id="staff-legend" class="staff-legend" hidden></div>
 
     <div class="cal-wrap">
       <div id="cal-grid" class="cal-grid"></div>
@@ -751,7 +766,7 @@ function renderCalendar(){
         cellStart.setHours(h, mins, 0, 0);
         // 同日の過去時刻も past 扱い
         const cellPast = cellStart < new Date(today.getFullYear(), today.getMonth(), today.getDate(), today.getHours(), today.getMinutes(), 0, 0);
-        grid.appendChild(makeCell(cellStart, cellPast));
+        grid.appendChild(makeCell(cellStart, cellPast, dd, (h - startHour) * slotsPerHour + s));
       }
       // 右の時刻ラベル
       const tRight = document.createElement('div');
@@ -780,34 +795,38 @@ function renderCalendar(){
         const cellStart = new Date(day);
         cellStart.setHours(h, s*duration, 0, 0);
         const cellPast = cellStart < new Date();
-        const slotData = findSlot(cellStart);
+        const slots = findSlots(cellStart);
         // モバイルでは既存枠 or 当日の未来枠のみ表示
-        if (!slotData && (cellPast || !sameDay(day, today) && day < today)) continue;
+        if (!slots.length && (cellPast || !sameDay(day, today) && day < today)) continue;
         const row = document.createElement('div');
-        row.className = 'cal-day-slot' + (slotData ? ' has' : '') + (slotData && slotResCount(slotData) >= slotData.capacity ? ' full' : '');
+        row.className = 'cal-day-slot' + (slots.length ? ' has' : '') + (slots.length && slots.every(sl => slotResCount(sl) >= sl.capacity) ? ' full' : '');
         if (cellPast) row.style.opacity = '0.55';
         const t = document.createElement('span');
         t.className = 'time';
         t.textContent = fmtTime(cellStart);
         row.appendChild(t);
-        if (slotData) {
-          if (slotData.created_by_name) {
-            const cr = document.createElement('span');
-            cr.style.cssText = 'flex:1;text-align:right;font-size:11px;color:var(--text-3);font-weight:600;margin:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-            cr.textContent = slotData.created_by_name;
-            row.appendChild(cr);
-          }
-          const c = document.createElement('span');
-          c.className = 'count';
-          c.textContent = `${slotResCount(slotData)}/${slotData.capacity}`;
-          row.appendChild(c);
-          row.addEventListener('click', () => openSlotDialog(slotData));
-        } else if (!cellPast) {
+        if (slots.length) {
+          // 同じ時間の担当者を色付きで並べる（タップでその人の枠の予約確認）
+          const list = document.createElement('span');
+          list.className = 'staff-list';
+          slots.forEach(sl => {
+            const cnt = slotResCount(sl);
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'staff-chip' + (cnt >= sl.capacity ? ' full' : '');
+            chip.style.setProperty('--staff', staffColor(sl.created_by_name));
+            chip.innerHTML = `<span class="dot"></span>${escapeHtml(sl.created_by_name || '名前なし')} ${cnt}/${sl.capacity}`;
+            chip.addEventListener('click', e => { e.stopPropagation(); openSlotDialog(sl); });
+            list.appendChild(chip);
+          });
+          row.appendChild(list);
+        }
+        if (!cellPast && !hasMySlot(slots)) {
           const a = document.createElement('span');
           a.className = 'add';
-          a.textContent = '＋ 枠を追加';
+          a.textContent = slots.length ? '＋ 自分も追加' : '＋ 枠を追加';
           row.appendChild(a);
-          row.addEventListener('click', () => createSlot(cellStart));
+          row.addEventListener('click', () => createSlots([cellStart]));
         }
         slotsBox.appendChild(row);
         anyShown = true;
@@ -822,20 +841,47 @@ function renderCalendar(){
     dayBox.appendChild(slotsBox);
     mob.appendChild(dayBox);
   }
+  renderStaffLegend();
 }
 function headEl(txt){ const d = document.createElement('div'); d.className='cal-head'; d.textContent = txt; return d; }
-function findSlot(d){ return state.slots.find(s => new Date(s.starts_at).getTime() === d.getTime()); }
+// 同じ時間に複数の担当者の枠を持てる（作成順）
+function findSlots(d){ return state.slots.filter(s => new Date(s.starts_at).getTime() === d.getTime()).sort((a,b) => new Date(a.created_at) - new Date(b.created_at)); }
+function hasMySlot(slots){ const me = getAdminName(); return !!me && slots.some(s => s.created_by_name === me); }
 function slotResCount(slot){ return state.reservations.filter(r => r.slot_id === slot.id).length; }
 
-function makeCell(cellStart, cellPast){
+// 担当者名から色を決める（誰が見ても同じ人は同じ色になるよう名前から計算）
+const STAFF_COLORS = ['#2D8D57','#2563EB','#D97706','#DB2777','#7C3AED','#0891B2','#65A30D','#0D9488','#EA580C'];
+const STAFF_COLOR_NONE = '#78716C';
+function staffColor(name){
+  if (!name) return STAFF_COLOR_NONE;
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+  return STAFF_COLORS[h % STAFF_COLORS.length];
+}
+
+function renderStaffLegend(){
+  const el = document.getElementById('staff-legend');
+  const names = [...new Set(state.slots.map(s => s.created_by_name || ''))];
+  if (!names.length) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = '<span>担当：</span>' + names.map(n =>
+    `<span class="staff-chip" style="--staff:${staffColor(n)}"><span class="dot"></span>${escapeHtml(n || '名前なし')}</span>`
+  ).join('');
+}
+
+function makeCell(cellStart, cellPast, dayIdx, rowIdx){
   const cell = document.createElement('div');
   cell.className = 'cal-cell' + (cellPast ? ' past' : '');
-  const slotData = findSlot(cellStart);
-  if (slotData) {
+  cell.dataset.day = dayIdx;
+  cell.dataset.row = rowIdx;
+  cell.dataset.ts = cellStart.getTime();
+  const slots = findSlots(cellStart);
+  slots.forEach(slotData => {
     const cnt = slotResCount(slotData);
     const full = cnt >= slotData.capacity;
     const slotEl = document.createElement('div');
     slotEl.className = 'slot' + (full ? ' full' : '');
+    slotEl.style.setProperty('--staff', staffColor(slotData.created_by_name));
     if (slotData.created_by_name) {
       const creator = document.createElement('span');
       creator.className = 'slot-creator';
@@ -849,32 +895,106 @@ function makeCell(cellStart, cellPast){
     slotEl.appendChild(countEl);
     slotEl.addEventListener('click', e => { e.stopPropagation(); openSlotDialog(slotData); });
     cell.appendChild(slotEl);
-  } else if (!cellPast) {
+  });
+  // 自分の枠がまだない時間なら、他の人の枠があっても自分の枠を追加できる
+  if (!cellPast && !hasMySlot(slots)) {
     const plus = document.createElement('div');
-    plus.className = 'plus';
+    plus.className = 'plus' + (slots.length ? ' mini' : '');
     plus.textContent = '＋';
+    plus.title = slots.length ? '自分の枠を追加' : '枠を追加';
     cell.appendChild(plus);
-    cell.addEventListener('click', () => createSlot(cellStart));
   }
   return cell;
 }
 
-async function createSlot(startsAt){
+// ─── ドラッグで範囲選択してまとめて枠作成（PCグリッド） ───
+const drag = { active: false, startDay: 0, startRow: 0, endDay: 0, endRow: 0 };
+function dragCells(){
+  const d1 = Math.min(drag.startDay, drag.endDay), d2 = Math.max(drag.startDay, drag.endDay);
+  const r1 = Math.min(drag.startRow, drag.endRow), r2 = Math.max(drag.startRow, drag.endRow);
+  return [...document.querySelectorAll('#cal-grid .cal-cell')].filter(c => {
+    const d = +c.dataset.day, r = +c.dataset.row;
+    return d >= d1 && d <= d2 && r >= r1 && r <= r2 && !c.classList.contains('past');
+  });
+}
+function paintDrag(){
+  const sel = new Set(dragCells());
+  document.querySelectorAll('#cal-grid .cal-cell').forEach(c => c.classList.toggle('sel', sel.has(c)));
+}
+function clearDrag(){
+  drag.active = false;
+  document.querySelectorAll('#cal-grid .cal-cell.sel').forEach(c => c.classList.remove('sel'));
+}
+document.getElementById('cal-grid').addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  const cell = e.target.closest('.cal-cell');
+  if (!cell || cell.classList.contains('past') || e.target.closest('.slot')) return;
+  e.preventDefault();
+  drag.active = true;
+  drag.startDay = drag.endDay = +cell.dataset.day;
+  drag.startRow = drag.endRow = +cell.dataset.row;
+  paintDrag();
+});
+document.addEventListener('pointermove', e => {
+  if (!drag.active) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const cell = el && el.closest('#cal-grid .cal-cell');
+  if (!cell) return;
+  const d = +cell.dataset.day, r = +cell.dataset.row;
+  if (d === drag.endDay && r === drag.endRow) return;
+  drag.endDay = d;
+  drag.endRow = r;
+  paintDrag();
+});
+document.addEventListener('pointerup', () => {
+  if (!drag.active) return;
+  const starts = dragCells().map(c => new Date(+c.dataset.ts));
+  clearDrag();
+  if (starts.length) createSlots(starts);
+});
+// タッチでのスクロール等で操作が中断されたら何もしない
+document.addEventListener('pointercancel', () => { if (drag.active) clearDrag(); });
+
+// 作成対象の日時を「日ごとの時間帯」にまとめた表示用テキスト
+function describeStarts(starts, duration){
+  const byDay = new Map();
+  starts.forEach(d => {
+    const key = fmtDate(d);
+    if (!byDay.has(key)) byDay.set(key, []);
+    byDay.get(key).push(d);
+  });
+  return [...byDay.values()].map(list => {
+    const first = list[0], last = list[list.length - 1];
+    const end = new Date(last.getTime() + duration * 60000);
+    return `${fmtDateTime(first)}〜${fmtTime(end)}${list.length > 1 ? `（${list.length}枠）` : ''}`;
+  });
+}
+
+async function createSlots(startsList){
   const ev = state.event;
   // 名前が未設定なら先に入力してもらう
   if (!getAdminName()) {
     promptAdminName();
     return;
   }
-  const endsAt = new Date(startsAt.getTime() + ev.slot_duration_min * 60000);
+  // 自分の枠がすでにある時間は除外（他の人の枠がある時間は重ねて作成できる）
+  const all = [...startsList].sort((a,b) => a - b);
+  const targets = all.filter(d => !hasMySlot(findSlots(d)));
+  const skipped = all.length - targets.length;
+  if (!targets.length) {
+    showAlert('info', '選んだ時間には、すでにあなたの枠があります');
+    return;
+  }
+  const lines = describeStarts(targets, ev.slot_duration_min);
   const capacityModeHint = ev.capacity_mode === 'per_slot'
-    ? '<span style="color:var(--text-3);font-size:11px">この枠だけ別の定員にしたい場合は変更できます</span>'
+    ? `<span style="color:var(--text-3);font-size:11px">${targets.length > 1 ? 'まとめて作る枠はすべてこの定員になります' : 'この枠だけ別の定員にしたい場合は変更できます'}</span>`
     : `<span style="color:var(--text-3);font-size:11px">通常はデフォルト定員（${ev.default_capacity}名）のまま「作成する」を押してください</span>`;
   showModal(`
-    <h2 style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;color:var(--primary-dk)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>枠を作成しますか？</h2>
+    <h2 style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;color:var(--primary-dk)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>${targets.length > 1 ? `${targets.length}枠を作成しますか？` : '枠を作成しますか？'}</h2>
     <div style="background:var(--primary-bg);border:1px solid var(--primary-lt);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px">
       <div style="font-size:12px;color:var(--text-3);margin-bottom:4px">日時</div>
-      <div style="font-weight:800;font-size:16px;color:var(--text-1)">${fmtDateTime(startsAt)}〜${fmtTime(endsAt)}</div>
+      ${lines.map(l => `<div style="font-weight:800;font-size:${lines.length > 1 ? 14 : 16}px;color:var(--text-1)">${l}</div>`).join('')}
+      ${skipped ? `<div style="font-size:11px;color:var(--text-3);margin-top:6px">※ すでにあなたの枠がある ${skipped} 枠は除きました</div>` : ''}
     </div>
     <div class="field">
       <label for="slot-cap-input">定員（人）</label>
@@ -896,13 +1016,13 @@ async function createSlot(startsAt){
     if (!(cap >= 1)) { showAlert('error', '定員は1人以上で入力してください'); return; }
     confirmBtn.disabled = true;
     confirmBtn.textContent = '作成中…';
-    const { error } = await supa.from('booking_slots').insert({
+    const { error } = await supa.from('booking_slots').insert(targets.map(startsAt => ({
       booking_id: ev.id,
       starts_at: startsAt.toISOString(),
       capacity: cap,
       created_by_name: getAdminName() || null,
       created_by_email: getAdminEmail() || null
-    });
+    })));
     if (error) {
       showAlert('error', '枠の作成に失敗：' + error.message);
       confirmBtn.disabled = false;
