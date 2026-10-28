@@ -150,6 +150,8 @@
     .cal-cell.past { background: #FAFAF9; cursor: default; opacity: 0.55; }
     .cal-cell.past:hover { background: #FAFAF9; }
     .cal-cell.sel, .cal-cell.sel:hover { background: #D4F0DE; box-shadow: inset 0 0 0 1px var(--primary); }
+    .cal-cell.sel-del, .cal-cell.sel-del:hover { background: #FEF2F2; box-shadow: inset 0 0 0 1px var(--danger); }
+    .cal-cell .slot.del-target { outline: 2px solid var(--danger); outline-offset: -1px; opacity: 0.6; }
     /* 担当者ごとの色は --staff で受け取る（同じ時間に複数人の枠を横並びで表示） */
     .cal-cell .slot { flex: 1; min-width: 0; background: color-mix(in srgb, var(--staff, #43A86A) 14%, #fff); border: 1px solid color-mix(in srgb, var(--staff, #43A86A) 40%, #fff); border-left: 3px solid var(--staff, #43A86A); border-radius: 4px; padding: 1px 3px; font-size: 11px; font-weight: 700; color: color-mix(in srgb, var(--staff, #43A86A) 70%, #000); text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; gap: 1px; overflow: hidden; }
     .cal-cell .slot .slot-creator { font-size: 9.5px; font-weight: 600; opacity: 0.9; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -233,6 +235,7 @@
     html[data-theme="dark"] .cal-cell .slot { background: color-mix(in srgb, var(--staff, #4ADE80) 22%, transparent); border-color: color-mix(in srgb, var(--staff, #4ADE80) 45%, transparent); border-left-color: var(--staff, #4ADE80); color: color-mix(in srgb, var(--staff, #4ADE80) 40%, #fff); }
     html[data-theme="dark"] .cal-cell .slot.full { background: rgba(220, 38, 38, 0.18); border-color: rgba(220, 38, 38, 0.45); border-left-color: var(--staff, #4ADE80); color: #FCA5A5; }
     html[data-theme="dark"] .cal-cell.sel, html[data-theme="dark"] .cal-cell.sel:hover { background: rgba(74, 222, 128, 0.20); box-shadow: inset 0 0 0 1px #4ADE80; }
+    html[data-theme="dark"] .cal-cell.sel-del, html[data-theme="dark"] .cal-cell.sel-del:hover { background: rgba(220, 38, 38, 0.15); box-shadow: inset 0 0 0 1px #F87171; }
     html[data-theme="dark"] .staff-chip { background: color-mix(in srgb, var(--staff) 22%, transparent); border-color: color-mix(in srgb, var(--staff) 45%, transparent); color: color-mix(in srgb, var(--staff) 40%, #fff); }
     html[data-theme="dark"] .staff-chip.full { background: rgba(220, 38, 38, 0.18); border-color: rgba(220, 38, 38, 0.45); color: #FCA5A5; }
     /* チップ */
@@ -416,7 +419,7 @@
       <button class="btn btn-sm" id="cal-next">翌週 →</button>
       <button class="btn btn-sm" id="cal-today">今週</button>
       <span style="flex:1"></span>
-      <span style="font-size:12px;color:var(--text-3)">空いている所をドラッグでまとめて枠作成（クリックで1枠）、既存枠クリックで予約確認</span>
+      <span style="font-size:12px;color:var(--text-3)">空いている所をドラッグでまとめて枠作成（クリックで1枠）、自分の枠の上からドラッグでまとめて削除、既存枠クリックで予約確認</span>
     </div>
     <div id="staff-legend" class="staff-legend" hidden></div>
 
@@ -880,7 +883,8 @@ function makeCell(cellStart, cellPast, dayIdx, rowIdx){
     const cnt = slotResCount(slotData);
     const full = cnt >= slotData.capacity;
     const slotEl = document.createElement('div');
-    slotEl.className = 'slot' + (full ? ' full' : '');
+    slotEl.className = 'slot' + (full ? ' full' : '') + (hasMySlot([slotData]) ? ' mine' : '');
+    slotEl.dataset.slotId = slotData.id;
     slotEl.style.setProperty('--staff', staffColor(slotData.created_by_name));
     if (slotData.created_by_name) {
       const creator = document.createElement('span');
@@ -907,8 +911,9 @@ function makeCell(cellStart, cellPast, dayIdx, rowIdx){
   return cell;
 }
 
-// ─── ドラッグで範囲選択してまとめて枠作成（PCグリッド） ───
-const drag = { active: false, startDay: 0, startRow: 0, endDay: 0, endRow: 0 };
+// ─── ドラッグで範囲選択してまとめて枠作成／削除（PCグリッド） ───
+// 空いている所から始めると作成、自分の枠の上から始めると削除（消えるのは範囲内の自分の枠だけ）
+const drag = { active: false, mode: 'create', startDay: 0, startRow: 0, endDay: 0, endRow: 0 };
 function dragCells(){
   const d1 = Math.min(drag.startDay, drag.endDay), d2 = Math.max(drag.startDay, drag.endDay);
   const r1 = Math.min(drag.startRow, drag.endRow), r2 = Math.max(drag.startRow, drag.endRow);
@@ -919,17 +924,26 @@ function dragCells(){
 }
 function paintDrag(){
   const sel = new Set(dragCells());
-  document.querySelectorAll('#cal-grid .cal-cell').forEach(c => c.classList.toggle('sel', sel.has(c)));
+  const cls = drag.mode === 'delete' ? 'sel-del' : 'sel';
+  document.querySelectorAll('#cal-grid .cal-cell').forEach(c => {
+    c.classList.toggle(cls, sel.has(c));
+    if (drag.mode === 'delete') c.querySelectorAll('.slot.mine').forEach(s => s.classList.toggle('del-target', sel.has(c)));
+  });
 }
 function clearDrag(){
   drag.active = false;
-  document.querySelectorAll('#cal-grid .cal-cell.sel').forEach(c => c.classList.remove('sel'));
+  document.querySelectorAll('#cal-grid .cal-cell.sel, #cal-grid .cal-cell.sel-del').forEach(c => c.classList.remove('sel', 'sel-del'));
+  document.querySelectorAll('#cal-grid .slot.del-target').forEach(s => s.classList.remove('del-target'));
 }
 document.getElementById('cal-grid').addEventListener('pointerdown', e => {
   if (e.button !== 0) return;
   const cell = e.target.closest('.cal-cell');
-  if (!cell || cell.classList.contains('past') || e.target.closest('.slot')) return;
+  if (!cell || cell.classList.contains('past')) return;
+  const slotEl = e.target.closest('.slot');
+  // 他の人の枠の上はクリックで予約確認のみ
+  if (slotEl && !slotEl.classList.contains('mine')) return;
   e.preventDefault();
+  drag.mode = slotEl ? 'delete' : 'create';
   drag.active = true;
   drag.startDay = drag.endDay = +cell.dataset.day;
   drag.startRow = drag.endRow = +cell.dataset.row;
@@ -948,8 +962,19 @@ document.addEventListener('pointermove', e => {
 });
 document.addEventListener('pointerup', () => {
   if (!drag.active) return;
-  const starts = dragCells().map(c => new Date(+c.dataset.ts));
+  const cells = dragCells();
+  const moved = drag.startDay !== drag.endDay || drag.startRow !== drag.endRow;
+  const mode = drag.mode;
   clearDrag();
+  if (mode === 'delete') {
+    // 動かさずに離した時は通常のクリック（予約確認ダイアログ）として扱う
+    if (!moved) return;
+    const ids = new Set(cells.flatMap(c => [...c.querySelectorAll('.slot.mine')].map(s => s.dataset.slotId)));
+    const targets = state.slots.filter(s => ids.has(s.id));
+    if (targets.length) deleteSlots(targets);
+    return;
+  }
+  const starts = cells.map(c => new Date(+c.dataset.ts));
   if (starts.length) createSlots(starts);
 });
 // タッチでのスクロール等で操作が中断されたら何もしない
@@ -1035,6 +1060,43 @@ async function createSlots(startsList){
   confirmBtn.addEventListener('click', doCreate);
   capInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) doCreate();
+  });
+}
+
+// ドラッグで選んだ自分の枠をまとめて削除（予約が入っている枠は予約も一緒に消える）
+function deleteSlots(slots){
+  const ev = state.event;
+  const sorted = [...slots].sort((a,b) => new Date(a.starts_at) - new Date(b.starts_at));
+  const lines = describeStarts(sorted.map(s => new Date(s.starts_at)), ev.slot_duration_min);
+  const resCount = sorted.reduce((sum, s) => sum + slotResCount(s), 0);
+  showModal(`
+    <h2>${sorted.length}枠を削除しますか？</h2>
+    <div style="background:var(--danger-bg);border:1px solid #FECACA;border-radius:var(--radius);padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:12px;color:var(--text-3);margin-bottom:4px">削除するあなたの枠</div>
+      ${lines.map(l => `<div style="font-weight:800;font-size:${lines.length > 1 ? 14 : 16}px;color:var(--text-1)">${l}</div>`).join('')}
+    </div>
+    ${resCount ? `<div class="alert error" style="font-size:12px">このうち ${resCount} 件の予約が入っています。予約も一緒に削除されます。</div>` : ''}
+    <div style="font-size:12px;color:var(--text-3);margin-bottom:6px">※ 削除すると元に戻せません。ほかの人の枠は削除されません。</div>
+    <div class="modal-actions">
+      <button class="btn" data-modal-close>キャンセル</button>
+      <button class="btn btn-danger" id="slot-delete-confirm">削除する</button>
+    </div>
+  `);
+  document.querySelectorAll('[data-modal-close]').forEach(b => b.addEventListener('click', hideModal));
+  const btn = document.getElementById('slot-delete-confirm');
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = '削除中…';
+    const { error } = await supa.from('booking_slots').delete().in('id', sorted.map(s => s.id));
+    if (error) {
+      showAlert('error', '削除失敗：' + error.message);
+      btn.disabled = false;
+      btn.textContent = '削除する';
+      return;
+    }
+    hideModal();
+    showAlert('success', `${sorted.length}枠を削除しました`);
+    await loadEvent();
   });
 }
 
